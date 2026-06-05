@@ -2,12 +2,9 @@
 //  AppLanguage.swift
 //  Follower
 //
-//  语言枚举、持久化、以及翻译查找。
-//  绕过 NSLocalizedString，直接从 String Catalog 读取，实现 App 内即时语言切换。
+//  语言枚举、持久化、Bundle 翻译查找。
 
 import Foundation
-
-// MARK: - AppLanguage
 
 enum AppLanguage: String, CaseIterable {
     case english    = "en"
@@ -23,20 +20,17 @@ enum AppLanguage: String, CaseIterable {
         case .japanese:             return "日本語"
         }
     }
-
-    var localeIdentifier: String { rawValue }
 }
 
-// MARK: - LanguageStore (actor for thread safety)
+// MARK: - LanguageStore
 
-final actor LanguageStore {
+final class LanguageStore: @unchecked Sendable {
     static let shared = LanguageStore()
 
     private let key = "com.follower.AppLanguage"
-    private var translationCache: [String: [String: String]] = [:]
-    private var isLoaded = false
+    private let appleLanguagesKey = "AppleLanguages"
 
-    nonisolated var current: AppLanguage {
+    var current: AppLanguage {
         get {
             guard let raw = UserDefaults.standard.string(forKey: key),
                   let lang = AppLanguage(rawValue: raw) else {
@@ -46,49 +40,36 @@ final actor LanguageStore {
         }
         set {
             UserDefaults.standard.set(newValue.rawValue, forKey: key)
-            UserDefaults.standard.set([newValue.rawValue], forKey: "AppleLanguages")
+            UserDefaults.standard.set([newValue.rawValue], forKey: appleLanguagesKey)
+            UserDefaults.standard.synchronize()
+            // 重新加载当前语言的 bundle
+            reloadBundle()
         }
     }
 
-    /// 确保翻译缓存已加载
-    private func ensureLoaded() {
-        guard !isLoaded else { return }
-        guard let url = Bundle.main.url(forResource: "Localizable", withExtension: "xcstrings"),
-              let data = try? Data(contentsOf: url),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let strings = json["strings"] as? [String: Any] else {
-            isLoaded = true
-            return
-        }
+    // MARK: - Bundle Lookup
 
-        for (key, value) in strings {
-            guard let entry = value as? [String: Any],
-                  let locals = entry["localizations"] as? [String: Any] else { continue }
-            var langMap: [String: String] = [:]
-            for (langCode, langValue) in locals {
-                if let lv = langValue as? [String: Any],
-                   let unit = lv["stringUnit"] as? [String: Any],
-                   let str = unit["value"] as? String {
-                    langMap[langCode] = str
-                }
-            }
-            translationCache[key] = langMap
-        }
-        isLoaded = true
-    }
+    private var currentBundle: Bundle = .main
 
-    /// 获取指定 key 的翻译。fallback: key 本身 → 英语 → 德语等 → key
-    func translation(for key: String) -> String {
-        ensureLoaded()
+    private func reloadBundle() {
         let lang = current.rawValue
+        if let path = Bundle.main.path(forResource: lang, ofType: "lproj"),
+           let bundle = Bundle(path: path) {
+            currentBundle = bundle
+        } else if let path = Bundle.main.path(forResource: "en", ofType: "lproj"),
+                  let bundle = Bundle(path: path) {
+            currentBundle = bundle
+        } else {
+            currentBundle = .main
+        }
+    }
 
-        if let localized = translationCache[key]?[lang] {
-            return localized
+    func localizedString(_ key: String) -> String {
+        let value = currentBundle.localizedString(forKey: key, value: key, table: nil)
+        // 如果返回 key 本身，说明没找到翻译，fallback 到 main bundle
+        if value == key {
+            return Bundle.main.localizedString(forKey: key, value: key, table: nil)
         }
-        // fallback to English
-        if let en = translationCache[key]?["en"] {
-            return en
-        }
-        return key
+        return value
     }
 }

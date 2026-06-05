@@ -2,62 +2,16 @@
 //  L10n.swift
 //  Follower
 //
-//  统一文本访问入口。直接从 String Catalog 缓存读取，支持 App 内即时语言切换。
+//  统一文本访问入口。通过 LanguageStore 的 per-language Bundle 查找翻译。
 
 import Foundation
-
-// MARK: - Translation Cache
-
-/// 同步翻译缓存：App 启动时加载一次，语言切换时刷新。
-@MainActor
-final class TranslationCache: @unchecked Sendable {
-    static let shared = TranslationCache()
-
-    private var cache: [String: [String: String]] = [:]
-
-    private init() {
-        load()
-    }
-
-    private func load() {
-        guard let url = Bundle.main.url(forResource: "Localizable", withExtension: "xcstrings"),
-              let data = try? Data(contentsOf: url),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let strings = json["strings"] as? [String: Any] else { return }
-
-        cache.removeAll()
-        for (key, value) in strings {
-            guard let entry = value as? [String: Any],
-                  let locals = entry["localizations"] as? [String: Any] else { continue }
-            var langMap: [String: String] = [:]
-            for (langCode, langValue) in locals {
-                if let lv = langValue as? [String: Any],
-                   let unit = lv["stringUnit"] as? [String: Any],
-                   let str = unit["value"] as? String {
-                    langMap[langCode] = str
-                }
-            }
-            cache[key] = langMap
-        }
-    }
-
-    /// 重新加载缓存（语言切换后刷新 fallback，但实际翻译通过 lang 参数直接查找）
-    func reload() { load() }
-
-    func translate(_ key: String, _ language: AppLanguage) -> String {
-        if let localized = cache[key]?[language.rawValue] { return localized }
-        if let en = cache[key]?["en"] { return en }
-        return key
-    }
-}
 
 // MARK: - loc()
 
 /// 根据当前 App 内选择的语言返回翻译文本。
-/// 切换语言后自动反映新的语言（因为 `LanguageStore.current` 读取 UserDefaults）。
+/// LanguageStore 切换语言时自动切换 Bundle，loc() 即时反映新语言。
 func loc(_ key: String, comment: String = "") -> String {
-    let lang = LanguageStore.shared.current
-    return TranslationCache.shared.translate(key, lang)
+    LanguageStore.shared.localizedString(key)
 }
 
 // MARK: - L10n Keys
