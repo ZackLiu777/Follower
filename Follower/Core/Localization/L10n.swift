@@ -86,6 +86,7 @@ enum L10n {
         static let language = "settings.language"
         static let appleNative = "settings.appleNative"
         static let instagram = "settings.instagram"
+        static let midnight = "settings.midnight"
         static let dataExport = "settings.dataExport"
         static let format = "settings.format"
         static let exportData = "settings.exportData"
