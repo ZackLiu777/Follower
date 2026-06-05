@@ -1,0 +1,67 @@
+//
+//  APIDTOs.swift
+//  Follower
+//
+//  外部 API 返回数据的 DTO 定义。
+//  DTO 仅用于网络层与 Ingestion 层之间的数据传递。
+//  不得直接暴露给 Domain Models 或 View。
+//
+
+import Foundation
+
+// MARK: - API Patterns
+
+/// API 返回的粉丝数、关注数等基���指标
+struct APIProfileResponse: Codable {
+    let username: String
+    let displayName: String
+    let followersCount: Int
+    let followingCount: Int
+    let mediaCount: Int
+    let totalLikes: Int
+    let totalComments: Int
+    let totalShares: Int
+    let totalViews: Int
+    let engagementRate: Double
+    let fetchedAt: Date
+}
+
+/// API 返回的互动统计
+struct APIEngagementResponse: Codable {
+    let username: String
+    let likes: Int
+    let comments: Int
+    let shares: Int
+    let views: Int
+    let period: String // "day", "week", "month"
+    let fetchedAt: Date
+}
+
+/// API 返回的历史趋势数据点
+struct APITrendDataPoint: Codable {
+    let date: Date
+    let followersCount: Int
+    let followingCount: Int
+    let mediaCount: Int
+    let engagementRate: Double
+}
+
+/// API 返回的趋势时间序列
+struct APITrendResponse: Codable {
+    let username: String
+    let dataPoints: [APITrendDataPoint]
+    let period: String
+}
+
+// MARK: - Sync Result
+
+/// 同步操作结果
+struct SyncResult {
+    let accountId: Int64
+    let eventsCreated: Int
+    let snapshotsUpdated: Int
+    let metricsUpdated: Int
+    let errors: [Error]
+
+    var isSuccess: Bool { errors.isEmpty }
+}

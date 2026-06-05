@@ -1,0 +1,35 @@
+# Xcode
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+DerivedData/
+build/
+*.mode1v3
+*.mode2v3
+*.pbxuser
+*.perspectivev3
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.moved-aside
+
+# Swift Package Manager
+.swiftpm/
+Package.resolved
+
+# Local dependencies
+Vendor/
+
+# General
+.DS_Store
+.AppleDouble
+Thumbs.db
+
+# Xcode Workspace - ignore user-specific files, keep shared
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# Playground
+playground.xcworkspace
+timeline.xctimeline
