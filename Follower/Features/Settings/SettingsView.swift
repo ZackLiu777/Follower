@@ -2,41 +2,40 @@
 //  SettingsView.swift
 //  Follower
 //
-//  设置页：试用状态、账号管理、主题切换、数据导出、隐私、存储说明。
-//
+//  设置页。Beta: 全部文案本地化 + 语言切换入口。
 
 import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var appState: AppState
     @ObservedObject var viewModel: SettingsViewModel
-
     @State private var showAccountSheet: Bool = false
 
     var body: some View {
         NavigationStack {
             Form {
-                Section { trialSection } header: { Text("Trial Status") }
+                Section { trialSection } header: { Text(loc(L10n.Settings.trialStatus)) }
 
-                Section { accountSection } header: { Text("Accounts") }
+                Section { accountSection } header: { Text(loc(L10n.Settings.accounts)) }
 
-                Section { themeSection } header: { Text("Appearance") }
+                Section {
+                    languageSection
+                    themeSection
+                } header: { Text(loc(L10n.Settings.appearance)) }
 
                 Section {
                     exportSection
-                } header: {
-                    Text("Data Export")
-                } footer: {
-                    Text("All exports are saved locally. Your data never leaves your device.")
+                } header: { Text(loc(L10n.Settings.dataExport)) } footer: {
+                    Text(loc(L10n.Settings.exportFooter))
                 }
 
-                Section { storageInfoSection } header: { Text("Storage") }
+                Section { storageInfoSection } header: { Text(loc(L10n.Settings.storage)) }
 
-                Section { privacySection } header: { Text("Privacy") }
+                Section { privacySection } header: { Text(loc(L10n.Settings.privacy)) }
 
-                Section { premiumFeaturesSection } header: { Text("Premium Features") }
+                Section { premiumFeaturesSection } header: { Text(loc(L10n.Settings.premiumFeatures)) }
             }
-            .navigationTitle("Settings")
+            .navigationTitle(loc(L10n.Settings.title))
             .sheet(isPresented: $showAccountSheet) {
                 AccountView(viewModel: AccountViewModel(
                     accountRepo: appState.container.accountRepository,
@@ -44,27 +43,24 @@ struct SettingsView: View {
                 ))
             }
         }
-        .task {
-            await viewModel.loadSettings()
-        }
+        .task { await viewModel.loadSettings() }
     }
 
-    // MARK: - Trial Section
+    // MARK: - Trial
 
     private var trialSection: some View {
         HStack {
             Label(
-                viewModel.isTrialActive ? "Trial Active" : "Trial Ended",
+                viewModel.isTrialActive ? loc(L10n.Settings.trialActive) : loc(L10n.Settings.trialEnded),
                 systemImage: viewModel.isTrialActive ? "timer" : "timer.badge.exclamationmark"
             )
             Spacer()
             Text(viewModel.trialRemainingTime)
-                .foregroundColor(.secondary)
-                .font(.subheadline)
+                .foregroundColor(.secondary).font(.subheadline)
         }
     }
 
-    // MARK: - Account Section
+    // MARK: - Account
 
     private var accountSection: some View {
         Group {
@@ -73,9 +69,8 @@ struct SettingsView: View {
                     Image(systemName: account.platform == .instagram ? "camera.fill" : "play.rectangle.fill")
                     VStack(alignment: .leading) {
                         Text(account.username).font(.subheadline)
-                        Text(account.platform.rawValue.capitalized)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        Text(account.platform == .instagram ? loc(L10n.Account.instagram) : loc(L10n.Account.tiktok))
+                            .font(.caption).foregroundColor(.secondary)
                     }
                     Spacer()
                     Text(account.authState.rawValue.capitalized)
@@ -90,67 +85,73 @@ struct SettingsView: View {
                     }
                 }
             }
-
             Button { showAccountSheet = true } label: {
-                Label("Connect Account", systemImage: "plus.circle")
+                Label(loc(L10n.Dashboard.connectAccount), systemImage: "plus.circle")
             }
         }
     }
 
-    // MARK: - Theme Section
+    // MARK: - Language
+
+    private var languageSection: some View {
+        Picker(loc(L10n.Settings.language), selection: Binding(
+            get: { appState.currentLanguage },
+            set: { appState.setLanguage($0) }
+        )) {
+            ForEach(AppLanguage.allCases, id: \.self) { lang in
+                Text(lang.displayName).tag(lang)
+            }
+        }
+    }
+
+    // MARK: - Theme
 
     private var themeSection: some View {
-        Picker("Theme", selection: Binding(
+        Picker(loc(L10n.Settings.theme), selection: Binding(
             get: { viewModel.currentTheme },
             set: { newTheme in
                 viewModel.updateTheme(newTheme)
                 appState.currentTheme = newTheme
             }
         )) {
-            ForEach(AppTheme.allCases, id: \.self) { theme in
-                Text(theme.displayName).tag(theme)
-            }
+            Text(loc(L10n.Settings.appleNative)).tag(AppTheme.appleNative)
+            Text(loc(L10n.Settings.instagram)).tag(AppTheme.instagram)
         }
         .pickerStyle(.segmented)
     }
 
-    // MARK: - Export Section
+    // MARK: - Export
 
     private var exportSection: some View {
         Group {
-            Picker("Format", selection: $viewModel.exportFormat) {
+            Picker(loc(L10n.Settings.format), selection: $viewModel.exportFormat) {
                 ForEach(ExportFormat.allCases, id: \.self) { format in
                     Text(format.displayName).tag(format)
                 }
             }
-
-            Button {
-                Task { await viewModel.exportData() }
-            } label: {
+            Button { Task { await viewModel.exportData() } } label: {
                 HStack {
-                    Label("Export Data", systemImage: "square.and.arrow.up")
+                    Label(loc(L10n.Settings.exportData), systemImage: "square.and.arrow.up")
                     Spacer()
                     if viewModel.isExporting { ProgressView() }
                 }
             }
             .disabled(viewModel.selectedAccountId == nil || viewModel.isExporting)
-
             if let url = viewModel.exportURL {
                 ShareLink(item: url) {
-                    Label("Share Export File", systemImage: "square.and.arrow.up.fill")
+                    Label(loc(L10n.Settings.shareExport), systemImage: "square.and.arrow.up.fill")
                 }
             }
         }
     }
 
-    // MARK: - Storage Info
+    // MARK: - Storage
 
     private var storageInfoSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label("Local Only", systemImage: "lock.shield").font(.subheadline)
-            Text("All data is stored locally on your device using SQLite. Nothing is uploaded to the cloud.")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            Label(loc(L10n.Settings.localOnly), systemImage: "lock.shield").font(.subheadline)
+            Text(loc(L10n.Settings.storageDescription))
+                .font(.caption).foregroundColor(.secondary)
         }
     }
 
@@ -159,32 +160,29 @@ struct SettingsView: View {
     private var privacySection: some View {
         Group {
             Button { showPrivacyPolicy() } label: {
-                Label("Privacy Policy", systemImage: "hand.raised")
+                Label(loc(L10n.Settings.privacyPolicy), systemImage: "hand.raised")
             }
-
-            Button(role: .destructive) {
-                viewModel.showDeleteConfirmation = true
-            } label: {
-                Label("Delete All Local Data", systemImage: "trash")
+            Button(role: .destructive) { viewModel.showDeleteConfirmation = true } label: {
+                Label(loc(L10n.Settings.deleteAllData), systemImage: "trash")
             }
             .confirmationDialog(
-                "Delete All Data?",
+                loc(L10n.Settings.deleteConfirmationTitle),
                 isPresented: $viewModel.showDeleteConfirmation,
                 titleVisibility: .visible
             ) {
-                Button("Delete", role: .destructive) {
+                Button(loc(L10n.Common.delete), role: .destructive) {
                     if let id = viewModel.selectedAccountId {
                         Task { await viewModel.deleteLocalData(accountId: id) }
                     }
                 }
-                Button("Cancel", role: .cancel) {}
+                Button(loc(L10n.Common.cancel), role: .cancel) {}
             } message: {
-                Text("This will permanently remove all locally stored data. This action cannot be undone.")
+                Text(loc(L10n.Settings.deleteConfirmationMessage))
             }
         }
     }
 
-    // MARK: - Premium Features
+    // MARK: - Premium
 
     private var premiumFeaturesSection: some View {
         ForEach(viewModel.premiumFeatures, id: \.id) { feature in
@@ -200,10 +198,8 @@ struct SettingsView: View {
         }
     }
 
-    private func showPrivacyPolicy() { /* Alpha 阶段占位 */ }
+    private func showPrivacyPolicy() {}
 }
-
-// MARK: - Preview
 
 #Preview {
     SettingsView(viewModel: SettingsViewModel(

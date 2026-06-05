@@ -21,7 +21,7 @@ struct FollowerApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(appState)
-                .withTheme(from: appState)
+                .withTheme(appState.currentTheme.theme)
                 .task {
                     // 延后初始化试用，确保数据库和 UI 都已就绪
                     await appState.container.trialManager.startTrialIfNeeded()

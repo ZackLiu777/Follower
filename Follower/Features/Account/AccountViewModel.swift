@@ -59,7 +59,7 @@ final class AccountViewModel: ObservableObject {
     /// 添加账号（Alpha 阶段模拟绑定）
     func addAccount() async {
         guard !username.isEmpty, !displayName.isEmpty else {
-            errorMessage = "Username and display name are required"
+            errorMessage = loc(L10n.Account.requiredFields)
             return
         }
 

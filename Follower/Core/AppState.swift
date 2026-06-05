@@ -2,12 +2,7 @@
 //  AppState.swift
 //  Follower
 //
-//  全局应用状态，持有：
-//  - DatabaseManager 引用
-//  - DI 容器
-//  - 当前主题
-//  - 试用状态
-//
+//  全局应用状态。
 
 import Foundation
 import Combine
@@ -20,11 +15,17 @@ final class AppState: ObservableObject {
     // MARK: - Published
 
     @Published var currentTheme: AppTheme = .appleNative
+    @Published var currentLanguage: AppLanguage = LanguageStore.shared.current
     @Published var isTrialActive: Bool = false
     @Published var trialStartDate: Date?
 
     init(databaseManager: DatabaseManager) {
         self.databaseManager = databaseManager
         self.container = DIContainer(databaseManager: databaseManager)
+    }
+
+    func setLanguage(_ language: AppLanguage) {
+        LanguageStore.shared.current = language
+        currentLanguage = language
     }
 }

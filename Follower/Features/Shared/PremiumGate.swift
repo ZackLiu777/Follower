@@ -55,7 +55,7 @@ struct PremiumGateModifier: ViewModifier {
     }
 
     private var trialBadge: some View {
-        Text("TRIAL")
+        Text(loc(L10n.Premium.trialBadge))
             .font(.system(size: 8, weight: .bold))
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
@@ -123,7 +123,7 @@ struct UpgradePromptView: View {
                     )
                     .padding(.top, 40)
 
-                Text("Premium Feature")
+                Text(loc(L10n.Premium.premiumFeature))
                     .font(.title2)
                     .fontWeight(.bold)
 
@@ -132,11 +132,11 @@ struct UpgradePromptView: View {
                     .foregroundColor(.accentColor)
 
                 VStack(alignment: .leading, spacing: 12) {
-                    premiumBenefit("Advanced analytics and predictions")
-                    premiumBenefit("Deeper insights into your audience")
-                    premiumBenefit("Export in multiple formats")
-                    premiumBenefit("Long-term trend comparison")
-                    premiumBenefit("Local AI-powered analysis")
+                    premiumBenefit(loc(L10n.Premium.benefit1))
+                    premiumBenefit(loc(L10n.Premium.benefit2))
+                    premiumBenefit(loc(L10n.Premium.benefit3))
+                    premiumBenefit(loc(L10n.Premium.benefit4))
+                    premiumBenefit(loc(L10n.Premium.benefit5))
                 }
                 .padding(.horizontal)
 
@@ -144,16 +144,15 @@ struct UpgradePromptView: View {
 
                 VStack(spacing: 12) {
                     if appState.isTrialActive {
-                        Text("You're currently in the free trial. Enjoy full access!")
+                        Text(loc(L10n.Premium.trialActive))
                             .font(.caption)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                     } else {
                         Button {
-                            // Alpha: 升级入口占位
                             dismiss()
                         } label: {
-                            Text("Upgrade to Premium")
+                            Text(loc(L10n.Premium.upgradeTo))
                                 .fontWeight(.semibold)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
@@ -169,7 +168,7 @@ struct UpgradePromptView: View {
                         }
                         .padding(.horizontal)
 
-                        Text("Coming soon in a future update")
+                        Text(loc(L10n.Premium.comingSoon))
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -178,7 +177,7 @@ struct UpgradePromptView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Close") { dismiss() }
+                    Button(loc(L10n.Premium.close)) { dismiss() }
                 }
             }
         }

@@ -2,7 +2,7 @@
 //  AccountView.swift
 //  Follower
 //
-//  账号管理页面。Alpha 阶段使用模拟登录。
+//  账号管理页面。Beta: 全部文案本地化。
 
 import SwiftUI
 
@@ -26,109 +26,86 @@ struct AccountView: View {
                             }
                         }
                     } header: {
-                        Text("Connected Accounts")
+                        Text(loc(L10n.Account.connectedAccounts))
                     }
                 }
-
                 Section {
-                    if viewModel.isAddingAccount {
-                        addAccountForm
-                    } else {
+                    if viewModel.isAddingAccount { addAccountForm }
+                    else {
                         Button { viewModel.isAddingAccount = true } label: {
-                            Label("Connect New Account", systemImage: "plus.circle.fill")
+                            Label(loc(L10n.Account.connectNew), systemImage: "plus.circle.fill")
                         }
                     }
                 } header: {
-                    Text(viewModel.isAddingAccount ? "New Account" : "Add Account")
+                    Text(viewModel.isAddingAccount ? loc(L10n.Account.addAccount) : loc(L10n.Account.connectNew))
                 } footer: {
-                    Text("Alpha version uses simulated data. Enter any username to create a demo account.")
+                    Text(loc(L10n.Account.footerHint))
                 }
             }
-            .navigationTitle("Accounts")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") { dismiss() }
-                }
-            }
+            .navigationTitle(loc(L10n.Account.title))
+            .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button(loc(L10n.Common.done)) { dismiss() } } }
         }
-        .task {
-            await viewModel.loadAccounts()
-        }
+        .task { await viewModel.loadAccounts() }
     }
 
     @ViewBuilder
     private func accountRow(_ account: Account) -> some View {
         HStack {
             Image(systemName: account.platform == .instagram ? "camera.fill" : "play.rectangle.fill")
-                .font(.title3)
-                .foregroundColor(.accentColor)
-
+                .font(.title3).foregroundColor(.accentColor)
             VStack(alignment: .leading, spacing: 2) {
                 Text(account.displayName).font(.subheadline).fontWeight(.medium)
                 Text("@\(account.username)").font(.caption).foregroundColor(.secondary)
             }
-
             Spacer()
-
-            Text(account.authState.rawValue.capitalized)
-                .font(.caption2)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+            Text((account.platform == .instagram ? loc(L10n.Account.instagram) : loc(L10n.Account.tiktok))
+                + " · " + authDisplayName(account.authState))
+                .font(.caption2).padding(.horizontal, 8).padding(.vertical, 4)
                 .background(account.authState == .authorized ? Color.green.opacity(0.15) : Color.red.opacity(0.15))
                 .foregroundColor(account.authState == .authorized ? .green : .red)
                 .clipShape(Capsule())
         }
         .swipeActions(edge: .trailing) {
             Button(role: .destructive) {
-                if let id = account.id {
-                    Task { await viewModel.revokeAccount(id) }
-                }
-            } label: {
-                Label("Revoke", systemImage: "xmark.shield")
-            }
+                if let id = account.id { Task { await viewModel.revokeAccount(id) } }
+            } label: { Label(loc(L10n.Account.revoke), systemImage: "xmark.shield") }
         }
     }
 
     private var addAccountForm: some View {
         Group {
-            Picker("Platform", selection: $viewModel.selectedPlatform) {
-                ForEach([Platform.instagram, Platform.tiktok], id: \.self) { platform in
-                    Text(platform.rawValue.capitalized).tag(platform)
-                }
+            Picker(loc(L10n.Account.platform), selection: $viewModel.selectedPlatform) {
+                Text(loc(L10n.Account.instagram)).tag(Platform.instagram)
+                Text(loc(L10n.Account.tiktok)).tag(Platform.tiktok)
             }
-
-            TextField("Username", text: $viewModel.username)
-                .textContentType(.username)
-                .autocapitalization(.none)
-
-            TextField("Display Name", text: $viewModel.displayName)
+            TextField(loc(L10n.Account.username), text: $viewModel.username)
+                .textContentType(.username).autocapitalization(.none)
+            TextField(loc(L10n.Account.displayName), text: $viewModel.displayName)
                 .textContentType(.name)
-
             HStack {
                 Button(role: .cancel) {
                     viewModel.isAddingAccount = false
                     viewModel.username = ""
                     viewModel.displayName = ""
-                } label: { Text("Cancel") }
-
+                } label: { Text(loc(L10n.Account.cancel)) }
                 Spacer()
-
-                Button {
-                    Task { await viewModel.addAccount() }
-                } label: {
-                    if viewModel.isLoading {
-                        ProgressView()
-                    } else {
-                        Text("Connect").fontWeight(.semibold)
-                    }
+                Button { Task { await viewModel.addAccount() } } label: {
+                    if viewModel.isLoading { ProgressView() }
+                    else { Text(loc(L10n.Account.connect)).fontWeight(.semibold) }
                 }
                 .disabled(viewModel.username.isEmpty || viewModel.displayName.isEmpty || viewModel.isLoading)
             }
         }
     }
-}
 
-// MARK: - Preview
+    private func authDisplayName(_ state: AuthState) -> String {
+        switch state {
+        case .authorized: return loc(L10n.Account.authorized)
+        case .expired: return loc(L10n.Account.expired)
+        case .revoked: return loc(L10n.Account.revoked)
+        }
+    }
+}
 
 #Preview {
     AccountView(viewModel: AccountViewModel(

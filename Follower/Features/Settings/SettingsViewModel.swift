@@ -84,7 +84,7 @@ final class SettingsViewModel: ObservableObject {
 
     func exportData() async {
         guard let accountId = selectedAccountId else {
-            errorMessage = "No account selected"
+            errorMessage = loc(L10n.Account.noAccountSelected)
             return
         }
         isExporting = true
@@ -117,11 +117,10 @@ final class SettingsViewModel: ObservableObject {
     // MARK: - Private
 
     private func formatRemainingTime(_ time: TimeInterval?) -> String {
-        guard let time = time else { return "Trial ended" }
-        if time <= 0 { return "Trial ended" }
+        guard let time = time, time > 0 else { return loc(L10n.Premium.trialEnded) }
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
-        return String(format: "%d:%02d remaining", minutes, seconds)
+        return String(format: loc(L10n.Premium.trialRemaining), minutes, seconds)
     }
 }
 

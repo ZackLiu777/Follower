@@ -63,10 +63,10 @@ struct TrendChart: View {
             Image(systemName: "chart.line.downtrend.xy")
                 .font(.largeTitle)
                 .foregroundColor(.secondary)
-            Text("No trend data yet")
+            Text(loc(L10n.Trends.noData))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
-            Text("Sync your account to start tracking")
+            Text(loc(L10n.Trends.noDataHint))
                 .font(.caption)
                 .foregroundColor(.secondary.opacity(0.7))
         }

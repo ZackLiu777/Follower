@@ -2,8 +2,7 @@
 //  TrendsView.swift
 //  Follower
 //
-//  历史趋势页面。数据均由 ViewModel 提供，View 不做计算和直接数据访问。
-//
+//  历史趋势页面。Beta: 全部文案本地化。
 
 import SwiftUI
 
@@ -14,17 +13,15 @@ struct TrendsView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
+                if let error = viewModel.errorMessage {
+                    ErrorBanner(message: error, onDismiss: { viewModel.errorMessage = nil }, onRetry: nil)
+                        .padding(.top, 8)
+                }
                 VStack(spacing: 16) {
                     metricTypePicker
                     timeWindowPicker
-
-                    TrendChart(
-                        dataPoints: viewModel.trendDataPoints,
-                        lineColor: chartColor,
-                        title: chartTitle
-                    )
-                    .padding(.horizontal)
-
+                    TrendChart(dataPoints: viewModel.trendDataPoints, lineColor: chartColor, title: chartTitle)
+                        .padding(.horizontal)
                     if let first = viewModel.trendDataPoints.first,
                        let last = viewModel.trendDataPoints.last,
                        viewModel.trendDataPoints.count > 1 {
@@ -33,27 +30,19 @@ struct TrendsView: View {
                 }
                 .padding(.vertical)
             }
-            .navigationTitle("Trends")
+            .navigationTitle(loc(L10n.Trends.title))
         }
-        .task {
-            await viewModel.loadInitialAccount()
-        }
+        .task { await viewModel.loadInitialAccount() }
     }
-
-    // MARK: - Pickers
 
     private var metricTypePicker: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(visibleMetricTypes, id: \.self) { type in
-                    Button {
-                        viewModel.selectMetricType(type)
-                    } label: {
-                        Text(type.displayName)
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+                    Button { viewModel.selectMetricType(type) } label: {
+                        Text(type.localizedName)
+                            .font(.caption).fontWeight(.medium)
+                            .padding(.horizontal, 12).padding(.vertical, 6)
                             .background(viewModel.selectedMetricType == type ? AnyShapeStyle(.tint) : AnyShapeStyle(.regularMaterial))
                             .foregroundColor(viewModel.selectedMetricType == type ? .white : .primary)
                             .clipShape(Capsule())
@@ -67,43 +56,31 @@ struct TrendsView: View {
 
     private var timeWindowPicker: some View {
         Picker("Time Window", selection: $viewModel.selectedWindow) {
-            ForEach(TimeWindow.allCases, id: \.self) { window in
-                Text(window.displayName).tag(window)
-            }
+            Text(loc(L10n.Trends.daily)).tag(TimeWindow.day)
+            Text(loc(L10n.Trends.weekly)).tag(TimeWindow.week)
+            Text(loc(L10n.Trends.monthly)).tag(TimeWindow.month)
         }
-        .pickerStyle(.segmented)
-        .padding(.horizontal)
+        .pickerStyle(.segmented).padding(.horizontal)
     }
-
-    // MARK: - Growth Summary
 
     private func growthSummary(first: TrendDataPoint, last: TrendDataPoint) -> some View {
         let change = last.value - first.value
         let pct = first.value > 0 ? (change / first.value) * 100 : 0
-
         return HStack(spacing: 16) {
-            summaryItem(label: "Change", value: String(format: "%+.0f", change), isPositive: change >= 0)
-            summaryItem(label: "Growth", value: String(format: "%+.1f%%", pct), isPositive: pct >= 0)
+            summaryItem(label: loc(L10n.Trends.change), value: String(format: "%+.0f", change), isPositive: change >= 0)
+            summaryItem(label: loc(L10n.Trends.growth), value: String(format: "%+.1f%%", pct), isPositive: pct >= 0)
         }
         .padding(.horizontal)
     }
 
     private func summaryItem(label: String, value: String, isPositive: Bool) -> some View {
         VStack(spacing: 4) {
-            Text(value)
-                .font(.headline)
-                .foregroundColor(isPositive ? .green : .red)
-            Text(label)
-                .font(.caption)
-                .foregroundColor(.secondary)
+            Text(value).font(.headline).foregroundColor(isPositive ? .green : .red)
+            Text(label).font(.caption).foregroundColor(.secondary)
         }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .frame(maxWidth: .infinity).padding()
+        .background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 12))
     }
-
-    // MARK: - Helpers
 
     private var visibleMetricTypes: [MetricType] {
         [.followerGrowth, .engagementTrend, .averageLikes, .averageComments, .averageShares, .profileViews]
@@ -122,47 +99,41 @@ struct TrendsView: View {
     }
 
     private var chartTitle: String {
-        "\(viewModel.selectedMetricType.displayName) — \(viewModel.selectedWindow.displayName)"
+        "\(viewModel.selectedMetricType.localizedName) — \(viewModel.selectedWindow.localizedName)"
     }
 }
 
-// MARK: - Display Helpers
-
 extension MetricType {
-    var displayName: String {
+    var localizedName: String {
         switch self {
-        case .followerGrowth: return "Followers"
-        case .engagementTrend: return "Engagement"
-        case .averageLikes: return "Likes"
-        case .averageComments: return "Comments"
-        case .averageShares: return "Shares"
-        case .profileViews: return "Views"
-        case .reachEstimate: return "Reach"
+        case .followerGrowth: return loc(L10n.Trends.followers)
+        case .engagementTrend: return loc(L10n.Trends.engagement)
+        case .averageLikes: return loc(L10n.Trends.likes)
+        case .averageComments: return loc(L10n.Trends.comments)
+        case .averageShares: return loc(L10n.Trends.shares)
+        case .profileViews: return loc(L10n.Trends.views)
+        case .reachEstimate: return loc(L10n.Trends.reach)
         }
     }
 }
 
 extension TimeWindow: CaseIterable {
     public static var allCases: [TimeWindow] { [.day, .week, .month] }
-
-    var displayName: String {
+    var localizedName: String {
         switch self {
-        case .day: return "Daily"
-        case .week: return "Weekly"
-        case .month: return "Monthly"
+        case .day: return loc(L10n.Trends.daily)
+        case .week: return loc(L10n.Trends.weekly)
+        case .month: return loc(L10n.Trends.monthly)
         }
     }
 }
-
-// MARK: - Preview
 
 #Preview {
     TrendsView(viewModel: TrendsViewModel(
         snapshotRepo: PreviewMocks.snapshotRepo,
         metricRepo: PreviewMocks.metricRepo,
         accountRepo: PreviewMocks.accountRepo
-    ))
-    .environmentObject(AppState(databaseManager: DatabaseManager.shared))
+    )).environmentObject(AppState(databaseManager: DatabaseManager.shared))
 }
 
 #if DEBUG
