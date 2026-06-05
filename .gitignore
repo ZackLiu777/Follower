@@ -19,7 +19,7 @@ build/
 Package.resolved
 
 # Local dependencies
-Vendor/
+*Vendor/
 
 # General
 .DS_Store
