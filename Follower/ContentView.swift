@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  Follower
 //
-//  应用主入口。主题切换响应由 ContentViewInner 内部的 @EnvironmentObject 驱动。
+//  应用主入口。主题和语言切换即时响应。
 
 import SwiftUI
 
@@ -12,6 +12,8 @@ struct ContentView: View {
     var body: some View {
         ContentViewInner(container: appState.container)
             .environmentObject(appState)
+            // 语言切换 → 强制重建 view tree → 重新调用 loc()
+            .id(appState.currentLanguage.rawValue)
     }
 }
 
@@ -54,6 +56,7 @@ private struct ContentViewInner: View {
             SettingsView(viewModel: settingsVM)
                 .tabItem { Label(loc(L10n.Tab.settings), systemImage: "gearshape.fill") }
         }
+        .tint(appState.currentTheme.theme.accentPrimary)
         .withTheme(appState.currentTheme.theme)
     }
 }
