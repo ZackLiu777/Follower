@@ -10,6 +10,7 @@ final class AccountUITests: XCTestCase {
     override func setUp() {
         continueAfterFailure = false
         app = XCUIApplication()
+        app.launchArguments = ["UI_TEST"]
         app.launch()
     }
 

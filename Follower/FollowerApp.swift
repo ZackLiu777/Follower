@@ -2,29 +2,39 @@
 //  FollowerApp.swift
 //  Follower
 //
-//  App 入口。
-//  初始化 GRDB 数据库，注入全局主题与依赖。
-//  试用初始化延后到首个 View 出现后，避免阻塞启动。
+//  App 入口。Beta-2.0: 开屏页面 → 主界面过渡。
 
 import SwiftUI
 
 @main
 struct FollowerApp: App {
     @StateObject private var appState: AppState
+    @State private var showSplash: Bool = true
+
+    private let skipSplash: Bool
 
     init() {
         let dbManager = DatabaseManager.shared
         _appState = StateObject(wrappedValue: AppState(databaseManager: dbManager))
+        skipSplash = ProcessInfo.processInfo.arguments.contains("UI_TEST")
     }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(appState)
-                .task {
-                    // 延后初始化试用，确保数据库和 UI 都已就绪
-                    await appState.container.trialManager.startTrialIfNeeded()
+            ZStack {
+                ContentView()
+                    .environmentObject(appState)
+                    .task {
+                        await appState.container.trialManager.startTrialIfNeeded()
+                    }
+
+                if showSplash && !skipSplash {
+                    SplashView {
+                        showSplash = false
+                    }
+                    .transition(.opacity)
                 }
+            }
         }
     }
 }

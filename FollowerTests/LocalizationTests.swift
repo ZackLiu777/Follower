@@ -79,7 +79,7 @@ final class LocalizationTests: XCTestCase {
             L10n.Trends.change, L10n.Trends.growth, L10n.Trends.noData, L10n.Trends.noDataHint,
             L10n.Settings.title, L10n.Settings.trialStatus, L10n.Settings.accounts,
             L10n.Settings.appearance, L10n.Settings.theme, L10n.Settings.language,
-            L10n.Settings.appleNative, L10n.Settings.instagram, L10n.Settings.midnight,
+            L10n.Settings.appleNative, L10n.Settings.instagram, L10n.Settings.midnight, L10n.Settings.instagramDark,
             L10n.Settings.dataExport, L10n.Settings.exportData, L10n.Settings.exportFooter,
             L10n.Settings.storage, L10n.Settings.localOnly, L10n.Settings.storageDescription,
             L10n.Settings.privacy, L10n.Settings.privacyPolicy, L10n.Settings.deleteAllData,
@@ -95,7 +95,7 @@ final class LocalizationTests: XCTestCase {
             L10n.Premium.benefit1, L10n.Premium.benefit2, L10n.Premium.benefit3,
             L10n.Premium.benefit4, L10n.Premium.benefit5,
         ]
-        XCTAssertEqual(allKeys.count, 82, "L10n key count mismatch")
+        XCTAssertEqual(allKeys.count, 83, "L10n key count mismatch")
         for key in allKeys {
             XCTAssertTrue(key.contains("."), "Key '\(key)' should contain a dot separator")
             XCTAssertFalse(key.contains(" "), "Key '\(key)' should not contain spaces")

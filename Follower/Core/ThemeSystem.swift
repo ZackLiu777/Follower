@@ -141,6 +141,40 @@ struct Theme: Sendable {
         displayName: "Midnight",
         liquidGlassEnabled: false
     )
+
+    // MARK: - Instagram Dark
+
+    static let instagramDark = Theme(
+        backgroundPrimary: Color(red: 0.06, green: 0.06, blue: 0.10),
+        backgroundSecondary: Color(red: 0.08, green: 0.08, blue: 0.14),
+        backgroundGrouped: Color(red: 0.04, green: 0.04, blue: 0.07),
+        cardSurface: Color.white.opacity(0.08),
+        cardElevated: Color.white.opacity(0.12),
+        textPrimary: Color.white.opacity(0.92),
+        textSecondary: Color.white.opacity(0.60),
+        textTertiary: Color.white.opacity(0.38),
+        textInverted: .black,
+        accentPrimary: Color(red: 0.82, green: 0.18, blue: 0.49),
+        accentSecondary: Color(red: 0.96, green: 0.55, blue: 0.31),
+        positiveGreen: Color(red: 0.25, green: 0.78, blue: 0.35),
+        negativeRed: Color(red: 1.0, green: 0.35, blue: 0.35),
+        warningOrange: Color(red: 1.0, green: 0.65, blue: 0.20),
+        chartLine: Color(red: 0.82, green: 0.18, blue: 0.49),
+        chartArea: Color(red: 0.82, green: 0.18, blue: 0.49).opacity(0.15),
+        chartGrid: Color.white.opacity(0.08),
+        badgePremiumStart: Color(red: 1.0, green: 0.75, blue: 0.10),
+        badgePremiumEnd: Color(red: 0.82, green: 0.18, blue: 0.49),
+        badgeTrial: Color(red: 0.96, green: 0.55, blue: 0.31),
+        badgeLocked: Color.white.opacity(0.20),
+        buttonPrimaryBg: Color(red: 0.82, green: 0.18, blue: 0.49),
+        buttonDestructiveBg: Color(red: 0.90, green: 0.25, blue: 0.25),
+        buttonDisabledFg: Color.white.opacity(0.15),
+        divider: Color.white.opacity(0.08),
+        navigationBg: Color(red: 0.06, green: 0.06, blue: 0.10),
+        emptyStateIcon: Color.white.opacity(0.15),
+        displayName: "Instagram Dark",
+        liquidGlassEnabled: false
+    )
 }
 
 // MARK: - AppTheme Enum
@@ -149,12 +183,14 @@ enum AppTheme: String, CaseIterable {
     case appleNative
     case instagram
     case midnight
+    case instagramDark
 
     var theme: Theme {
         switch self {
         case .appleNative: return .appleNative
         case .instagram: return .instagram
         case .midnight: return .midnight
+        case .instagramDark: return .instagramDark
         }
     }
 
@@ -163,6 +199,7 @@ enum AppTheme: String, CaseIterable {
         case .appleNative: return loc(L10n.Settings.appleNative)
         case .instagram: return loc(L10n.Settings.instagram)
         case .midnight: return loc(L10n.Settings.midnight)
+        case .instagramDark: return loc(L10n.Settings.instagramDark)
         }
     }
 }

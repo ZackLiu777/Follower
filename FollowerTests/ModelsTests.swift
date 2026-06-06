@@ -109,7 +109,7 @@ final class ModelsTests: XCTestCase {
     }
 
     func testAppThemeAllCases() {
-        XCTAssertEqual(AppTheme.allCases.count, 3)
+        XCTAssertEqual(AppTheme.allCases.count, 4)
         XCTAssertTrue(AppTheme.allCases.contains(.midnight))
     }
 }

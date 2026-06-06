@@ -30,8 +30,9 @@ final class ThemeTests: XCTestCase {
             Theme.appleNative.accentPrimary.hashValue,
             Theme.instagram.accentPrimary.hashValue,
             Theme.midnight.accentPrimary.hashValue,
+            Theme.instagramDark.accentPrimary.hashValue,
         ])
-        XCTAssertEqual(accents.count, 3, "All three themes should have distinct accent colors")
+        XCTAssertEqual(accents.count, 4, "All four themes should have distinct accent colors")
     }
 
     func testLiquidGlassEnablement() {
