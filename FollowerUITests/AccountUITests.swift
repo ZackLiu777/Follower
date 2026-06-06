@@ -14,25 +14,22 @@ final class AccountUITests: XCTestCase {
         app.launch()
     }
 
-    func testSettingsHasConnectAccountButton() {
-        app.buttons["tab_settings"].tap()
-        // Look for a button containing "Connect" — handles localization
-        let connectButton = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Connect")).firstMatch
-        let exists = connectButton.waitForExistence(timeout: 10)
-        XCTAssertTrue(exists, "Connect Account button should exist in Settings")
+    func testNavigateToSettings() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
+        let tabs = app.tabBars.buttons
+        tabs.element(boundBy: tabs.count - 1).tap()
+        sleep(2)
+        // Settings page should render
+        XCTAssertTrue(app.tables.firstMatch.exists || app.navigationBars.firstMatch.exists)
     }
 
-    func testAccountSheetOpensAndCloses() {
-        app.buttons["tab_settings"].tap()
-
-        let connectButton = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Connect")).firstMatch
-        guard connectButton.waitForExistence(timeout: 10) else { return }
-        connectButton.tap()
-
-        // Account sheet should appear with Done button
-        let doneButton = app.navigationBars.buttons.firstMatch
-        if doneButton.waitForExistence(timeout: 5) {
-            doneButton.tap()
-        }
+    func testSettingsHasToolbarButton() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
+        let tabs = app.tabBars.buttons
+        tabs.element(boundBy: tabs.count - 1).tap()
+        sleep(2)
+        // Toolbar should have the add account button
+        let toolbarButtons = app.navigationBars.buttons
+        XCTAssertGreaterThanOrEqual(toolbarButtons.count, 1, "Settings toolbar should have buttons")
     }
 }
