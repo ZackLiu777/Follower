@@ -31,6 +31,7 @@ final class AccountViewModel: ObservableObject {
 
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published var shouldDismiss: Bool = false
 
     // MARK: - Init
 
@@ -82,6 +83,7 @@ final class AccountViewModel: ObservableObject {
             username = ""
             displayName = ""
             await loadAccounts()
+            shouldDismiss = true
         } catch {
             errorMessage = error.localizedDescription
         }

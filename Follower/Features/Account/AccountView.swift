@@ -46,6 +46,9 @@ struct AccountView: View {
             .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button(loc(L10n.Common.done)) { dismiss() } } }
         }
         .task { await viewModel.loadAccounts() }
+        .onChange(of: viewModel.shouldDismiss) { _, dismiss in
+            if dismiss { self.dismiss() }
+        }
     }
 
     @ViewBuilder

@@ -86,10 +86,13 @@ struct SettingsView: View {
                     }
                 }
             }
-            Button { showAccountSheet = true } label: {
+            HStack {
                 Label(loc(L10n.Dashboard.connectAccount), systemImage: "plus.circle")
+                    .foregroundColor(.accentColor)
+                Spacer()
             }
-            .buttonStyle(.borderless)
+            .contentShape(Rectangle())
+            .onTapGesture { showAccountSheet = true }
         }
     }
 
