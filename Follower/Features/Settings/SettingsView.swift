@@ -89,6 +89,7 @@ struct SettingsView: View {
             Button { showAccountSheet = true } label: {
                 Label(loc(L10n.Dashboard.connectAccount), systemImage: "plus.circle")
             }
+            .buttonStyle(.borderless)
         }
     }
 

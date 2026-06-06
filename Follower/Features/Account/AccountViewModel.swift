@@ -11,7 +11,6 @@
 //
 
 import Foundation
-import Combine
 import SwiftUI
 import Combine
 
@@ -78,12 +77,7 @@ final class AccountViewModel: ObservableObject {
                 createdAt: Date(),
                 updatedAt: Date()
             )
-            let saved = try await accountRepo.insert(account)
-
-            // 新账号首次同步
-            if let accountId = saved.id {
-                _ = try await syncEngine.sync(accountId: accountId)
-            }
+            _ = try await accountRepo.insert(account)
 
             username = ""
             displayName = ""
