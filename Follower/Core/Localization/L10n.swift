@@ -36,6 +36,7 @@ enum L10n {
         static let dashboard = "tab.dashboard"
         static let trends = "tab.trends"
         static let settings = "tab.settings"
+        static let my = "tab.my"
     }
 
     // MARK: Dashboard
@@ -147,5 +148,7 @@ enum L10n {
         static let benefit3 = "premium.benefit3"
         static let benefit4 = "premium.benefit4"
         static let benefit5 = "premium.benefit5"
+        static let unlockAll = "premium.unlockAll"
+        static let unlocked = "premium.unlocked"
     }
 }

@@ -102,6 +102,17 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Premium Unlock (dev mode: one-tap unlock all)
+
+    func unlockAllPremium() async {
+        for key in PremiumFeatureKey.allCases {
+            try? await premiumFeatureRepo.setEnabled(true, expiresAt: nil, for: key)
+        }
+        do {
+            premiumFeatures = try await premiumFeatureRepo.fetchAll()
+        } catch {}
+    }
+
     // MARK: - Delete Data
 
     /// 删除指定账号的本地数据（隐私权利）

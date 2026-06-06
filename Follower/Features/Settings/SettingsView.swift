@@ -212,14 +212,31 @@ struct SettingsView: View {
     // MARK: - Premium
 
     private var premiumFeaturesSection: some View {
-        ForEach(viewModel.premiumFeatures, id: \.id) { feature in
-            HStack {
-                Text(feature.key.displayName).font(.subheadline)
-                Spacer()
-                if feature.enabled {
-                    Image(systemName: "checkmark.seal.fill").foregroundColor(.green)
-                } else {
-                    Image(systemName: "lock.fill").foregroundColor(.secondary)
+        Group {
+            // Unlock button
+            Button {
+                Task { await viewModel.unlockAllPremium() }
+            } label: {
+                HStack {
+                    Label(loc(L10n.Premium.unlockAll), systemImage: "crown.fill")
+                        .foregroundColor(.orange)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            // Feature list
+            ForEach(viewModel.premiumFeatures, id: \.id) { feature in
+                HStack {
+                    Text(feature.key.displayName).font(.subheadline)
+                    Spacer()
+                    if feature.enabled {
+                        Image(systemName: "checkmark.seal.fill").foregroundColor(.green)
+                    } else {
+                        Image(systemName: "lock.fill").foregroundColor(.secondary)
+                    }
                 }
             }
         }

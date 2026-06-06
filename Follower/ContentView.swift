@@ -56,7 +56,7 @@ private struct ContentViewInner: View {
                 .tabItem { Label(loc(L10n.Tab.trends), systemImage: "chart.xyaxis.line") }
                 .accessibilityIdentifier("tab_trends")
             SettingsView(viewModel: settingsVM)
-                .tabItem { Label(loc(L10n.Tab.settings), systemImage: "slider.horizontal.3") }
+                .tabItem { Label(loc(L10n.Tab.my), systemImage: "person.fill") }
                 .accessibilityIdentifier("tab_settings")
         }
         .tint(appState.currentTheme.theme.accentPrimary)

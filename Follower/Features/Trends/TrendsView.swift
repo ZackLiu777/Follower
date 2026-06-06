@@ -55,7 +55,10 @@ struct TrendsView: View {
     }
 
     private var timeWindowPicker: some View {
-        Picker("Time Window", selection: $viewModel.selectedWindow) {
+        Picker("Time Window", selection: Binding(
+            get: { viewModel.selectedWindow },
+            set: { viewModel.selectWindow($0) }
+        )) {
             Text(loc(L10n.Trends.daily)).tag(TimeWindow.day)
             Text(loc(L10n.Trends.weekly)).tag(TimeWindow.week)
             Text(loc(L10n.Trends.monthly)).tag(TimeWindow.month)
