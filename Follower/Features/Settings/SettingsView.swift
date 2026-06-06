@@ -37,6 +37,13 @@ struct SettingsView: View {
                 Section { premiumFeaturesSection } header: { Text(loc(L10n.Settings.premiumFeatures)) }
             }
             .navigationTitle(loc(L10n.Settings.title))
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button { showAccountSheet = true } label: {
+                        Image(systemName: "person.badge.plus")
+                    }
+                }
+            }
             .sheet(isPresented: $showAccountSheet) {
                 AccountView(viewModel: AccountViewModel(
                     accountRepo: appState.container.accountRepository,
@@ -86,13 +93,13 @@ struct SettingsView: View {
                     }
                 }
             }
-            HStack {
-                Label(loc(L10n.Dashboard.connectAccount), systemImage: "plus.circle")
-                    .foregroundColor(.accentColor)
-                Spacer()
+            if viewModel.accounts.isEmpty {
+                HStack {
+                    Label(loc(L10n.Dashboard.connectAccount), systemImage: "person.crop.circle.badge.plus")
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
             }
-            .contentShape(Rectangle())
-            .onTapGesture { showAccountSheet = true }
         }
     }
 

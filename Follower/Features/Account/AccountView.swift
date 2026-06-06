@@ -43,7 +43,33 @@ struct AccountView: View {
                 }
             }
             .navigationTitle(loc(L10n.Account.title))
-            .toolbar { ToolbarItem(placement: .navigationBarTrailing) { Button(loc(L10n.Common.done)) { dismiss() } } }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    if viewModel.isAddingAccount {
+                        Button(loc(L10n.Account.cancel)) {
+                            viewModel.isAddingAccount = false
+                            viewModel.username = ""
+                            viewModel.displayName = ""
+                        }
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if viewModel.isAddingAccount {
+                        Button {
+                            Task { await viewModel.addAccount() }
+                        } label: {
+                            if viewModel.isLoading {
+                                ProgressView()
+                            } else {
+                                Text(loc(L10n.Account.connect)).fontWeight(.semibold)
+                            }
+                        }
+                        .disabled(viewModel.username.isEmpty || viewModel.displayName.isEmpty || viewModel.isLoading)
+                    } else {
+                        Button(loc(L10n.Common.done)) { dismiss() }
+                    }
+                }
+            }
         }
         .task { await viewModel.loadAccounts() }
         .onChange(of: viewModel.shouldDismiss) { _, dismiss in
@@ -85,19 +111,6 @@ struct AccountView: View {
                 .textContentType(.username).autocapitalization(.none)
             TextField(loc(L10n.Account.displayName), text: $viewModel.displayName)
                 .textContentType(.name)
-            HStack {
-                Button(role: .cancel) {
-                    viewModel.isAddingAccount = false
-                    viewModel.username = ""
-                    viewModel.displayName = ""
-                } label: { Text(loc(L10n.Account.cancel)) }
-                Spacer()
-                Button { Task { await viewModel.addAccount() } } label: {
-                    if viewModel.isLoading { ProgressView() }
-                    else { Text(loc(L10n.Account.connect)).fontWeight(.semibold) }
-                }
-                .disabled(viewModel.username.isEmpty || viewModel.displayName.isEmpty || viewModel.isLoading)
-            }
         }
     }
 
