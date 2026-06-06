@@ -21,6 +21,7 @@ struct SettingsView: View {
                 Section {
                     languageSection
                     themeSection
+                    colorSchemeSection
                 } header: { Text(loc(L10n.Settings.appearance)) }
 
                 Section {
@@ -114,8 +115,23 @@ struct SettingsView: View {
                 appState.currentTheme = newTheme
             }
         )) {
-            Text(loc(L10n.Settings.appleNative)).tag(AppTheme.appleNative)
-            Text(loc(L10n.Settings.instagram)).tag(AppTheme.instagram)
+            ForEach(AppTheme.allCases, id: \.self) { t in
+                Text(t.displayName).tag(t)
+            }
+        }
+        .pickerStyle(.menu)
+    }
+
+    // MARK: - Color Scheme
+
+    private var colorSchemeSection: some View {
+        Picker(loc(L10n.Settings.colorScheme), selection: Binding(
+            get: { appState.colorScheme },
+            set: { appState.colorScheme = $0 }
+        )) {
+            Text(loc(L10n.Settings.system)).tag(nil as ColorScheme?)
+            Text(loc(L10n.Settings.light)).tag(ColorScheme?.some(.light))
+            Text(loc(L10n.Settings.dark)).tag(ColorScheme?.some(.dark))
         }
         .pickerStyle(.segmented)
     }

@@ -2,7 +2,7 @@
 //  FollowerApp.swift
 //  Follower
 //
-//  App 入口。Beta-2.0: 开屏页面 → 主界面过渡。
+//  App 入口。Beta-2.0: 开屏页面 + 浅色/深色模式。
 
 import SwiftUI
 
@@ -10,7 +10,6 @@ import SwiftUI
 struct FollowerApp: App {
     @StateObject private var appState: AppState
     @State private var showSplash: Bool = true
-
     private let skipSplash: Bool
 
     init() {
@@ -35,6 +34,7 @@ struct FollowerApp: App {
                     .transition(.opacity)
                 }
             }
+            .preferredColorScheme(appState.colorScheme)
         }
     }
 }

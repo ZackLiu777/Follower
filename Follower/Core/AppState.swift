@@ -6,6 +6,7 @@
 
 import Foundation
 import Combine
+import SwiftUI
 
 @MainActor
 final class AppState: ObservableObject {
@@ -16,6 +17,7 @@ final class AppState: ObservableObject {
 
     @Published var currentTheme: AppTheme = .appleNative
     @Published var currentLanguage: AppLanguage = LanguageStore.shared.current
+    @Published var colorScheme: ColorScheme? = nil  // nil = system, .light, .dark
     @Published var isTrialActive: Bool = false
     @Published var trialStartDate: Date?
 

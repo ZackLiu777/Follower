@@ -50,13 +50,13 @@ private struct ContentViewInner: View {
     var body: some View {
         TabView {
             DashboardView(viewModel: dashboardVM)
-                .tabItem { Label(loc(L10n.Tab.dashboard), systemImage: "chart.bar.fill") }
+                .tabItem { Label(loc(L10n.Tab.dashboard), systemImage: "square.grid.2x2.fill") }
                 .accessibilityIdentifier("tab_dashboard")
             TrendsView(viewModel: trendsVM)
-                .tabItem { Label(loc(L10n.Tab.trends), systemImage: "chart.line.uptrend.xy") }
+                .tabItem { Label(loc(L10n.Tab.trends), systemImage: "chart.xyaxis.line") }
                 .accessibilityIdentifier("tab_trends")
             SettingsView(viewModel: settingsVM)
-                .tabItem { Label(loc(L10n.Tab.settings), systemImage: "gearshape.fill") }
+                .tabItem { Label(loc(L10n.Tab.settings), systemImage: "slider.horizontal.3") }
                 .accessibilityIdentifier("tab_settings")
         }
         .tint(appState.currentTheme.theme.accentPrimary)
