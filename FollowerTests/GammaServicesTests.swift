@@ -115,4 +115,89 @@ final class GammaServicesTests: XCTestCase {
             observedAt: Date(), createdAt: Date()
         )
     }
+
+    private func makeEvent(accountId: Int64, daysAgo: Int) -> Event {
+        let date = Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date()) ?? Date()
+        return Event(accountId: accountId, eventType: .profileSnapshot, payload: Data(), source: .api, observedAt: date, createdAt: date)
+    }
+
+    // MARK: - ActivityAnalysisService
+
+    func testActivityAnalysisCalculatesRatio() async {
+        let service = ActivityAnalysisService()
+        let now = Date()
+        let from = Calendar.current.date(byAdding: .day, value: -7, to: now)!
+        let events = [makeEvent(accountId: 1, daysAgo: 0), makeEvent(accountId: 1, daysAgo: 1), makeEvent(accountId: 1, daysAgo: 3)]
+        let result = await service.analyze(events: events, from: from, to: now)
+        XCTAssertGreaterThan(result.activeDays, 0)
+        XCTAssertLessThanOrEqual(result.activeDaysRatio, 1.0)
+    }
+
+    func testActivityAnalysisEmptyEvents() async {
+        let service = ActivityAnalysisService()
+        let now = Date()
+        let result = await service.analyze(events: [], from: Calendar.current.date(byAdding: .day, value: -7, to: now)!, to: now)
+        XCTAssertEqual(result.activeDays, 0)
+        XCTAssertEqual(result.label, "Low")
+    }
+
+    // MARK: - RetentionAnalysisService
+
+    func testRetentionGrowingFollowers() async {
+        let service = RetentionAnalysisService()
+        let snapshots = [makeSnapshot(followers: 100), makeSnapshot(followers: 110), makeSnapshot(followers: 120)]
+        let result = await service.analyze(snapshots: snapshots)
+        XCTAssertGreaterThan(result.netGrowthRate, 0)
+        XCTAssertFalse(result.isChurning)
+    }
+
+    func testRetentionChurnDetection() async {
+        let service = RetentionAnalysisService()
+        let snapshots = [makeSnapshot(followers: 120), makeSnapshot(followers: 110), makeSnapshot(followers: 100), makeSnapshot(followers: 90)]
+        let result = await service.analyze(snapshots: snapshots)
+        XCTAssertLessThan(result.netGrowthRate, 0)
+        XCTAssertTrue(result.isChurning)
+        XCTAssertEqual(result.churnRiskLevel, "Low")
+    }
+
+    func testRetentionInsufficientData() async {
+        let service = RetentionAnalysisService()
+        let result = await service.analyze(snapshots: [makeSnapshot(followers: 100)])
+        XCTAssertEqual(result.churnRiskLevel, "None")
+    }
+
+    // MARK: - GeoDistributionService
+
+    func testGeoDistributionReturnsMockData() async {
+        let service = GeoDistributionService()
+        let result = await service.fetchDistribution(accountId: 1)
+        XCTAssertEqual(result.totalRegions, 9)
+        XCTAssertEqual(result.topRegion?.name, "United States")
+        XCTAssertEqual(result.topRegion?.flag, "🇺🇸")
+    }
+
+    // MARK: - AIAnalysisService
+
+    func testAIAnomalyDetection() async {
+        let service = AIAnalysisService()
+        let snapshots = (0..<10).map { i in makeSnapshot(likes: 50, views: 500, followers: i < 7 ? 100 : 150) }
+        let insights = await service.analyze(snapshots: snapshots)
+        XCTAssertGreaterThanOrEqual(insights.count, 1, "Should find at least a summary")
+        XCTAssertTrue(insights.contains { $0.type == InsightType.summary })
+    }
+
+    func testAIEmptyData() async {
+        let service = AIAnalysisService()
+        let insights = await service.analyze(snapshots: [])
+        XCTAssertTrue(insights.isEmpty)
+    }
+
+    func testAIFollowerSurgeDetection() async {
+        let service = AIAnalysisService()
+        var snapshots: [Snapshot] = []
+        for _ in 0..<7 { snapshots.append(makeSnapshot(followers: 100)) }
+        for _ in 0..<3 { snapshots.append(makeSnapshot(followers: 200)) }
+        let insights = await service.analyze(snapshots: snapshots)
+        XCTAssertTrue(insights.contains { $0.type == InsightType.anomaly }, "Should detect follower anomaly")
+    }
 }
