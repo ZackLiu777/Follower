@@ -39,7 +39,7 @@ struct PremiumGateModifier: ViewModifier {
         .sheet(isPresented: $showUpgradePrompt) {
             UpgradePromptView(featureKey: featureKey)
         }
-        .task {
+        .task(id: appState.premiumRefreshID) {
             await checkFeatureAccess()
         }
     }

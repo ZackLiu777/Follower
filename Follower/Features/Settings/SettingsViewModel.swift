@@ -111,6 +111,8 @@ final class SettingsViewModel: ObservableObject {
         do {
             premiumFeatures = try await premiumFeatureRepo.fetchAll()
         } catch {}
+        // 通知所有 PremiumGate 重新检查
+        NotificationCenter.default.post(name: .premiumUnlocked, object: nil)
     }
 
     // MARK: - Delete Data

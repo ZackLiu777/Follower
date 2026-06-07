@@ -1,7 +1,42 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
+
+    },
+    "(%@%%)" : {
+
+    },
     "@%@" : {
+
+    },
+    "%@'s Followers" : {
+
+    },
+    "%@%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@%2$lld"
+          }
+        }
+      }
+    },
+    "%@%lld (%@%%)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@%2$lld (%3$@%%)"
+          }
+        }
+      }
+    },
+    "%lld" : {
+
+    },
+    "7-Day Growth" : {
 
     },
     "account.addAccount" : {
@@ -526,6 +561,15 @@
         }
       }
     },
+    "All Posts" : {
+
+    },
+    "Breakdown" : {
+
+    },
+    "Caption" : {
+
+    },
     "common.cancel" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -728,6 +772,9 @@
           }
         }
       }
+    },
+    "Daily Engagement" : {
+
     },
     "dashboard.comments" : {
       "extractionState" : "manual",
@@ -1138,7 +1185,25 @@
     "Date" : {
 
     },
+    "Engagement" : {
+
+    },
+    "Engagement Rate" : {
+
+    },
+    "Followed" : {
+
+    },
     "Follower" : {
+
+    },
+    "Mock Content" : {
+
+    },
+    "No posts yet. Sync to load content." : {
+
+    },
+    "Post Detail" : {
 
     },
     "PREMIUM" : {
@@ -1610,6 +1675,12 @@
           }
         }
       }
+    },
+    "Recent Activity" : {
+
+    },
+    "Recent Content" : {
+
     },
     "settings.accounts" : {
       "extractionState" : "manual",
@@ -3038,7 +3109,16 @@
         }
       }
     },
+    "Unfollowed" : {
+
+    },
     "Value" : {
+
+    },
+    "View All" : {
+
+    },
+    "vs last 7 days" : {
 
     }
   },
