@@ -1,8 +1,6 @@
 name: iOS CI
 
 on:
-  push:
-    branches: ["main", "gamma"]
   pull_request:
     branches: ["main", "gamma"]
 
