@@ -9,7 +9,7 @@ on:
 jobs:
   unit-tests:
     name: Unit Tests
-    runs-on: macos-latest
+    runs-on: macos-26
 
     steps:
       - name: Checkout
@@ -22,7 +22,7 @@ jobs:
           git clone --depth 1 --branch v7.11.0 \
             https://github.com/groue/GRDB.swift.git GRDB.swift-7.11.0
 
-      - name: Select Xcode
+      - name: Select Xcode 26
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
       - name: Build for Testing
@@ -45,7 +45,7 @@ jobs:
 
   ui-tests:
     name: UI Tests
-    runs-on: macos-latest
+    runs-on: macos-26
     needs: unit-tests
 
     steps:
@@ -59,7 +59,7 @@ jobs:
           git clone --depth 1 --branch v7.11.0 \
             https://github.com/groue/GRDB.swift.git GRDB.swift-7.11.0
 
-      - name: Select Xcode
+      - name: Select Xcode 26
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
       - name: Build for Testing
