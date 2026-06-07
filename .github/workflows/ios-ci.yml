@@ -45,6 +45,7 @@ jobs:
             -only-testing:FollowerTests/TrendsViewModelTests \
             -only-testing:FollowerTests/GammaServicesTests \
             -only-testing:FollowerTests/LambdaTests \
+            -only-testing:FollowerTests/PremiumSyncTests \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Run Known-Flaky Tests (shared DB, allowed to fail)
