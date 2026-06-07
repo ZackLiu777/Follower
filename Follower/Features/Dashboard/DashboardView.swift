@@ -2,7 +2,7 @@
 //  DashboardView.swift
 //  Follower
 //
-//  Dashboard 主页面。Beta: 全部文案本地化。
+//  Lambda: Hero粉丝 + 次要指标 + 帖子列表 + Premium Insights。
 
 import SwiftUI
 
@@ -15,111 +15,72 @@ struct DashboardView: View {
             ScrollView {
                 if let error = viewModel.errorMessage {
                     ErrorBanner(message: error, onDismiss: { viewModel.errorMessage = nil }, onRetry: { Task { await viewModel.loadAccounts() } })
-                        .padding(.top, 8)
                 }
                 if viewModel.accounts.isEmpty {
-                    EmptyStateView(
-                        icon: "person.crop.circle.badge.exclamationmark",
-                        title: loc(L10n.Dashboard.noAccountTitle),
-                        message: loc(L10n.Dashboard.noAccountMessage),
-                        actionLabel: loc(L10n.Dashboard.connectAccount),
-                        action: {}
-                    )
-                } else if let snapshot = viewModel.latestSnapshot {
-                    contentView(snapshot: snapshot)
+                    EmptyStateView(icon: "person.crop.circle.badge.exclamationmark", title: loc(L10n.Dashboard.noAccountTitle), message: loc(L10n.Dashboard.noAccountMessage), actionLabel: loc(L10n.Dashboard.connectAccount), action: {})
+                } else if viewModel.latestSnapshot != nil {
+                    contentView
                 } else if viewModel.isLoading {
-                    ProgressView(loc(L10n.Common.loading))
-                        .frame(maxWidth: .infinity, minHeight: 300)
+                    ProgressView(loc(L10n.Common.loading)).frame(maxWidth: .infinity, minHeight: 300)
                 } else {
-                    EmptyStateView(
-                        icon: "arrow.triangle.2.circlepath",
-                        title: loc(L10n.Dashboard.noDataTitle),
-                        message: loc(L10n.Dashboard.noDataMessage),
-                        actionLabel: loc(L10n.Common.syncNow),
-                        action: { Task { await viewModel.sync() } }
-                    )
+                    EmptyStateView(icon: "arrow.triangle.2.circlepath", title: loc(L10n.Dashboard.noDataTitle), message: loc(L10n.Dashboard.noDataMessage), actionLabel: loc(L10n.Common.syncNow), action: { Task { await viewModel.sync() } })
                 }
             }
             .navigationTitle(loc(L10n.Dashboard.title))
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if viewModel.isSyncing {
-                        ProgressView()
-                    } else {
-                        Button { Task { await viewModel.sync() } } label: {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                        }
-                        .disabled(viewModel.selectedAccountId == nil)
-                    }
-                }
-            }
+            .toolbar { toolbar }
             .refreshable { await viewModel.loadAccounts() }
         }
-        .animation(.easeInOut(duration: 0.3), value: viewModel.latestSnapshot?.id)
         .task { await viewModel.loadAccounts() }
     }
 
-    @ViewBuilder
-    private func contentView(snapshot: Snapshot) -> some View {
-        VStack(spacing: 16) {
-            accountPicker
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                StatCard(title: loc(L10n.Dashboard.followers), value: snapshot.followersCount.formatted(.number), icon: "person.2.fill", tint: .blue)
-                StatCard(title: loc(L10n.Dashboard.following), value: snapshot.followingCount.formatted(.number), icon: "person.fill.checkmark", tint: .green)
-                StatCard(title: loc(L10n.Dashboard.media), value: snapshot.mediaCount.formatted(.number), icon: "photo.stack.fill", tint: .orange)
-                StatCard(title: loc(L10n.Dashboard.engagementRate), value: String(format: "%.1f%%", snapshot.engagementRate * 100), icon: "heart.fill", tint: .pink)
-                StatCard(title: loc(L10n.Dashboard.likes), value: snapshot.totalLikes.formatted(.number), icon: "hand.thumbsup.fill", tint: .red)
-                StatCard(title: loc(L10n.Dashboard.comments), value: snapshot.totalComments.formatted(.number), icon: "text.bubble.fill", tint: .purple)
-                StatCard(title: loc(L10n.Dashboard.shares), value: snapshot.totalShares.formatted(.number), icon: "arrowshape.turn.up.forward.fill", tint: .teal)
-                StatCard(title: loc(L10n.Dashboard.views), value: snapshot.totalViews.formatted(.number), icon: "eye.fill", tint: .indigo)
-            }
-            .padding(.horizontal)
-
-            // Gamma: Premium Insights
-            premiumCards
+    private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            if viewModel.isSyncing { ProgressView() }
+            else { Button { Task { await viewModel.sync() } } label: { Image(systemName: "arrow.triangle.2.circlepath") }.disabled(viewModel.selectedAccountId == nil) }
         }
-        .padding(.vertical)
     }
 
-    @ViewBuilder
-    private var premiumCards: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "crown.fill").foregroundColor(.orange).font(.caption)
-                Text("Premium Insights").font(.headline)
-                Spacer()
-            }
+    // MARK: - Content
+
+    private var contentView: some View {
+        VStack(spacing: 16) {
+            accountPicker
+
+            // Hero: Followers
+            HeroMetricCard(
+                title: loc(L10n.Dashboard.followers), value: viewModel.latestSnapshot!.followersCount.formatted(.number),
+                delta: viewModel.followerDelta, deltaPercent: viewModel.followerDeltaPercent,
+                period: "vs last 7 days", sparklineData: viewModel.sparklineData
+            )
             .padding(.horizontal)
 
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                if let score = viewModel.engagementScore {
-                    StatCard(title: "Quality Score", value: String(format: "%.0f/100", score.score), icon: "star.fill", tint: .orange)
-                        .premiumGate(feature: .engagementQualityScore)
-                }
-                if let ret = viewModel.retentionResult {
-                    StatCard(title: "Churn Risk", value: ret.churnRiskLevel, icon: "person.2.slash.fill", tint: ret.isChurning ? .red : .green)
-                        .premiumGate(feature: .retentionAnalysis)
-                }
-                if let geo = viewModel.topGeoRegion {
-                    StatCard(title: "Top Region", value: "\(geo.flag) \(geo.name)", icon: "globe.asia.australia.fill", tint: .blue)
-                        .premiumGate(feature: .geoDistribution)
-                }
-                StatCard(title: "Excel Export", value: "Premium", icon: "tablecells.fill", tint: .green)
-                    .premiumGate(feature: .excelExport)
-            }
+            // Secondary
+            SecondaryMetricRow(
+                engagementRate: viewModel.latestSnapshot?.engagementRate ?? 0,
+                reach: viewModel.latestSnapshot?.totalViews ?? 0,
+                posts: viewModel.latestSnapshot?.mediaCount ?? 0,
+                engagementDelta: viewModel.engagementDelta,
+                reachDelta: viewModel.reachDelta,
+                postsDelta: viewModel.postsDelta
+            )
             .padding(.horizontal)
+
+            // Post list
+            postSection
+
+            // Premium
+            premiumSection
         }
+        .padding(.vertical)
     }
 
     private var accountPicker: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(viewModel.accounts, id: \.id) { account in
-                    Button {
-                        if let id = account.id { viewModel.selectAccount(id) }
-                    } label: {
+                    Button { if let id = account.id { viewModel.selectAccount(id) } } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: account.platform == .instagram ? "camera.fill" : "play.rectangle.fill").font(.caption)
+                            Image(systemName: "camera.fill").font(.caption)
                             Text(account.username).font(.subheadline).fontWeight(.medium)
                         }
                         .padding(.horizontal, 12).padding(.vertical, 8)
@@ -133,25 +94,78 @@ struct DashboardView: View {
             .padding(.horizontal)
         }
     }
-}
 
-#Preview {
-    DashboardView(viewModel: DashboardViewModel(
-        snapshotRepo: PreviewMocks.snapshotRepo,
-        accountRepo: PreviewMocks.accountRepo,
-        syncEngine: PreviewMocks.syncEngine
-    )).environmentObject(AppState(databaseManager: DatabaseManager.shared))
-}
+    // MARK: - Posts
 
-#if DEBUG
-private enum PreviewMocks {
-    static let db = DatabaseManager.shared
-    static let accountRepo = AccountRepository(db: db)
-    static let eventRepo = EventRepository(db: db)
-    static let snapshotRepo = SnapshotRepository(db: db)
-    static let metricRepo = MetricRepository(db: db)
-    static let aggregationService = AggregationService(eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo)
-    static let ingestionService = IngestionService(eventRepo: eventRepo, aggregationService: aggregationService)
-    static let syncEngine = SyncEngine(eventRepo: eventRepo, accountRepo: accountRepo, ingestionService: ingestionService)
+    private var postSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Recent Content").font(.headline)
+                Spacer()
+                if !viewModel.recentPosts.isEmpty {
+                    NavigationLink("View All") { PostListView(posts: MockPostGenerator().generate(count: 20)) }
+                        .font(.subheadline)
+                }
+            }
+            .padding(.horizontal)
+
+            if viewModel.recentPosts.isEmpty {
+                Text("No posts yet. Sync to load content.").font(.caption).foregroundColor(.secondary).padding(.horizontal)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(viewModel.recentPosts) { post in
+                        NavigationLink { PostDetailView(post: post) } label: {
+                            PostRowView(post: post)
+                                .padding(.horizontal)
+                        }
+                        .buttonStyle(.plain)
+                        if post.id != viewModel.recentPosts.last?.id {
+                            Divider().padding(.leading, 72)
+                        }
+                    }
+                }
+                .background(.regularMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .padding(.horizontal)
+            }
+        }
+    }
+
+    // MARK: - Premium
+
+    private var premiumSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "crown.fill").foregroundColor(.orange).font(.caption)
+                Text("Premium Insights").font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal)
+
+            VStack(spacing: 6) {
+                premiumRow(icon: "person.2.slash", title: "Who Unfollowed You", value: "\(viewModel.unfollowList.count) people this week")
+                premiumRow(icon: "clock", title: "Best Time to Post", value: viewModel.bestPostingTime)
+                premiumRow(icon: "lightbulb", title: "Content Strategy", value: viewModel.contentTip)
+                premiumRow(icon: "chart.line.uptrend.xy", title: "Follower Prediction", value: "~\(viewModel.predictedFollowers) next month")
+            }
+            .padding(.horizontal)
+        }
+        .padding(.vertical, 8)
+    }
+
+    private func premiumRow(icon: String, title: String, value: String) -> some View {
+        HStack {
+            Image(systemName: icon).frame(width: 24).foregroundColor(.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.subheadline).fontWeight(.medium)
+                Text(value).font(.caption).foregroundColor(.secondary)
+            }
+            Spacer()
+            Image(systemName: "lock.fill").font(.caption).foregroundColor(.secondary)
+        }
+        .padding(10)
+        .background(Color.orange.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .premiumGate(feature: .trendPrediction)
+    }
 }
-#endif

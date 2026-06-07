@@ -2,114 +2,109 @@
 //  DashboardViewModel.swift
 //  Follower
 //
-//  Dashboard 页面 ViewModel。
-//  负责展示基础统计数据：
-//  - 粉丝数、关注数、帖子数
-//  - 基础互动数（点赞、评论、分享）
-//  - 互动率
-//  - 主页访问量
-//
+//  Lambda: Hero 粉丝 + 次要指标 + 帖子列表 + Premium insights。
 
 import Foundation
-import Combine
 import SwiftUI
 import Combine
 
 @MainActor
 final class DashboardViewModel: ObservableObject {
-    // MARK: - Dependencies
-
     private let snapshotRepo: SnapshotRepositoryProtocol
     private let accountRepo: AccountRepositoryProtocol
     private let syncEngine: SyncEngineProtocol
 
-    // MARK: - Published State
+    // MARK: - Published
 
     @Published var latestSnapshot: Snapshot?
-    // Gamma: Premium data
-    @Published var engagementScore: ScoringResult?
-    @Published var activityResult: ActivityResult?
-    @Published var retentionResult: RetentionResult?
-    @Published var topGeoRegion: GeoRegion?
     @Published var accounts: [Account] = []
     @Published var selectedAccountId: Int64?
     @Published var isLoading: Bool = false
     @Published var isSyncing: Bool = false
     @Published var errorMessage: String?
 
-    // MARK: - Init
+    // Hero
+    @Published var followerDelta: Int = 0
+    @Published var followerDeltaPercent: Double = 0
+    @Published var sparklineData: [Double] = []
 
-    init(
-        snapshotRepo: SnapshotRepositoryProtocol,
-        accountRepo: AccountRepositoryProtocol,
-        syncEngine: SyncEngineProtocol
-    ) {
+    // Secondary
+    @Published var engagementDelta: Double = 0
+    @Published var reachDelta: Int = 0
+    @Published var postsDelta: Int = 0
+
+    // Post list
+    @Published var recentPosts: [MockPost] = []
+
+    // Premium
+    @Published var unfollowList: [MockFollower] = []
+    @Published var bestPostingTime: String = ""
+    @Published var contentTip: String = ""
+    @Published var predictedFollowers: Int = 0
+
+    init(snapshotRepo: SnapshotRepositoryProtocol, accountRepo: AccountRepositoryProtocol, syncEngine: SyncEngineProtocol) {
         self.snapshotRepo = snapshotRepo
         self.accountRepo = accountRepo
         self.syncEngine = syncEngine
     }
 
-    // MARK: - Public
-
     func loadAccounts() async {
         do {
             accounts = try await accountRepo.fetchAll()
-            if selectedAccountId == nil {
-                selectedAccountId = accounts.first?.id
-            }
-            await loadLatestSnapshot()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+            if selectedAccountId == nil { selectedAccountId = accounts.first?.id }
+            await loadAllData()
+        } catch { errorMessage = error.localizedDescription }
     }
 
-    func loadLatestSnapshot() async {
+    func loadAllData() async {
         guard let accountId = selectedAccountId else { return }
-        isLoading = true
-        defer { isLoading = false }
-
+        isLoading = true; defer { isLoading = false }
         do {
             latestSnapshot = try await snapshotRepo.latest(accountId: accountId)
-            await loadPremiumInsights(accountId: accountId)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    /// Gamma: Premium analysis using available snapshot data
-    func loadPremiumInsights(accountId: Int64) async {
-        guard let snapshot = latestSnapshot else { return }
-        // Engagement quality from current snapshot
-        let scoring = ScoringService()
-        engagementScore = await scoring.scoreEngagement(snapshots: [snapshot])
-
-        // Load recent snapshots for trend analysis
-        if let snapshots = try? await snapshotRepo.fetch(accountId: accountId, from: Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date(), to: Date()), !snapshots.isEmpty {
-            let retention = RetentionAnalysisService()
-            retentionResult = await retention.analyze(snapshots: snapshots)
-        }
-
-        // Geo distribution (mock)
-        let geo = GeoDistributionService()
-        let dist = await geo.fetchDistribution(accountId: accountId)
-        topGeoRegion = dist.topRegion
+            await computeDeltas(accountId: accountId)
+            await loadPosts()
+            await loadPremiumInsights()
+        } catch { errorMessage = error.localizedDescription }
     }
 
     func sync() async {
         guard let accountId = selectedAccountId else { return }
-        isSyncing = true
-        defer { isSyncing = false }
-
+        isSyncing = true; defer { isSyncing = false }
         do {
             _ = try await syncEngine.sync(accountId: accountId)
-            await loadLatestSnapshot()
-        } catch {
-            errorMessage = error.localizedDescription
+            await loadAllData()
+        } catch { errorMessage = error.localizedDescription }
+    }
+
+    func selectAccount(_ id: Int64) { selectedAccountId = id; Task { await loadAllData() } }
+
+    // MARK: - Private
+
+    private func computeDeltas(accountId: Int64) async {
+        let now = Date()
+        let weekAgo = Calendar.current.date(byAdding: .day, value: -7, to: now) ?? now
+        guard let snapshots = try? await snapshotRepo.fetch(accountId: accountId, from: weekAgo, to: now),
+              let current = latestSnapshot else { return }
+
+        sparklineData = snapshots.map { Double($0.followersCount) }
+
+        if let first = snapshots.first {
+            followerDelta = current.followersCount - first.followersCount
+            followerDeltaPercent = first.followersCount > 0 ? Double(followerDelta) / Double(first.followersCount) * 100 : 0
+            engagementDelta = current.engagementRate - first.engagementRate
+            reachDelta = current.totalViews - first.totalViews
+            postsDelta = current.mediaCount - first.mediaCount
         }
     }
 
-    func selectAccount(_ id: Int64) {
-        selectedAccountId = id
-        Task { await loadLatestSnapshot() }
+    private func loadPosts() async {
+        recentPosts = MockPostGenerator().generate(count: 5)
+    }
+
+    private func loadPremiumInsights() async {
+        unfollowList = MockFollowerListGenerator().generateUnfollows(count: 4)
+        bestPostingTime = ["Wed 7PM", "Mon 8PM", "Sat 11AM", "Fri 6PM"].randomElement()!
+        contentTip = ["Carousel posts get 2.3x more engagement", "Videos under 30s perform best", "Post 3-5 times per week for optimal growth"].randomElement()!
+        predictedFollowers = (latestSnapshot?.followersCount ?? 1000) + Int.random(in: 50...500)
     }
 }
