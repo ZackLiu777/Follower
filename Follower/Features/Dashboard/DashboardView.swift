@@ -152,30 +152,57 @@ struct DashboardView: View {
             }
             .padding(.horizontal)
 
-            VStack(spacing: 6) {
-                premiumRow(icon: "person.2.slash", title: "Who Unfollowed You", value: "\(viewModel.unfollowList.count) people this week")
-                premiumRow(icon: "clock", title: "Best Time to Post", value: viewModel.bestPostingTime)
-                premiumRow(icon: "lightbulb", title: "Content Strategy", value: viewModel.contentTip)
-                premiumRow(icon: "chart.line.uptrend.xy", title: "Follower Prediction", value: "~\(viewModel.predictedFollowers) next month")
+            if appState.premiumEnabledFlags[PremiumFeatureKey.trendPrediction.rawValue] == true {
+                // 解锁后：可点击的详情 NavigationLink
+                VStack(spacing: 6) {
+                    premiumNavRow(icon: "person.2.slash", title: "Who Unfollowed You", value: "\(viewModel.unfollowList.count) people this week", destination: UnfollowListView(followers: viewModel.unfollowList))
+                    premiumNavRow(icon: "clock", title: "Best Time to Post", value: viewModel.bestPostingTime, destination: BestTimeView())
+                    premiumNavRow(icon: "lightbulb", title: "Content Strategy", value: viewModel.contentTip, destination: ContentStrategyView(tip: viewModel.contentTip))
+                    premiumNavRow(icon: "chart.line.uptrend.xy", title: "Follower Prediction", value: "~\(viewModel.predictedFollowers) next month", destination: PredictionDetailView(predicted: viewModel.predictedFollowers))
+                }
+                .padding(.horizontal)
+            } else {
+                // 锁定：显示锁 + 点击弹出升级
+                VStack(spacing: 6) {
+                    lockedRow(icon: "person.2.slash", title: "Who Unfollowed You")
+                    lockedRow(icon: "clock", title: "Best Time to Post")
+                    lockedRow(icon: "lightbulb", title: "Content Strategy")
+                    lockedRow(icon: "chart.line.uptrend.xy", title: "Follower Prediction")
+                }
+                .padding(.horizontal)
+                .premiumGate(feature: .trendPrediction)
             }
-            .padding(.horizontal)
         }
         .padding(.vertical, 8)
     }
 
-    private func premiumRow(icon: String, title: String, value: String) -> some View {
+    private func premiumNavRow<D: View>(icon: String, title: String, value: String, destination: D) -> some View {
+        NavigationLink(destination: destination) {
+            HStack {
+                Image(systemName: icon).frame(width: 24).foregroundColor(.orange)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.subheadline).fontWeight(.medium)
+                    Text(value).font(.caption).foregroundColor(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary)
+            }
+            .padding(10)
+            .background(Color.orange.opacity(0.05))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func lockedRow(icon: String, title: String) -> some View {
         HStack {
             Image(systemName: icon).frame(width: 24).foregroundColor(.orange)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.subheadline).fontWeight(.medium)
-                Text(value).font(.caption).foregroundColor(.secondary)
-            }
+            Text(title).font(.subheadline).fontWeight(.medium).foregroundColor(.secondary)
             Spacer()
             Image(systemName: "lock.fill").font(.caption).foregroundColor(.secondary)
         }
         .padding(10)
         .background(Color.orange.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 10))
-        .premiumGate(feature: .trendPrediction)
     }
 }
