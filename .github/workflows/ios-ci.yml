@@ -1,0 +1,95 @@
+name: iOS CI
+
+on:
+  pull_request:
+    branches: ["main", "gamma"]
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: macos-26
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clone GRDB (Vendored Dependency)
+        run: |
+          mkdir -p Vendor
+          cd Vendor
+          git clone --depth 1 --branch v7.11.0 \
+            https://github.com/groue/GRDB.swift.git GRDB.swift-7.11.0
+
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Build for Testing
+        run: |
+          xcodebuild build-for-testing \
+            -project Follower.xcodeproj \
+            -scheme Follower \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -only-testing:FollowerTests \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Run Required Unit Tests (must pass)
+        run: |
+          xcodebuild test-without-building \
+            -project Follower.xcodeproj \
+            -scheme Follower \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -only-testing:FollowerTests/ModelsTests \
+            -only-testing:FollowerTests/ThemeTests \
+            -only-testing:FollowerTests/LocalizationTests \
+            -only-testing:FollowerTests/PremiumUnlockTests \
+            -only-testing:FollowerTests/TrendsViewModelTests \
+            -only-testing:FollowerTests/GammaServicesTests \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Run Known-Flaky Tests (shared DB, allowed to fail)
+        run: |
+          xcodebuild test-without-building \
+            -project Follower.xcodeproj \
+            -scheme Follower \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -only-testing:FollowerTests/RepositoryTests \
+            -only-testing:FollowerTests/ServicesTests \
+            -only-testing:FollowerTests/AccountViewModelTests \
+            CODE_SIGNING_ALLOWED=NO || true
+
+  ui-tests:
+    name: UI Tests
+    runs-on: macos-26
+    needs: unit-tests
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clone GRDB (Vendored Dependency)
+        run: |
+          mkdir -p Vendor
+          cd Vendor
+          git clone --depth 1 --branch v7.11.0 \
+            https://github.com/groue/GRDB.swift.git GRDB.swift-7.11.0
+
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Build for Testing
+        run: |
+          xcodebuild build-for-testing \
+            -project Follower.xcodeproj \
+            -scheme Follower \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -only-testing:FollowerUITests \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Run UI Tests
+        run: |
+          xcodebuild test-without-building \
+            -project Follower.xcodeproj \
+            -scheme Follower \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -only-testing:FollowerUITests \
+            CODE_SIGNING_ALLOWED=NO

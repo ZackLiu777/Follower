@@ -80,15 +80,14 @@ struct AccountView: View {
     @ViewBuilder
     private func accountRow(_ account: Account) -> some View {
         HStack {
-            Image(systemName: account.platform == .instagram ? "camera.fill" : "play.rectangle.fill")
+            Image(systemName: "camera.fill")
                 .font(.title3).foregroundColor(.accentColor)
             VStack(alignment: .leading, spacing: 2) {
                 Text(account.displayName).font(.subheadline).fontWeight(.medium)
                 Text("@\(account.username)").font(.caption).foregroundColor(.secondary)
             }
             Spacer()
-            Text((account.platform == .instagram ? loc(L10n.Account.instagram) : loc(L10n.Account.tiktok))
-                + " · " + authDisplayName(account.authState))
+            Text(loc(L10n.Account.instagram) + " · " + authDisplayName(account.authState))
                 .font(.caption2).padding(.horizontal, 8).padding(.vertical, 4)
                 .background(account.authState == .authorized ? Color.green.opacity(0.15) : Color.red.opacity(0.15))
                 .foregroundColor(account.authState == .authorized ? .green : .red)
@@ -103,10 +102,6 @@ struct AccountView: View {
 
     private var addAccountForm: some View {
         Group {
-            Picker(loc(L10n.Account.platform), selection: $viewModel.selectedPlatform) {
-                Text(loc(L10n.Account.instagram)).tag(Platform.instagram)
-                Text(loc(L10n.Account.tiktok)).tag(Platform.tiktok)
-            }
             TextField(loc(L10n.Account.username), text: $viewModel.username)
                 .textContentType(.username).autocapitalization(.none)
             TextField(loc(L10n.Account.displayName), text: $viewModel.displayName)

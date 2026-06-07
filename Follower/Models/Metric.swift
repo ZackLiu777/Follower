@@ -17,6 +17,16 @@ enum MetricType: String, Codable, DatabaseValueConvertible {
     case averageShares
     case reachEstimate
     case profileViews
+    // Gamma: Premium analysis metrics
+    case engagementQualityScore
+    case longTermTrendComparison
+    case activityAnalysis
+    case retentionAnalysis
+    case churnAnalysis
+    case followerGrowthPrediction
+    case trendPrediction
+    case geoDistribution
+    case localAIAnalysis
 }
 
 // MARK: - TimeWindow
