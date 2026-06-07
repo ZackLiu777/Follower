@@ -98,6 +98,7 @@ struct TrendsView: View {
         case .averageShares: return .teal
         case .profileViews: return .indigo
         case .reachEstimate: return .orange
+        default: return .blue
         }
     }
 
@@ -116,6 +117,7 @@ extension MetricType {
         case .averageShares: return loc(L10n.Trends.shares)
         case .profileViews: return loc(L10n.Trends.views)
         case .reachEstimate: return loc(L10n.Trends.reach)
+        default: return "\(self)"
         }
     }
 }

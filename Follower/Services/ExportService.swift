@@ -13,12 +13,11 @@ import Foundation
 // MARK: - ExportServiceProtocol
 
 protocol ExportServiceProtocol: Sendable {
-    /// 导出为 JSON
     func exportAsJSON(accountId: Int64) async throws -> URL
-    /// 导出为 CSV
     func exportAsCSV(accountId: Int64) async throws -> URL
-    /// 导出 Snapshot 为 JSON
     func exportSnapshotsJSON(accountId: Int64) async throws -> URL
+    /// Gamma: Excel 导出（Premium）— UTF-8 BOM CSV，Excel 可直接打开
+    func exportAsExcel(accountId: Int64) async throws -> URL
 }
 
 // MARK: - ExportService
@@ -86,6 +85,28 @@ final class ExportService: ExportServiceProtocol {
         }
 
         return try writeToTempFile(data: data, prefix: "follower_export", extension: "csv")
+    }
+
+    // MARK: - Excel Export (Gamma Premium)
+
+    func exportAsExcel(accountId: Int64) async throws -> URL {
+        let snapshots = try await snapshotRepo.fetchAll(accountId: accountId)
+
+        // UTF-8 BOM ensures Excel opens correctly
+        let BOM = "\u{FEFF}"
+        var csv = BOM + "Date,Followers,Following,Media,Engagement Rate,Likes,Comments,Shares,Views\n"
+        let formatter = ISO8601DateFormatter()
+
+        for s in snapshots {
+            let date = formatter.string(from: s.observedAt)
+            csv += "\(date),\(s.followersCount),\(s.followingCount),\(s.mediaCount),\(String(format: "%.4f", s.engagementRate)),\(s.totalLikes),\(s.totalComments),\(s.totalShares),\(s.totalViews)\n"
+        }
+
+        guard let data = csv.data(using: .utf8) else {
+            throw ExportError.encodingFailure
+        }
+
+        return try writeToTempFile(data: data, prefix: "follower_premium", extension: "csv")
     }
 
     // MARK: - Private
