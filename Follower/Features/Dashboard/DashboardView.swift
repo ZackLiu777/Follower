@@ -46,12 +46,22 @@ struct DashboardView: View {
         VStack(spacing: 16) {
             accountPicker
 
-            // Hero: Followers
-            HeroMetricCard(
-                title: loc(L10n.Dashboard.followers), value: viewModel.latestSnapshot!.followersCount.formatted(.number),
-                delta: viewModel.followerDelta, deltaPercent: viewModel.followerDeltaPercent,
-                period: "vs last 7 days", sparklineData: viewModel.sparklineData
-            )
+            // Hero: Followers (tappable → detail)
+            NavigationLink {
+                FollowerDetailView(
+                    currentFollowers: viewModel.latestSnapshot?.followersCount ?? 0,
+                    delta: viewModel.followerDelta, deltaPercent: viewModel.followerDeltaPercent,
+                    sparklineData: viewModel.sparklineData,
+                    accountName: viewModel.accounts.first(where: { $0.id == viewModel.selectedAccountId })?.username ?? ""
+                )
+            } label: {
+                HeroMetricCard(
+                    title: loc(L10n.Dashboard.followers), value: viewModel.latestSnapshot!.followersCount.formatted(.number),
+                    delta: viewModel.followerDelta, deltaPercent: viewModel.followerDeltaPercent,
+                    period: "vs last 7 days", sparklineData: viewModel.sparklineData
+                )
+            }
+            .buttonStyle(.plain)
             .padding(.horizontal)
 
             // Secondary
