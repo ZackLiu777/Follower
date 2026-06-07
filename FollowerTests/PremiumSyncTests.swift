@@ -28,9 +28,9 @@ final class PremiumSyncTests: XCTestCase {
 
     func testEnableThenDisable() async throws {
         try await premiumRepo.setEnabled(true, for: .trendPrediction)
-        XCTAssertTrue(try await premiumRepo.isEnabled(key: .trendPrediction))
+        let e1 = try await premiumRepo.isEnabled(key: .trendPrediction); XCTAssertTrue(e1)
         try await premiumRepo.setEnabled(false, for: .trendPrediction)
-        XCTAssertFalse(try await premiumRepo.isEnabled(key: .trendPrediction))
+        let e2 = try await premiumRepo.isEnabled(key: .trendPrediction); XCTAssertFalse(e2)
     }
 
     // MARK: - Notification posting (simulated)
@@ -89,7 +89,7 @@ final class PremiumSyncTests: XCTestCase {
         }
         // Verify all disabled
         for key in PremiumFeatureKey.allCases {
-            XCTAssertFalse(try await premiumRepo.isEnabled(key: key))
+            let e4 = try await premiumRepo.isEnabled(key: key); XCTAssertFalse(e4)
         }
         // Enable all
         for key in PremiumFeatureKey.allCases {
@@ -97,7 +97,7 @@ final class PremiumSyncTests: XCTestCase {
         }
         // Verify all enabled
         for key in PremiumFeatureKey.allCases {
-            XCTAssertTrue(try await premiumRepo.isEnabled(key: key))
+            let e3 = try await premiumRepo.isEnabled(key: key); XCTAssertTrue(e3)
         }
     }
 }
