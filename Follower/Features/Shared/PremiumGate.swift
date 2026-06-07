@@ -15,13 +15,17 @@ import SwiftUI
 struct PremiumGateModifier: ViewModifier {
     let featureKey: PremiumFeatureKey
     @EnvironmentObject private var appState: AppState
-    @State private var isEnabled: Bool = false
     @State private var showUpgradePrompt: Bool = false
+
+    /// 同步读取 Premium 解锁状态 — 解锁后立即反映，无异步延迟
+    private var isEnabled: Bool {
+        appState.premiumEnabledFlags[featureKey.rawValue] ?? false
+    }
 
     func body(content: Content) -> some View {
         Button {
             if isEnabled {
-                // Feature is available — no overlay
+                // Feature enabled — no action
             } else {
                 showUpgradePrompt = true
             }
@@ -38,9 +42,6 @@ struct PremiumGateModifier: ViewModifier {
         .buttonStyle(.plain)
         .sheet(isPresented: $showUpgradePrompt) {
             UpgradePromptView(featureKey: featureKey)
-        }
-        .task(id: appState.premiumRefreshID) {
-            await checkFeatureAccess()
         }
     }
 
@@ -65,10 +66,6 @@ struct PremiumGateModifier: ViewModifier {
             .padding(4)
     }
 
-    private func checkFeatureAccess() async {
-        let container = appState.container
-        isEnabled = (try? await container.premiumFeatureRepository.isEnabled(key: featureKey)) ?? false
-    }
 }
 
 // MARK: - PremiumBadge

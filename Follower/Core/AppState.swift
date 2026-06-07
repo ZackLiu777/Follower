@@ -20,16 +20,29 @@ final class AppState: ObservableObject {
     @Published var colorScheme: ColorScheme? = nil
     @Published var isTrialActive: Bool = false
     @Published var trialStartDate: Date?
-    /// Lambda: Premium 解锁后自增，触发 PremiumGate 重新检查
-    @Published var premiumRefreshID: Int = 0
+    /// Lambda: Premium 解锁状态（同步，所有 PremiumGate 直接读取）
+    @Published var premiumEnabledFlags: [String: Bool] = [:]
+
+    func refreshPremiumFlags() {
+        let repo = container.premiumFeatureRepository
+        Task {
+            var flags: [String: Bool] = [:]
+            for key in PremiumFeatureKey.allCases {
+                flags[key.rawValue] = (try? await repo.isEnabled(key: key)) ?? false
+            }
+            premiumEnabledFlags = flags
+        }
+    }
 
     init(databaseManager: DatabaseManager) {
         self.databaseManager = databaseManager
         self.container = DIContainer(databaseManager: databaseManager)
-        // 监听 Premium 解锁通知，刷新 PremiumGate
+        // 监听 Premium 解锁通知，刷新标志位
         NotificationCenter.default.addObserver(forName: .premiumUnlocked, object: nil, queue: .main) { [weak self] _ in
-            self?.premiumRefreshID += 1
+            self?.refreshPremiumFlags()
         }
+        // 初始加载（TrialManager.startTrial 可能已启用）
+        refreshPremiumFlags()
     }
 
     func setLanguage(_ language: AppLanguage) {
