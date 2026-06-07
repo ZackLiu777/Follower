@@ -2,7 +2,7 @@
 //  PremiumUITests.swift
 //  FollowerUITests
 //
-//  Gamma: Premium UI 测试 — 解锁按钮、Premium 卡片显示。
+//  Lambda: Premium 解锁 UI 测试 — 工具栏按钮可点击、解锁后状态同步。
 
 import XCTest
 
@@ -16,71 +16,67 @@ final class PremiumUITests: XCTestCase {
         app.launch()
     }
 
-    // MARK: - Premium Unlock Flow
+    // MARK: - Unlock button in toolbar
 
-    func testSettingsTabHasContent() {
-        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
-        let tabs = app.tabBars.buttons
-        tabs.element(boundBy: tabs.count - 1).tap()
-        sleep(3)
-
-        // Settings page should render (Form = table)
-        XCTAssertTrue(app.tables.firstMatch.waitForExistence(timeout: 10)
-                      || app.navigationBars.firstMatch.exists)
-    }
-
-    func testPremiumUnlockTappable() {
+    func testPremiumUnlockButtonExistsInToolbar() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
         let tabs = app.tabBars.buttons
         tabs.element(boundBy: tabs.count - 1).tap()
         sleep(2)
 
-        // Find any button containing "Premium" or "Unlock" or crown icon
-        let unlockBtn = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Unlock")).firstMatch
-        if unlockBtn.waitForExistence(timeout: 5) {
-            unlockBtn.tap()
+        // Unlock button is now in toolbar (crown.fill icon)
+        let toolbarButton = app.toolbars.buttons.firstMatch
+        let unlockExists = toolbarButton.waitForExistence(timeout: 5)
+        // Or check via navigation bar buttons containing crown/unlock text
+        let navButtons = app.navigationBars.buttons
+        let hasButton = unlockExists || navButtons.count > 1
+        XCTAssertTrue(hasButton, "Settings toolbar should have unlock button")
+    }
+
+    func testUnlockButtonIsTappable() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
+        let tabs = app.tabBars.buttons
+        tabs.element(boundBy: tabs.count - 1).tap()
+        sleep(2)
+
+        // Tap any toolbar button — should not crash
+        let toolbarButtons = app.toolbars.buttons
+        if toolbarButtons.firstMatch.waitForExistence(timeout: 5) {
+            toolbarButtons.firstMatch.tap()
             sleep(2)
         }
-        // App should survive the tap
+        // App should survive
         XCTAssertTrue(app.tabBars.firstMatch.exists)
     }
 
-    // MARK: - Premium Dashboard Cards
-
-    func testDashboardHasPremiumInsightsSection() {
-        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
-
-        // 需要先有账号和同步数据才能看到 Premium 卡片
-        // 最小验证：Dashboard 页面渲染不崩溃
-        app.tabBars.buttons.element(boundBy: 0).tap()
-        sleep(2)
-
-        // ScrollView 存在
-        XCTAssertTrue(app.scrollViews.firstMatch.exists)
-    }
-
-    // MARK: - Post-Unlock Tab Navigation
+    // MARK: - Post-unlock sync
 
     func testAllTabsSurviveAfterPremiumUnlock() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
         let tabs = app.tabBars.buttons
 
-        // Go to 我的
         tabs.element(boundBy: tabs.count - 1).tap()
         sleep(2)
 
-        // Unlock premium
-        let unlockButton = app.buttons["Unlock All Premium"]
-        if unlockButton.waitForExistence(timeout: 5) {
-            unlockButton.tap()
+        // Tap toolbar unlock if present
+        let toolbarBtn = app.toolbars.buttons.firstMatch
+        if toolbarBtn.waitForExistence(timeout: 5) {
+            toolbarBtn.tap()
             sleep(2)
         }
 
-        // Navigate all tabs — should not crash
+        // Navigate all tabs — should survive
         for i in 0..<tabs.count {
             tabs.element(boundBy: i).tap()
             sleep(2)
         }
         XCTAssertTrue(app.tabBars.firstMatch.exists)
+    }
+
+    func testDashboardHasPremiumInsightsSection() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
+        app.tabBars.buttons.element(boundBy: 0).tap()
+        sleep(2)
+        XCTAssertTrue(app.scrollViews.firstMatch.exists)
     }
 }

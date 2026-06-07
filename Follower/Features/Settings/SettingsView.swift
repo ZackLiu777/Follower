@@ -38,6 +38,14 @@ struct SettingsView: View {
             }
             .navigationTitle(loc(L10n.Settings.title))
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        Task { await viewModel.unlockAllPremium() }
+                    } label: {
+                        Image(systemName: "crown.fill")
+                            .foregroundColor(.orange)
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button { showAccountSheet = true } label: {
                         Image(systemName: "person.badge.plus")
@@ -213,20 +221,6 @@ struct SettingsView: View {
 
     private var premiumFeaturesSection: some View {
         Group {
-            // Unlock button
-            Button {
-                Task { await viewModel.unlockAllPremium() }
-            } label: {
-                HStack {
-                    Label(loc(L10n.Premium.unlockAll), systemImage: "crown.fill")
-                        .foregroundColor(.orange)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-
             // Feature list
             ForEach(viewModel.premiumFeatures, id: \.id) { feature in
                 HStack {
