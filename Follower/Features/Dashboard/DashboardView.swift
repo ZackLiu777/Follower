@@ -74,8 +74,41 @@ struct DashboardView: View {
                 StatCard(title: loc(L10n.Dashboard.views), value: snapshot.totalViews.formatted(.number), icon: "eye.fill", tint: .indigo)
             }
             .padding(.horizontal)
+
+            // Gamma: Premium Insights
+            premiumCards
         }
         .padding(.vertical)
+    }
+
+    @ViewBuilder
+    private var premiumCards: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "crown.fill").foregroundColor(.orange).font(.caption)
+                Text("Premium Insights").font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal)
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                if let score = viewModel.engagementScore {
+                    StatCard(title: "Quality Score", value: String(format: "%.0f/100", score.score), icon: "star.fill", tint: .orange)
+                        .premiumGate(feature: .engagementQualityScore)
+                }
+                if let ret = viewModel.retentionResult {
+                    StatCard(title: "Churn Risk", value: ret.churnRiskLevel, icon: "person.2.slash.fill", tint: ret.isChurning ? .red : .green)
+                        .premiumGate(feature: .retentionAnalysis)
+                }
+                if let geo = viewModel.topGeoRegion {
+                    StatCard(title: "Top Region", value: "\(geo.flag) \(geo.name)", icon: "globe.asia.australia.fill", tint: .blue)
+                        .premiumGate(feature: .geoDistribution)
+                }
+                StatCard(title: "Excel Export", value: "Premium", icon: "tablecells.fill", tint: .green)
+                    .premiumGate(feature: .excelExport)
+            }
+            .padding(.horizontal)
+        }
     }
 
     private var accountPicker: some View {

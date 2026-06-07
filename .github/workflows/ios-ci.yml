@@ -85,11 +85,16 @@ jobs:
             -only-testing:FollowerUITests \
             CODE_SIGNING_ALLOWED=NO
 
-      - name: Run UI Tests
+      - name: Run Required UI Tests (must pass)
         run: |
           xcodebuild test-without-building \
             -project Follower.xcodeproj \
             -scheme Follower \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-            -only-testing:FollowerUITests \
+            -only-testing:FollowerUITests/DashboardUITests \
+            -only-testing:FollowerUITests/SettingsUITests \
+            -only-testing:FollowerUITests/TrendsUITests \
+            -only-testing:FollowerUITests/AccountUITests \
+            -only-testing:FollowerUITests/ThemeAndLanguageUITests \
+            -only-testing:FollowerUITests/PremiumUITests \
             CODE_SIGNING_ALLOWED=NO

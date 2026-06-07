@@ -91,5 +91,24 @@ final class DIContainer: ObservableObject {
         )
 
         self.trialManager = TrialManager(premiumFeatureRepo: premiumRepo)
+
+        // Gamma: Premium analysis services
+        self.scoringService = ScoringService()
+        self.comparisonService = ComparisonService()
+        self.predictionService = PredictionService()
+        self.activityAnalysisService = ActivityAnalysisService()
+        self.retentionAnalysisService = RetentionAnalysisService()
+        self.geoDistributionService = GeoDistributionService()
+        self.aiAnalysisService = AIAnalysisService()
     }
+
+    // MARK: - Gamma Premium Services
+
+    let scoringService: ScoringServiceProtocol
+    let comparisonService: ComparisonServiceProtocol
+    let predictionService: PredictionServiceProtocol
+    let activityAnalysisService: ActivityAnalysisServiceProtocol
+    let retentionAnalysisService: RetentionAnalysisServiceProtocol
+    let geoDistributionService: GeoDistributionServiceProtocol
+    let aiAnalysisService: AIAnalysisServiceProtocol
 }

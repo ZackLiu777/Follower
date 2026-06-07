@@ -26,6 +26,11 @@ final class DashboardViewModel: ObservableObject {
     // MARK: - Published State
 
     @Published var latestSnapshot: Snapshot?
+    // Gamma: Premium data
+    @Published var engagementScore: ScoringResult?
+    @Published var activityResult: ActivityResult?
+    @Published var retentionResult: RetentionResult?
+    @Published var topGeoRegion: GeoRegion?
     @Published var accounts: [Account] = []
     @Published var selectedAccountId: Int64?
     @Published var isLoading: Bool = false
@@ -65,9 +70,29 @@ final class DashboardViewModel: ObservableObject {
 
         do {
             latestSnapshot = try await snapshotRepo.latest(accountId: accountId)
+            await loadPremiumInsights(accountId: accountId)
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// Gamma: Premium analysis using available snapshot data
+    func loadPremiumInsights(accountId: Int64) async {
+        guard let snapshot = latestSnapshot else { return }
+        // Engagement quality from current snapshot
+        let scoring = ScoringService()
+        engagementScore = await scoring.scoreEngagement(snapshots: [snapshot])
+
+        // Load recent snapshots for trend analysis
+        if let snapshots = try? await snapshotRepo.fetch(accountId: accountId, from: Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date(), to: Date()), !snapshots.isEmpty {
+            let retention = RetentionAnalysisService()
+            retentionResult = await retention.analyze(snapshots: snapshots)
+        }
+
+        // Geo distribution (mock)
+        let geo = GeoDistributionService()
+        let dist = await geo.fetchDistribution(accountId: accountId)
+        topGeoRegion = dist.topRegion
     }
 
     func sync() async {
