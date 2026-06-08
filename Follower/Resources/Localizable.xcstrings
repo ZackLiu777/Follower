@@ -36,6 +36,15 @@
     "%lld" : {
 
     },
+    "~%@" : {
+
+    },
+    "💡 %@" : {
+
+    },
+    "📅 Wednesday 7 PM" : {
+
+    },
     "7-Day Growth" : {
 
     },
@@ -564,6 +573,12 @@
     "All Posts" : {
 
     },
+    "Based on your 90-day growth trend, you're on track to reach ~%@ followers. Keep posting consistently to maintain this growth rate." : {
+
+    },
+    "Best Time to Post" : {
+
+    },
     "Breakdown" : {
 
     },
@@ -772,6 +787,9 @@
           }
         }
       }
+    },
+    "Content Strategy" : {
+
     },
     "Daily Engagement" : {
 
@@ -1197,6 +1215,18 @@
     "Follower" : {
 
     },
+    "Follower Prediction" : {
+
+    },
+    "High" : {
+
+    },
+    "Hourly Engagement Heatmap" : {
+
+    },
+    "Low" : {
+
+    },
     "Mock Content" : {
 
     },
@@ -1204,6 +1234,9 @@
 
     },
     "Post Detail" : {
+
+    },
+    "Predicted Followers Next Month" : {
 
     },
     "PREMIUM" : {
@@ -3119,6 +3152,12 @@
 
     },
     "vs last 7 days" : {
+
+    },
+    "Who Unfollowed You" : {
+
+    },
+    "Your best posting time" : {
 
     }
   },

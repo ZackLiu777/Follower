@@ -24,9 +24,9 @@ final class ThemeAndLanguageUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(tabs.count, 3)
         for i in 0..<tabs.count {
             tabs.element(boundBy: i).tap()
-            sleep(2)
+            sleep(3)
         }
-        // 遍历完所有 tab 后不崩溃
+        // 遍历完不崩溃
         XCTAssertTrue(app.tabBars.firstMatch.exists)
     }
 }
