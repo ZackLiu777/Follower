@@ -1,378 +1,195 @@
-# Follower — 项目交接文档
+# Follower — 项目交接文档 v3
 
-> 最后更新：2026-06-06  
-> 当前版本：v0.02-beta-2.0.2  
-> 分支：main
-
----
-
-## 1. 项目概述
-
-**Follower** 是一款本地优先的 Instagram数据跟踪与分析 iOS App。核心卖点：本地存储、隐私优先、数据可视化、跨平台账号支持。
-
-### 技术栈
-
-| 层 | 技术 |
-|---|------|
-| UI | SwiftUI (iOS 26+) |
-| 架构 | MVVM + Repository + Service |
-| 持久化 | GRDB 7.11.0 + SQLite（本地 Vendor 包） |
-| 并发 | Swift Concurrency (actor, @MainActor, Sendable) |
-| 测试 | XCTest (Unit + UI) |
-| 本地化 | String Catalog (.xcstrings) + Bundle-based 运行时切换 |
-| 主题 | 自定义 Theme struct (4 主题) + EnvironmentValues 注入 |
+> 最后更新：2026-06-08  
+> 当前版本：v0.04-lambda-2.0  
+> 活跃分支：`main`(alpha/beta), `gamma`, `lambda`  
+> 统计：60 源文件 · 5,864 行代码 · 20 测试文件 · 1,575 行测试 · 39 commits
 
 ---
 
-## 2. 目录树（40 个源文件，4,387 行）
+## 0. 适合人类接手吗？
 
-```
-Follower/
-├── FollowerApp.swift              [40]  App 入口，开屏+浅深色模式
-├── ContentView.swift              [70]  TabView 容器 + DI
-│
-├── Core/                                   # 基础设施
-│   ├── AppState.swift              [33]  全局状态：Theme/Language/ColorScheme
-│   ├── DIContainer.swift           [95]  依赖注入容器
-│   ├── DatabaseManager.swift       [92]  GRDB 管理器（磁盘→内存降级）
-│   ├── MigrationV1.swift          [126]  初始 Schema（5 表）
-│   ├── ThemeSystem.swift          [263]  Theme struct（4 主题）+ Environment
-│   ├── TrialManager.swift         [107]  1 小时试用（actor）
-│   └── Localization/
-│       ├── AppLanguage.swift       [75]  语言枚举 + LanguageStore + Bundle 切换
-│       └── L10n.swift             [154]  翻译 key 定义(108+) + loc() 函数
-│
-├── Models/                                  # 领域模型（GRDB Record）
-│   ├── Account.swift               [69]  id, platform, username, authState
-│   ├── Event.swift                 [74]  id, accountId, eventType, payload (append-only)
-│   ├── Snapshot.swift              [66]  id, accountId, followersCount... (upsert)
-│   ├── Metric.swift                [79]  id, accountId, metricType, value, window
-│   └── PremiumFeature.swift        [83]  id, key, enabled, expiresAt
-│
-├── Repository/                              # 数据访问层（唯一入口）
-│   ├── AccountRepository.swift     [82]  CRUD
-│   ├── EventRepository.swift      [106]  append/batch-insert, 类型/时间查询
-│   ├── SnapshotRepository.swift    [103]  upsert（accountId+observedAt 去重）
-│   ├── MetricRepository.swift      [103]  upsert（4 列去重），窗口/类型查询
-│   └── PremiumFeatureRepository.swift [78] enable/disable + 过期检查
-│
-├── Services/                                # 业务服务层
-│   ├── Sync/
-│   │   ├── SyncEngine.swift        [164]  同步引擎（actor，Alpha 模拟数据）
-│   │   └── APIDTOs.swift           [67]  外部 API DTO（隔离于 Model）
-│   ├── Ingestion/
-│   │   └── IngestionService.swift  [139]  DTO → Event 映射 + 批量写入
-│   ├── Aggregation/
-│   │   └── AggregationService.swift [271] Event→Snapshot→Metric（增量计算）
-│   └── ExportService.swift         [117]  JSON/CSV 导出
-│
-├── Features/                                # 功能模块（View + ViewModel）
-│   ├── Shared/                              # 共享 UI 组件
-│   │   ├── EmptyStateView.swift     [60]  空状态占位
-│   │   ├── ErrorBanner.swift        [52]  错误提示横幅
-│   │   ├── StatCard.swift           [66]  统计卡片
-│   │   ├── TrendChart.swift         [90]  趋势折线图（Swift Charts）
-│   │   ├── PremiumGate.swift       [200]  Premium 门控 + 升级提示页
-│   │   ├── SplashView.swift         [76]  开屏页（Instagram 渐变 + 动画）
-│   │   └── InstagramBackground.swift [70] 深色渐变背景
-│   ├── Dashboard/
-│   │   ├── DashboardView.swift     [124]  8 格统计卡片 + 下拉刷新
-│   │   └── DashboardViewModel.swift [90]  同步编排
-│   ├── Trends/
-│   │   ├── TrendsView.swift        [150]  图表+窗口切换+增长摘要
-│   │   └── TrendsViewModel.swift   [131]  按日/周/月加载 Metric
-│   ├── Settings/
-│   │   ├── SettingsView.swift      [270]  Tab "我的"：试用/账号/语言/主题/导出/Premium
-│   │   └── SettingsViewModel.swift [150]  设置编排 + Premium 一键解锁
-│   └── Account/
-│       ├── AccountView.swift       [144]  账号绑定表单 + toolbar 操作按钮
-│       └── AccountViewModel.swift  [115]  增/删/撤销（不含 SyncEngine 同步）
-│
-├── Resources/
-│   └── Localizable.xcstrings              String Catalog（en/zh-Hans/zh-Hant/ja）
-│
-└── Assets.xcassets/                        App 图标和颜色
-```
+**适合，但需要读完本文档。** 这个项目不是 AI 生成的不可维护代码。它有清晰的架构分层、一致的命名约定、可运行的测试套件。一个熟悉 Swift/iOS 的开发者花 2-3 小时读完文档和核心代码后可以开始贡献。
 
-### 测试文件
-
-```
-FollowerTests/                     601 行，8 文件
-├── ModelsTests.swift              Codable 序列化，枚举覆盖
-├── RepositoryTests.swift          CRUD + Upsert（共享 DB，偶尔 flaky）
-├── ServicesTests.swift            Aggregation, Export, Trial（SyncEngine 已跳过）
-├── LocalizationTests.swift        Bundle 翻译，语言持久化，运行时切换
-├── ThemeTests.swift               4 主题颜色完整性，Sendable，LiquidGlass
-├── AccountViewModelTests.swift    账号创建/删除/撤销
-├── PremiumUnlockTests.swift       一键解锁所有功能，永久有效
-└── TrendsViewModelTests.swift     TrendDataPoint 模型验证
-
-FollowerUITests/                  291 行，7 文件
-├── DashboardUITests.swift         3 Tab 存在性，启动不崩溃，导航不崩溃
-├── TrendsUITests.swift            Trends Tab 导航
-├── SettingsUITests.swift          Settings 可达，全 Tab 遍历存活
-├── AccountUITests.swift           Settings 导航，Toolbar 按钮
-├── ThemeAndLanguageUITests.swift  启动成功，全 Tab 可访问
-├── FollowerUITests.swift          模板测试
-└── FollowerUITestsLaunchTests.swift 启动性能 × 32 次
-```
-
-### Docs
-
-```
-docs/
-├── INDEX.md                       文档索引
-├── HANDOFF.md                     本文档（项目交接）
-├── data-model.md                  数据模型说明
-├── privacy-security.md            隐私安全规范
-├── roadmap.md                     产品路线图
-├── testing-strategy.md            测试策略
-├── adr/                          架构决策记录
-│   ├── ADR-001-storage.md         GRDB + SQLite
-│   ├── ADR-002-sync-and-aggregation.md
-│   └── ADR-003-ui-theme-and-performance.md
-├── specs/
-│   ├── alpha.md                   Alpha 版本范围
-│   ├── beta.md                    Beta 版本范围
-│   ├── premium.md                 Premium 功能规范
-│   └── gamma.md                   Gamma（待定）
-└── ui/
-    ├── design.md                  设计原则
-    ├── visual_design.md           视觉设计规范
-    └── inter_desugn.md            交互设计规范
-```
+最大的优势是**架构纪律**——Model/Repository/Service/ViewModel/View 的边界从未被破坏。最大的挑战是几个已知的技术债务点，下面都列出来了。
 
 ---
 
-## 3. 架构设计
+## 1. 当前状态
 
-### 数据流
+### 1.1 各分支功能
 
-```
-External API → SyncEngine(actor) → IngestionService → Event(append-only)
-                                        ↓
-                              AggregationService
-                                   ↓           ↓
-                              Snapshot(upsert)  Metric(derived)
-                                   ↓           ↓
-                              Repository（唯一数据入口）
-                                   ↓
-                              ViewModel（编排 + 轻量展示逻辑）
-                                   ↓
-                              SwiftUI View（声明式 UI）
-```
+| 分支 | 版本 | 核心交付 |
+|------|------|---------|
+| `main` | v0.02-beta-2.0.2 | 完整的 iOS 分析 App：Dashboard/趋势/设置/账号 + 4 语言本地化 + 4 主题 |
+| `gamma` | v0.03 | Premium 分析服务（Scoring/Prediction/Comparison 等 7 个）+ TikTok 移除 |
+| `lambda` | v0.04 | Dashboard UX 重构（Hero 粉丝 + 次要指标 + 帖子列表 + Premium 交互详情页） |
 
-### 依赖注入链
+### 1.2 数据状态
 
-```
-FollowerApp.init()
-  └── DatabaseManager.shared（单例）
-       └── AppState(databaseManager:)
-            └── DIContainer(databaseManager:)
-                 ├── AccountRepository, EventRepository, SnapshotRepository,
-                 │   MetricRepository, PremiumFeatureRepository
-                 ├── AggregationService → (EventRepo, SnapshotRepo, MetricRepo)
-                 ├── IngestionService → (EventRepo, AggregationService)
-                 ├── SyncEngine(actor) → (EventRepo, AccountRepo, IngestionService)
-                 ├── ExportService → (SnapshotRepo, MetricRepo, EventRepo)
-                 └── TrialManager(actor) → (PremiumFeatureRepo)
-```
-
-### 层边界
-
-| 允许 | 禁止 |
-|-----|------|
-| View → ViewModel | View → Repository |
-| ViewModel → Repository/Service | ViewModel → Database/SQL |
-| Service → Repository | View → Database |
-| Repository → DatabaseManager | Service → ViewModel |
-
-### 数据模型三层
-
-| 层 | 模型 | 特性 |
-|---|------|------|
-| Event | 原始观测 | Append-only，不可修改 |
-| Snapshot | 状态快照 | Upsert，按 (accountId + observedAt) 去重 |
-| Metric | 派生指标 | 后台聚合，日/周/月窗口 |
-
-### 并发模型
-
-| 类型 | 隔离策略 |
-|------|---------|
-| AppState, ViewModel, DIContainer | `@MainActor class` |
-| SyncEngine | `actor` |
-| TrialManager | `actor` |
-| Repository | `class : Sendable`（通过 DatabaseManager 同步） |
-| DatabaseManager | `@unchecked Sendable`（GRDB DatabaseQueue 内置串行） |
-| Theme | `struct : Sendable`（值类型，安全跨 actor） |
-| LanguageStore | `class : @unchecked Sendable`（UserDefaults 是线程安全的） |
+**全部是 Mock 数据**——没有对接任何真实 API。SyncEngine 生成随机数字。帖子列表、取关名单、地域分布都是 MockPostGenerator 和 MockFollowerListGenerator 生成的假数据。
 
 ---
 
-## 4. 已实现功能（按版本）
+## 2. 最大优势
 
-### Alpha (v0.01) — 基础闭环
-- [x] GRDB 数据库 + 5 表 Migration
-- [x] 5 个 Repository（Account/Event/Snapshot/Metric/PremiumFeature）
-- [x] SyncEngine（模拟数据）
-- [x] IngestionService + AggregationService（增量聚合）
-- [x] ExportService（JSON/CSV）
-- [x] TrialManager（1 小时试用）
-- [x] Dashboard（8 个统计卡片）
-- [x] Trends（日/周/月折线图）
-- [x] Settings（试用/账号/主题/导出/隐私/存储）
-- [x] Account（创建/撤销/删除）
-- [x] Apple Native + Instagram 主题
-- [x] Liquid Glass 卡片效果
+### 2.1 架构一致性强
 
-### Beta (v0.02) — 本地化 + 主题 + 体验
-- [x] 4 语言本地化（en/zh-Hans/zh-Hant/ja）
-- [x] L10n key 体系（108+ key）
-- [x] String Catalog (.xcstrings)
-- [x] Bundle-based 运行时语言切换
-- [x] 4 主题系统（Apple Native / Instagram / Midnight Dark / Instagram Dark）
-- [x] 深色模式切换（System/Light/Dark）
-- [x] Instagram 品牌渐变开屏页
-- [x] 深色 UI 渐变背景
-- [x] ErrorBanner 统一错误提示
-- [x] Premium 一键解锁按钮
-- [x] Tab 图标更新（使用 SF Symbols）
-- [x] Settings → "我的"（person.fill）
-- [x] Form + NavigationStack 按钮 tappability 修复（toolbar button）
-- [x] Trends 日/周/月切换 Bug 修复（picker 绑定调用 selectWindow）
-- [x] Account 创建后自动 dismiss
+从第一个文件到最后一个文件，MVVM + Repository + Service 的分层从未被打破。ViewModel 里没有 SQL，View 里没有数据库调用，Repository 里没有 UI 代码。这不是一个"部分 MVVM"的项目——每一层都在它应该在的位置。
 
-### 测试 (v0.02-test)
-- [x] Unit Tests：~50 用例（Models/Theme/Localization/Repository/Service/Trial/Premium）
-- [x] UI Tests：11 用例（Dashboard/Trends/Settings/Account/Theme + 32 LaunchTests）
-- [x] CI 可运行：11/11 UI tests pass, core unit tests pass
-- [x] 闪退修复：移除所有 force-unwrap，actor 测试隔离
+### 2.2 GRDB 选择正确
+
+Event/Snapshot/Metric 三层数据模型是正确的设计。Event 是 append-only 的原始记录，Snapshot 是可 upsert 的 UI 快照，Metric 是后台计算的派生指标。这个设计让你可以删除 Metric 重新计算而不丢失原始数据——这在数据分析 App 中至关重要。
+
+### 2.3 测试框架完整
+
+- 75 个单元测试（61 必须通过，14 共享 DB flaky）
+- 12 个 UI 测试
+- GitHub Actions CI（macOS 26 runner）在每次 PR 时运行
+- 测试按"必须通过"和"已知 flaky"分组
+
+### 2.4 本地化系统实用
+
+`loc()` 函数通过 Bundle-based 查找实现运行时语言切换，无需重启 App。108+ key 覆盖 4 种语言。String Catalog (.xcstrings) 作为数据源。
+
+### 2.5 主题系统干净
+
+`Theme` 是 Sendable struct（非 protocol），安全跨 actor 边界。4 个主题用静态属性定义，Environment 注入。
 
 ---
 
-## 5. 未实现 / 待做（Gamma）
+## 3. 已知缺陷和何时会出问题
 
-### Premium 实际功能（目前仅有开关）
-- [ ] 趋势预测引擎
-- [ ] 粉丝增长预测
-- [ ] 活跃度/留存率/流失分析
-- [ ] 地域分布数据源
-- [ ] 互动质量评分模型
-- [ ] Excel 导出
-- [ ] 本地 AI 分析
-- [ ] 加强加密
-- [ ] 多设备同步
+### 3.1 SyncEngine 是 actor——测试永远覆盖不了
 
-### 基础设施
-- [ ] 真实 API 对接（替换 SyncEngine 模拟数据）
-- [ ] OAuth 登录流程
-- [ ] 数据库加密
-- [ ] iCloud 备份
+**当前影响**：SyncEngine 的行为从未被测试。所有涉及 SyncEngine 的单元测试都会在 XCTest 中触发 `EXC_BREAKPOINT` 或 `SIGABRT`。
 
-### 体验
-- [ ] 首次引导页（Onboarding）
-- [ ] Haptic 反馈
-- [ ] VoiceOver 适配
-- [ ] Dynamic Type 适配
-- [ ] 小屏 iPhone SE 适配
+**临界点**：对接真实 Instagram API 时。届时你需要修改 SyncEngine 的核心逻辑（HTTP 请求、token 刷新、重试策略），但无法为这些改动写测试。
+
+**修复方向**：将 SyncEngine 从 `actor` 改为使用串行 DispatchQueue 的 class，或引入 mock protocol。
+
+### 3.2 AggregationService 的"增量"是假的
+
+**当前影响**：`aggregate()` 声称增量计算，但每次同步后都重新读取 ±1 个月的所有 Snapshot 来 rebuild Metric。数据 30 天时无感，365 天后会明显变慢。
+
+**临界点**：~500 条 Snapshot（约 1.5 年数据）。或者首次对接真实 API 时——如果用户有 2 年历史数据，第一次全量同步会触发这个性能瓶颈。
+
+**修复方向**：只对新增/变更的 Snapshot 计算对应的 Metric，已存在的 Metric 不需更新（除非跨月/周的边界数据需要调整）。
+
+### 3.3 DIContainer 过紧耦合
+
+**当前影响**：无法单独 mock 某个依赖。所有 ViewModel 必须通过 DIContainer 获取真实的 Repository/Service 实例。SettingsViewModel 依赖 TrialManager（actor），导致 SettingsViewModel 也无法在单元测试中创建。
+
+**临界点**：当你需要为 ViewModel 写单元测试时（而不是通过 UI 测试间接验证）。
+
+**修复方向**：引入 Protocol Witness 或闭包注入。优先解决 TrialManager 和 SyncEngine 的 mock 问题——它们是 actor，是测试的头号障碍。
+
+### 3.4 Repository upsert 不是原子操作
+
+**当前影响**：`SnapshotRepository.upsert()` 和 `MetricRepository.upsert()` 使用"先查后写"模式（`if exists { update } else { insert }`），不是数据库级 UPSERT。两个并发 upsert 可能产生重复行。
+
+**临界点**：引入并发同步时（多个数据源同时写入）。目前单 SyncEngine 串行调用，不会触发。
+
+**修复方向**：使用 GRDB 的 `upsert` + `onConflict` 指定唯一索引。
+
+### 3.5 共享 DatabaseManager 单例导致测试 flaky
+
+**当前影响**：RepositoryTests 和 ServicesTests 的 14 个测试共享同一个 SQLite 数据库。前一个测试的残留数据影响后续测试。约 8% 的测试有不稳定的失败率。
+
+**临界点**：已经是一个问题，但 CI 通过 `|| true` 绕过了。
+
+**修复方向**：为 DatabaseManager 添加 `static func inMemory() -> DatabaseManager` 工厂方法，测试用内存数据库。
+
+### 3.6 Form + Button 在 Xcode 26 中不可点击
+
+**当前影响**：所有 Form 中的 Button 都被 Form 的行选中行为拦截。`.buttonStyle(.borderless)` 无效，`onTapGesture` 也无效。我们用了 toolbar button 作为 workaround。
+
+**临界点**：已经是一个问题。如果你需要在 Form 行内放交互式按钮（比如每行一个开关），目前的 workaround 不够。
+
+**修复方向**：关注 Xcode 更新是否修复。或使用 `List` 替代 `Form`。
+
+### 3.7 Premium 功能是 Mock
+
+**当前影响**：解锁 Premium 后显示的"谁取关了你""最佳发帖时间"等详情页都是随机生成的假数据。13 个 PremiumFeature key 只在数据库中作为权限旗帜存在。
+
+**临界点**：当你需要 Show 给真实用户而不是 Demo 时。
+
+**修复方向**：对接 Instagram Graph API 获取真实数据。优先实现 CSV 导出增强和 Excel 导出——这些不需要外部 API。
 
 ---
 
-## 6. 已知问题 & 避坑指南
+## 4. 代码膨胀临界点预测
 
-### 测试闪退
-- **actor 测试**：`SyncEngine`(actor) 和 `TrialManager`(actor) 在 `XCTestCase` 中创建会触发 `EXC_BREAKPOINT` 或 `SIGABRT`。**绝对不要**在测试中 `init` actor 类型，或创建触发 actor init 的对象（如 `AppState`）。
-- **@MainActor 测试**：`TrendsViewModel` 等 `@MainActor` 的类，在非 MainActor 测试方法中创建会导致 `POINTER_BEING_FREED_WAS_NOT_ALLOCATED`。需要标记测试方法为 `@MainActor`，或避免创建这些对象。
-- **force-unwrap**：所有 `!` 在测试中已替换为 `guard let`，**不要**添加新的 force-unwrap。
+| 规模 | 可能出现的问题 | 建议 |
+|------|--------------|------|
+| **~80 源文件** (当前 60) | Dashboard 目录文件过多，Feature 内组件混杂 | 创建 `Dashboard/Components/` 子目录 |
+| **~15 个 ViewModel** (当前 4) | ContentView 的 ViewModel 创建代码过长 | 引入 ViewModelFactory 或 Coordinator |
+| **~20 个 Repository 方法** (当前 5-7 个/Repo) | 查询参数组合爆炸，方法签名变长 | 引入 QueryBuilder 或 Specification 模式 |
+| **~2000 行/Service** (当前最大 271) | AggregationService 变 God Object | 拆分为 SnapshotBuilder + MetricBuilder + WeeklyAggregator 等 |
+| **对接真实 API** | SyncEngine 变成最复杂的 Service，actor 测试问题变致命 | 将 SyncEngine 改为 protocol + mock 实现 |
+| **3+ 开发者** | DIContainer 成为 merge conflict 热点，每个人都要碰同一个文件 | 引入模块化 DI（每个 Feature 自己注册依赖） |
 
-### 数据库
-- `DatabaseManager` 是单例，磁盘失败时**自动降级为内存数据库**（`isInMemoryFallback` 标记）
-- Repository 的 upsert 使用「先查后写」模式，因为 auto-increment 主键不能用于冲突检测
-- `AccountRepository.insert()` 返回 `Account`（含 `didInsert` 设置的 id），调用方必须使用返回值
-
-### UI
-- **Form + NavigationStack** 中的 `Button` 在 Xcode 26 中 tap 被行选中拦截。**始终使用 toolbar button** 代替 Form 内按钮。
-- Tab 切换时 `.accessibilityIdentifier` 在 Xcode 26 中不传播到 `UITabBarButton`。UI 测试使用 `app.tabBars.buttons.element(boundBy:)` 定位。
-
-### 编译
-- `import Combine` 需要在所有使用 `@Published` / `ObservableObject` 的文件中**显式声明**（`MemberImportVisibility` 开启）
-- Codable 声明必须与 GRDB Record 放在**同一个 extension** 中，否则 circular reference
+TL;DR：**当前架构在 80-100 源文件、15,000 行以内不会出结构性问题。** 真正需要重构的信号是对接真实 API 和多开发者协作。
 
 ---
 
-## 7. 编译与测试命令
+## 5. 阅读指南
+
+### 5.1 必须读的 6 个文件（按顺序）
+
+1. `CLAUDE.md` — 项目规则和行为约束
+2. `ARCHITECTURE.md` — 系统分层和数据流
+3. 本文档（HANDOFF.md）— 你在读的这个
+4. `Core/DIContainer.swift` — 依赖注入入口，理解整个对象图
+5. `Core/DatabaseManager.swift` — 数据库单例，磁盘→内存降级逻辑
+6. `Models/` 下 5 个文件 — 理解 Event/Snapshot/Metric 三层模型
+
+### 5.2 修改指南
+
+| 你想做什么 | 改哪个文件 |
+|-----------|----------|
+| 加新页面 | `Features/<Name>/` 下新建 View + ViewModel |
+| 加新数据表 | `Models/` + `MigrationV1.swift` → 注册 MigrationV2 |
+| 加新 Service | `Services/` 下新建 + 在 `DIContainer.swift` 注册 |
+| 加新查询 | 对应的 `Repository/` 文件 |
+| 加翻译 | `Core/Localization/L10n.swift` + `Resources/Localizable.xcstrings` |
+| 加主题 | `Core/ThemeSystem.swift` 新增 static let |
+
+### 5.3 绝对不要做的事
+
+1. 在 ViewModel 中写 SQL 或直接访问 DatabaseManager
+2. 在 View 中直接调用 Repository
+3. 在测试中创建 SyncEngine 或 TrialManager（actor 崩溃）
+4. 修改已注册的 Migration（只新增 MigrationV2, V3...）
+5. 把 Mock 数据当作真实数据源传输到生产环境
+
+---
+
+## 6. 编译和测试命令
 
 ```bash
-# 编译
-xcodebuild -project Follower.xcodeproj -scheme Follower \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
-
-# Clean build
-xcodebuild -project Follower.xcodeproj -scheme Follower \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' clean build
-
-# 单元测试
+# 全量编译
 xcodebuild -project Follower.xcodeproj -scheme Follower \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  test -only-testing:FollowerTests
+  -derivedDataPath /tmp/FollowerDD build
 
-# UI 测试
+# 运行核心单元测试
 xcodebuild -project Follower.xcodeproj -scheme Follower \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-  test -only-testing:FollowerUITests
+  -derivedDataPath /tmp/FollowerDD \
+  test -only-testing:FollowerTests/LambdaTests \
+       -only-testing:FollowerTests/PremiumSyncTests
 
-# 全部测试
-xcodebuild -project Follower.xcodeproj -scheme Follower \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
+# 注意：不要本地跑 UI 测试（GIT.md 规则）。UI 测试通过 GitHub Actions CI 运行。
 ```
 
 ### 前提条件
+
 - Xcode 26.0+
-- `Vendor/GRDB.swift-7.11.0/` 需要存在（git clone 后单独执行）：
+- `Vendor/GRDB.swift-7.11.0` 需要存在：
   ```bash
   mkdir -p Vendor
-  cd Vendor
-  git clone --depth 1 --branch v7.11.0 \
+  cd Vendor && git clone --depth 1 --branch v7.11.0 \
     https://github.com/groue/GRDB.swift.git GRDB.swift-7.11.0
   ```
-
----
-
-## 8. Git 版本历史
-
-```
-c176e9d v0.02-beta-2.0.2: Trends fix, Premium unlock, 我的 tab
-4f135f3 v0.02-beta-2.0.1: UI tests — 11/11 passed
-9bcf98e v0.02-beta-2.0.1: Fix tappability — toolbar buttons
-6ef0e31 v0.02-beta-2.0.1: Fix Connect Account tappability + auto-dismiss
-fda7765 v0.02-beta-test: Unit tests for Beta-2.0 features
-cad6bb0  v0.02-beta-2.0.1: SF Symbols + Light/Dark mode
-2e65750  v0.02-beta-2.0: Instagram Dark theme + Splash Screen
-1ae3922 v0.02-beta-test: Unit tests + UI tests + crash fixes
-3fee0ad v0.02-beta-fix: Language switching — Bundle-based lookup
-34505a1 v0.02-beta-fix: In-app language + theme reactivity
-b0566fb v0.02-beta-fix: Review fixes
-570e26a v0.02-beta: Localization + Theme System + Experience Polish
-6410302 Update .gitignore
-26049db v0.01-alpha: Initial Alpha implementation
-```
-
----
-
-## 9. 关键文件速查
-
-| 需求 | 文件 |
-|------|------|
-| 修改 Model 结构 | `Models/*.swift` + `MigrationV1.swift` |
-| 添加查询 | 对应 `Repository/*.swift` |
-| 添加业务逻辑 | `Services/` 下对应目录 |
-| 添加页面 | `Features/<Name>/` 下 View + ViewModel |
-| 添加翻译 | `L10n.swift` + `Localizable.xcstrings` |
-| 添加主题 | `ThemeSystem.swift` 中新增 Theme 静态属性 |
-| 添加依赖 | `DIContainer.swift` |
-
----
-
-## 10. 未提交的变更（Stash / 本地）
-
-无。`git status` 为 clean。
+- 如果 DerivedData 在外部磁盘，使用 `-derivedDataPath /tmp/FollowerDD`

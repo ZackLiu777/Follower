@@ -2,7 +2,7 @@ name: iOS CI
 
 on:
   pull_request:
-    branches: ["main", "gamma"]
+    branches: ["main", "gamma", "lambda"]
 
 jobs:
   unit-tests:
@@ -46,6 +46,7 @@ jobs:
             -only-testing:FollowerTests/GammaServicesTests \
             -only-testing:FollowerTests/LambdaTests \
             -only-testing:FollowerTests/PremiumSyncTests \
+            -only-testing:FollowerTests/FollowerTests \
             -derivedDataPath /tmp/FollowerDD CODE_SIGNING_ALLOWED=NO
 
       - name: Run Known-Flaky Tests (shared DB, allowed to fail)
@@ -99,4 +100,5 @@ jobs:
             -only-testing:FollowerUITests/AccountUITests \
             -only-testing:FollowerUITests/ThemeAndLanguageUITests \
             -only-testing:FollowerUITests/PremiumUITests \
+            -only-testing:FollowerUITests/FollowerUITests \
             -derivedDataPath /tmp/FollowerDD CODE_SIGNING_ALLOWED=NO
