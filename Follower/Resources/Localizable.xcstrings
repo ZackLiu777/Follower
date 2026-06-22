@@ -1,60 +1,14 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "" : {
-
-    },
-    "(%@%%)" : {
-
-    },
-    "@%@" : {
-
-    },
-    "%@'s Followers" : {
-
-    },
-    "%@%lld" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@%2$lld"
-          }
-        }
-      }
-    },
-    "%@%lld (%@%%)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@%2$lld (%3$@%%)"
-          }
-        }
-      }
-    },
-    "%lld" : {
-
-    },
-    "~%@" : {
-
-    },
-    "💡 %@" : {
-
-    },
-    "📅 Wednesday 7 PM" : {
-
-    },
-    "7-Day Growth" : {
-
-    },
-    "account.addAccount" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add Account"
+  "sourceLanguage": "en",
+  "strings": {
+    "@%@": {},
+    "account.addAccount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Account"
           }
         },
         "ja" : {
@@ -570,28 +524,13 @@
         }
       }
     },
-    "All Posts" : {
-
-    },
-    "Based on your 90-day growth trend, you're on track to reach ~%@ followers. Keep posting consistently to maintain this growth rate." : {
-
-    },
-    "Best Time to Post" : {
-
-    },
-    "Breakdown" : {
-
-    },
-    "Caption" : {
-
-    },
-    "common.cancel" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cancel"
+    "common.cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
           }
         },
         "ja" : {
@@ -788,19 +727,13 @@
         }
       }
     },
-    "Content Strategy" : {
-
-    },
-    "Daily Engagement" : {
-
-    },
-    "dashboard.comments" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comments"
+    "dashboard.comments": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comments"
           }
         },
         "ja" : {
@@ -1200,58 +1133,16 @@
         }
       }
     },
-    "Date" : {
-
-    },
-    "Engagement" : {
-
-    },
-    "Engagement Rate" : {
-
-    },
-    "Followed" : {
-
-    },
-    "Follower" : {
-
-    },
-    "Follower Prediction" : {
-
-    },
-    "High" : {
-
-    },
-    "Hourly Engagement Heatmap" : {
-
-    },
-    "Low" : {
-
-    },
-    "Mock Content" : {
-
-    },
-    "No posts yet. Sync to load content." : {
-
-    },
-    "Post Detail" : {
-
-    },
-    "Predicted Followers Next Month" : {
-
-    },
-    "PREMIUM" : {
-
-    },
-    "Premium Insights" : {
-
-    },
-    "premium.benefit1" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Advanced analytics and predictions"
+    "Date": {},
+    "Follower": {},
+    "PREMIUM": {},
+    "premium.benefit1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Advanced analytics and predictions"
           }
         },
         "ja" : {
@@ -1709,19 +1600,13 @@
         }
       }
     },
-    "Recent Activity" : {
-
-    },
-    "Recent Content" : {
-
-    },
-    "settings.accounts" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Accounts"
+    "settings.appleNative": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Native"
           }
         },
         "ja" : {
@@ -3254,28 +3139,7 @@
           }
         }
       }
-    },
-    "Unfollowed" : {
-
-    },
-    "Value" : {
-
-    },
-    "View All" : {
-
-    },
-    "vs last 7 days" : {
-
-    },
-    "Who Unfollowed You" : {
-
-    },
-    "Window" : {
-
-    },
-    "Your best posting time" : {
-
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }
