@@ -18,18 +18,18 @@ struct SettingsView: View {
             ZStack {
                 LinearGradient(colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
                 Form {
-                Section { trialSection } header: { Text(loc(L10n.Settings.trialStatus)) }
-                Section { accountSection } header: { Text(loc(L10n.Settings.accounts)) }
+                Section { trialSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.trialStatus)) }
+                Section { accountSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.accounts)) }
                 Section {
-                    languageSection
-                    themeSection
+                    languageSection.listRowBackground(theme.cardSurface)
+                    themeSection.listRowBackground(theme.cardSurface)
                 } header: { Text(loc(L10n.Settings.appearance)) }
                 Section {
-                    exportSection
+                    exportSection.listRowBackground(theme.cardSurface)
                 } header: { Text(loc(L10n.Settings.dataExport)) } footer: { Text(loc(L10n.Settings.exportFooter)) }
-                Section { storageInfoSection } header: { Text(loc(L10n.Settings.storage)) }
-                Section { privacySection } header: { Text(loc(L10n.Settings.privacy)) }
-                Section { premiumFeaturesSection } header: { Text(loc(L10n.Settings.premiumFeatures)) }
+                Section { storageInfoSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.storage)) }
+                Section { privacySection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.privacy)) }
+                Section { premiumFeaturesSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.premiumFeatures)) }
             }
             .scrollContentBackground(.hidden)
             }
