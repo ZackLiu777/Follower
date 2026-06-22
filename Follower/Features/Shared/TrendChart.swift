@@ -2,9 +2,7 @@
 //  TrendChart.swift
 //  Follower
 //
-//  趋势折线图组件。
-//  使用 Swift Charts 绘制历史趋势。
-//  支持懒加载数据，避免一次性渲染过多数据点。
+//  Lambda-2: 竖条柱状图组件。Swift Charts BarMark + 等比宽度 + 渐变填充。
 //
 
 import SwiftUI
@@ -12,8 +10,21 @@ import Charts
 
 struct TrendChart: View {
     let dataPoints: [TrendDataPoint]
-    let lineColor: Color
+    let barGradientStart: Color
+    let barGradientEnd: Color
     let title: String
+
+    static func barWidthRatio(for count: Int) -> Double {
+        switch count {
+        case ...4:  return 0.90
+        case 5...7: return 0.80
+        case 8...12: return 0.70
+        case 13...24: return 0.60
+        default: return 0.50
+        }
+    }
+
+    private var barWidthRatio: Double { Self.barWidthRatio(for: dataPoints.count) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -25,19 +36,14 @@ struct TrendChart: View {
                 emptyState
             } else {
                 Chart(dataPoints) { point in
-                    LineMark(
+                    BarMark(
                         x: .value("Date", point.date),
-                        y: .value("Value", point.value)
-                    )
-                    .foregroundStyle(lineColor)
-
-                    AreaMark(
-                        x: .value("Date", point.date),
-                        y: .value("Value", point.value)
+                        y: .value("Value", point.value),
+                        width: .automatic
                     )
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [lineColor.opacity(0.2), lineColor.opacity(0.0)],
+                            colors: [barGradientStart, barGradientEnd],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -46,9 +52,7 @@ struct TrendChart: View {
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 5))
                 }
-                .chartYAxis {
-                    AxisMarks(values: .automatic(desiredCount: 4))
-                }
+                .chartYAxis { AxisMarks(values: .automatic(desiredCount: 4)) }
                 .frame(height: 200)
                 .padding(.horizontal)
             }
@@ -60,15 +64,12 @@ struct TrendChart: View {
 
     private var emptyState: some View {
         VStack(spacing: 12) {
-            Image(systemName: "chart.line.downtrend.xy")
-                .font(.largeTitle)
-                .foregroundColor(.secondary)
+            Image(systemName: "chart.bar.fill")
+                .font(.largeTitle).foregroundColor(.secondary)
             Text(loc(L10n.Trends.noData))
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                .font(.subheadline).foregroundColor(.secondary)
             Text(loc(L10n.Trends.noDataHint))
-                .font(.caption)
-                .foregroundColor(.secondary.opacity(0.7))
+                .font(.caption).foregroundColor(.secondary.opacity(0.7))
         }
         .frame(maxWidth: .infinity, minHeight: 200)
     }
@@ -83,7 +84,8 @@ struct TrendChart: View {
     }
     TrendChart(
         dataPoints: sample,
-        lineColor: .blue,
+        barGradientStart: Color(red: 0.96, green: 0.55, blue: 0.31),
+        barGradientEnd: Color(red: 0.82, green: 0.18, blue: 0.49),
         title: "Followers Growth"
     )
     .padding()

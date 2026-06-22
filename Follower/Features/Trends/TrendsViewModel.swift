@@ -2,8 +2,8 @@
 //  TrendsViewModel.swift
 //  Follower
 //
-//  历史趋势页面 ViewModel。
-//  展示日/周/月趋势、增长与下降变化。
+//  Lambda-2: 多指标竖条柱状图 ViewModel。
+//  一次 fetch 全部 metricType，内存分区，日/周/月切换零延迟。
 //
 
 import Foundation
@@ -12,28 +12,23 @@ import Combine
 
 @MainActor
 final class TrendsViewModel: ObservableObject {
-    // MARK: - Dependencies
 
     private let snapshotRepo: SnapshotRepositoryProtocol
     private let metricRepo: MetricRepositoryProtocol
     private let accountRepo: AccountRepositoryProtocol
 
-    // MARK: - Published State
+    static let visibleMetricTypes: [MetricType] = [
+        .followerGrowth, .engagementTrend, .averageLikes,
+        .averageComments, .averageShares, .profileViews
+    ]
 
-    @Published var dailyMetrics: [Metric] = []
-    @Published var weeklyMetrics: [Metric] = []
-    @Published var monthlyMetrics: [Metric] = []
-
-    @Published var selectedMetricType: MetricType = .followerGrowth
+    @Published var dailyMetrics: [MetricType: [Metric]] = [:]
+    @Published var weeklyMetrics: [MetricType: [Metric]] = [:]
+    @Published var monthlyMetrics: [MetricType: [Metric]] = [:]
     @Published var selectedWindow: TimeWindow = .day
-
-    @Published var trendDataPoints: [TrendDataPoint] = []
     @Published var selectedAccountId: Int64?
-
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-
-    // MARK: - Init
 
     init(
         snapshotRepo: SnapshotRepositoryProtocol,
@@ -45,84 +40,66 @@ final class TrendsViewModel: ObservableObject {
         self.accountRepo = accountRepo
     }
 
-    // MARK: - Public
-
-    /// 加载账号列表并自动选中第一个
     func loadInitialAccount() async {
         do {
             let accounts = try await accountRepo.fetchAll()
-            if selectedAccountId == nil {
-                selectedAccountId = accounts.first?.id
+            #if DEBUG
+            print("[TrendsVM] loadInitialAccount: \(accounts.count) accounts, firstId=\(accounts.first?.id ?? -1)")
+            #endif
+            if selectedAccountId == nil { selectedAccountId = accounts.first?.id }
+            if let id = selectedAccountId {
+                await loadTrends(accountId: id)
+            } else {
+                #if DEBUG
+                print("[TrendsVM] ⚠️ selectedAccountId is nil, loadTrends NOT called")
+                #endif
             }
-            if let accountId = selectedAccountId {
-                await loadTrends(accountId: accountId)
-            }
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        } catch { errorMessage = error.localizedDescription }
     }
 
     func loadTrends(accountId: Int64) async {
         isLoading = true
         defer { isLoading = false }
-
         do {
-            dailyMetrics = try await metricRepo.fetch(
-                accountId: accountId,
-                metricType: selectedMetricType,
-                window: .day,
-                limit: 90
-            )
-            weeklyMetrics = try await metricRepo.fetch(
-                accountId: accountId,
-                metricType: selectedMetricType,
-                window: .week,
-                limit: 52
-            )
-            monthlyMetrics = try await metricRepo.fetch(
-                accountId: accountId,
-                metricType: selectedMetricType,
-                window: .month,
-                limit: 24
-            )
+            var dayDict: [MetricType: [Metric]] = [:]
+            var weekDict: [MetricType: [Metric]] = [:]
+            var monthDict: [MetricType: [Metric]] = [:]
 
-            buildTrendDataPoints()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+            for type in Self.visibleMetricTypes {
+                let d = try await metricRepo.fetch(accountId: accountId, metricType: type, window: .day, limit: 90)
+                let w = try await metricRepo.fetch(accountId: accountId, metricType: type, window: .week, limit: 52)
+                let m = try await metricRepo.fetch(accountId: accountId, metricType: type, window: .month, limit: 24)
+                if !d.isEmpty { dayDict[type] = d }
+                if !w.isEmpty { weekDict[type] = w }
+                if !m.isEmpty { monthDict[type] = m }
+            }
+
+            dailyMetrics = dayDict
+            weeklyMetrics = weekDict
+            monthlyMetrics = monthDict
+            #if DEBUG
+            print("[TrendsVM] loadTrends done — dayTypes=\(dayDict.count) weekTypes=\(weekDict.count) monthTypes=\(monthDict.count)")
+            print("[TrendsVM] followerGrowth day sample: \(chartData(for: .followerGrowth).prefix(3).map { ($0.date, $0.value) })")
+            #endif
+        } catch { errorMessage = error.localizedDescription }
     }
 
-    func selectMetricType(_ type: MetricType) {
-        selectedMetricType = type
-        if let accountId = selectedAccountId {
-            Task { await loadTrends(accountId: accountId) }
-        }
-    }
+    func selectWindow(_ window: TimeWindow) { selectedWindow = window }
 
-    func selectWindow(_ window: TimeWindow) {
-        selectedWindow = window
-        buildTrendDataPoints()
-    }
-
-    // MARK: - Private
-
-    /// 由当前选中窗口的 Metric 构建图表数据点
-    private func buildTrendDataPoints() {
-        let metrics: [Metric]
+    func chartData(for metricType: MetricType) -> [TrendDataPoint] {
+        let dict: [MetricType: [Metric]]
         switch selectedWindow {
-        case .day:   metrics = dailyMetrics
-        case .week:  metrics = weeklyMetrics
-        case .month: metrics = monthlyMetrics
+        case .day: dict = dailyMetrics
+        case .week: dict = weeklyMetrics
+        case .month: dict = monthlyMetrics
         }
-
-        trendDataPoints = metrics
-            .filter { $0.metricType == selectedMetricType }
+        return dict[metricType]?
+            .sorted { $0.observedAt < $1.observedAt }
             .map { TrendDataPoint(date: $0.observedAt, value: $0.value) }
-            .sorted { $0.date < $1.date }
+            ?? []
     }
-}
 
-// MARK: - TrendDataPoint
+}
 
 struct TrendDataPoint: Identifiable {
     var id: Date { date }

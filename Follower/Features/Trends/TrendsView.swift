@@ -2,63 +2,53 @@
 //  TrendsView.swift
 //  Follower
 //
-//  历史趋势页面。Beta: 全部文案本地化。
+//  Lambda-2: 竖条柱状图趋势页。多指标竖向堆叠 + 增长摘要。
+//
 
 import SwiftUI
 
 struct TrendsView: View {
     @EnvironmentObject private var appState: AppState
     @ObservedObject var viewModel: TrendsViewModel
+    @Environment(\.theme) private var theme
 
     var body: some View {
         NavigationStack {
-            ScrollView {
+            ZStack {
+                LinearGradient(colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
+                ScrollView {
                 if let error = viewModel.errorMessage {
                     ErrorBanner(message: error, onDismiss: { viewModel.errorMessage = nil }, onRetry: nil)
                         .padding(.top, 8)
                 }
-                VStack(spacing: 16) {
-                    metricTypePicker
+                VStack(spacing: 12) {
                     timeWindowPicker
-                    TrendChart(dataPoints: viewModel.trendDataPoints, lineColor: chartColor, title: chartTitle)
+
+                    ForEach(TrendsViewModel.visibleMetricTypes, id: \.self) { metricType in
+                        TrendChart(
+                            dataPoints: viewModel.chartData(for: metricType),
+                            barGradientStart: theme.chartBarGradientStart,
+                            barGradientEnd: theme.chartBarGradientEnd,
+                            title: "\(metricType.localizedName) — \(viewModel.selectedWindow.localizedName)"
+                        )
                         .padding(.horizontal)
-                    if let first = viewModel.trendDataPoints.first,
-                       let last = viewModel.trendDataPoints.last,
-                       viewModel.trendDataPoints.count > 1 {
-                        growthSummary(first: first, last: last)
                     }
+
+                    if hasAnyData { aggregateGrowthSummary }
                 }
                 .padding(.vertical)
+            }
+            .scrollContentBackground(.hidden)
             }
             .navigationTitle(loc(L10n.Trends.title))
         }
         .task { await viewModel.loadInitialAccount() }
     }
 
-    private var metricTypePicker: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(visibleMetricTypes, id: \.self) { type in
-                    Button { viewModel.selectMetricType(type) } label: {
-                        Text(type.localizedName)
-                            .font(.caption).fontWeight(.medium)
-                            .padding(.horizontal, 12).padding(.vertical, 6)
-                            .background(viewModel.selectedMetricType == type ? AnyShapeStyle(.tint) : AnyShapeStyle(.regularMaterial))
-                            .foregroundColor(viewModel.selectedMetricType == type ? .white : .primary)
-                            .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal)
-        }
-    }
+    // MARK: - Picker
 
     private var timeWindowPicker: some View {
-        Picker("Time Window", selection: Binding(
-            get: { viewModel.selectedWindow },
-            set: { viewModel.selectWindow($0) }
-        )) {
+        Picker("Window", selection: Binding(get: { viewModel.selectedWindow }, set: { viewModel.selectWindow($0) })) {
             Text(loc(L10n.Trends.daily)).tag(TimeWindow.day)
             Text(loc(L10n.Trends.weekly)).tag(TimeWindow.week)
             Text(loc(L10n.Trends.monthly)).tag(TimeWindow.month)
@@ -66,44 +56,32 @@ struct TrendsView: View {
         .pickerStyle(.segmented).padding(.horizontal)
     }
 
-    private func growthSummary(first: TrendDataPoint, last: TrendDataPoint) -> some View {
-        let change = last.value - first.value
-        let pct = first.value > 0 ? (change / first.value) * 100 : 0
-        return HStack(spacing: 16) {
-            summaryItem(label: loc(L10n.Trends.change), value: String(format: "%+.0f", change), isPositive: change >= 0)
-            summaryItem(label: loc(L10n.Trends.growth), value: String(format: "%+.1f%%", pct), isPositive: pct >= 0)
+    // MARK: - Growth Summary
+
+    private var hasAnyData: Bool {
+        TrendsViewModel.visibleMetricTypes.contains { !viewModel.chartData(for: $0).isEmpty }
+    }
+
+    private var aggregateGrowthSummary: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+            ForEach(TrendsViewModel.visibleMetricTypes, id: \.self) { metricType in
+                let points = viewModel.chartData(for: metricType)
+                if let first = points.first, let last = points.last, points.count > 1 {
+                    let change = last.value - first.value
+                    summaryItem(label: metricType.localizedName, value: String(format: "%+.0f", change), isPositive: change >= 0)
+                }
+            }
         }
         .padding(.horizontal)
     }
 
     private func summaryItem(label: String, value: String, isPositive: Bool) -> some View {
         VStack(spacing: 4) {
-            Text(value).font(.headline).foregroundColor(isPositive ? .green : .red)
-            Text(label).font(.caption).foregroundColor(.secondary)
+            Text(value).font(.headline).foregroundColor(isPositive ? theme.positiveGreen : theme.negativeRed)
+            Text(label).font(.caption).foregroundColor(theme.textSecondary)
         }
         .frame(maxWidth: .infinity).padding()
         .background(.regularMaterial).clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-
-    private var visibleMetricTypes: [MetricType] {
-        [.followerGrowth, .engagementTrend, .averageLikes, .averageComments, .averageShares, .profileViews]
-    }
-
-    private var chartColor: Color {
-        switch viewModel.selectedMetricType {
-        case .followerGrowth: return .blue
-        case .engagementTrend: return .pink
-        case .averageLikes: return .red
-        case .averageComments: return .purple
-        case .averageShares: return .teal
-        case .profileViews: return .indigo
-        case .reachEstimate: return .orange
-        default: return .blue
-        }
-    }
-
-    private var chartTitle: String {
-        "\(viewModel.selectedMetricType.localizedName) — \(viewModel.selectedWindow.localizedName)"
     }
 }
 

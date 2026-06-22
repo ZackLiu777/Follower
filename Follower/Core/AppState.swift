@@ -17,7 +17,6 @@ final class AppState: ObservableObject {
 
     @Published var currentTheme: AppTheme = .appleNative
     @Published var currentLanguage: AppLanguage = LanguageStore.shared.current
-    @Published var colorScheme: ColorScheme? = nil
     @Published var isTrialActive: Bool = false
     @Published var trialStartDate: Date?
     /// Lambda: Premium 解锁状态（同步，所有 PremiumGate 直接读取）

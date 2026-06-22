@@ -2,7 +2,8 @@
 //  FollowerApp.swift
 //  Follower
 //
-//  App 入口。Beta-2.0: 开屏页面 + 浅色/深色模式。
+//  Lambda-2: isDark 驱动 preferredColorScheme。
+//
 
 import SwiftUI
 
@@ -21,20 +22,22 @@ struct FollowerApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
+                LinearGradient(
+                    colors: [appState.currentTheme.theme.backgroundGradientStart,
+                             appState.currentTheme.theme.backgroundGradientEnd],
+                    startPoint: .top, endPoint: .bottom
+                ).ignoresSafeArea()
+
                 ContentView()
                     .environmentObject(appState)
-                    .task {
-                        await appState.container.trialManager.startTrialIfNeeded()
-                    }
+                    .task { await appState.container.trialManager.startTrialIfNeeded() }
 
                 if showSplash && !skipSplash {
-                    SplashView {
-                        showSplash = false
-                    }
-                    .transition(.opacity)
+                    SplashView { showSplash = false }
+                        .transition(.opacity)
                 }
             }
-            .preferredColorScheme(appState.colorScheme)
+            .preferredColorScheme(appState.currentTheme.theme.isDark ? .dark : .light)
         }
     }
 }

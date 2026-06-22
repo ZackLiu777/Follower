@@ -9,22 +9,27 @@ import SwiftUI
 struct DashboardView: View {
     @EnvironmentObject private var appState: AppState
     @ObservedObject var viewModel: DashboardViewModel
+    @Environment(\.theme) private var theme
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                if let error = viewModel.errorMessage {
-                    ErrorBanner(message: error, onDismiss: { viewModel.errorMessage = nil }, onRetry: { Task { await viewModel.loadAccounts() } })
+            ZStack {
+                LinearGradient(colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
+                ScrollView {
+                    if let error = viewModel.errorMessage {
+                        ErrorBanner(message: error, onDismiss: { viewModel.errorMessage = nil }, onRetry: { Task { await viewModel.loadAccounts() } })
+                    }
+                    if viewModel.accounts.isEmpty {
+                        EmptyStateView(icon: "person.crop.circle.badge.exclamationmark", title: loc(L10n.Dashboard.noAccountTitle), message: loc(L10n.Dashboard.noAccountMessage), actionLabel: loc(L10n.Dashboard.connectAccount), action: {})
+                    } else if viewModel.latestSnapshot != nil {
+                        contentView
+                    } else if viewModel.isLoading {
+                        ProgressView(loc(L10n.Common.loading)).frame(maxWidth: .infinity, minHeight: 300)
+                    } else {
+                        EmptyStateView(icon: "arrow.triangle.2.circlepath", title: loc(L10n.Dashboard.noDataTitle), message: loc(L10n.Dashboard.noDataMessage), actionLabel: loc(L10n.Common.syncNow), action: { Task { await viewModel.sync() } })
+                    }
                 }
-                if viewModel.accounts.isEmpty {
-                    EmptyStateView(icon: "person.crop.circle.badge.exclamationmark", title: loc(L10n.Dashboard.noAccountTitle), message: loc(L10n.Dashboard.noAccountMessage), actionLabel: loc(L10n.Dashboard.connectAccount), action: {})
-                } else if viewModel.latestSnapshot != nil {
-                    contentView
-                } else if viewModel.isLoading {
-                    ProgressView(loc(L10n.Common.loading)).frame(maxWidth: .infinity, minHeight: 300)
-                } else {
-                    EmptyStateView(icon: "arrow.triangle.2.circlepath", title: loc(L10n.Dashboard.noDataTitle), message: loc(L10n.Dashboard.noDataMessage), actionLabel: loc(L10n.Common.syncNow), action: { Task { await viewModel.sync() } })
-                }
+                .scrollContentBackground(.hidden)
             }
             .navigationTitle(loc(L10n.Dashboard.title))
             .toolbar { toolbar }
