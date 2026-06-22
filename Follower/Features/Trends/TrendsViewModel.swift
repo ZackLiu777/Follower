@@ -69,6 +69,9 @@ final class TrendsViewModel: ObservableObject {
                 let d = try await metricRepo.fetch(accountId: accountId, metricType: type, window: .day, limit: 90)
                 let w = try await metricRepo.fetch(accountId: accountId, metricType: type, window: .week, limit: 52)
                 let m = try await metricRepo.fetch(accountId: accountId, metricType: type, window: .month, limit: 24)
+                #if DEBUG
+                print("[\(type)] day:", d.prefix(3).map { ($0.observedAt, $0.value) })
+                #endif
                 if !d.isEmpty { dayDict[type] = d }
                 if !w.isEmpty { weekDict[type] = w }
                 if !m.isEmpty { monthDict[type] = m }

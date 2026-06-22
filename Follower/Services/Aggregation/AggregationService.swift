@@ -68,6 +68,9 @@ final class AggregationService: AggregationServiceProtocol {
     }
 
     func rebuildAll(accountId: Int64) async throws -> AggregationResult {
+        // 先清掉所有旧 Metric（含之前错误 0 值数据）
+        _ = try await metricRepo.deleteOldMetrics(accountId: accountId, olderThan: Date.distantFuture)
+
         let allEvents = try await eventRepo.fetchAll(accountId: accountId)
         let snapshots = buildSnapshots(accountId: accountId, events: allEvents)
         _ = try await snapshotRepo.upsertBatch(snapshots)
@@ -87,45 +90,39 @@ final class AggregationService: AggregationServiceProtocol {
     /// 由 Event 构建 Snapshot：按 accountId + observedAt(天) 分组聚合
     private func buildSnapshots(accountId: Int64, events: [Event]) -> [Snapshot] {
         let calendar = Calendar.current
+        // 先按时间排序，保证 profileSnapshot 不会在 followerChange 之前被覆盖
+        let sorted = events.sorted { $0.observedAt < $1.observedAt }
         var grouped: [Date: (followers: Int, following: Int, media: Int, likes: Int, comments: Int, shares: Int, views: Int, engagementRate: Double, count: Int)] = [:]
 
-        for event in events {
+        for event in sorted {
             let day = calendar.startOfDay(for: event.observedAt)
+            var cur = grouped[day] ?? (0, 0, 0, 0, 0, 0, 0, 0, 0)
 
             switch event.eventType {
             case .profileSnapshot:
                 if let profile = try? JSONDecoder().decode(APIProfileResponse.self, from: event.payload) {
-                    let current = grouped[day] ?? (0, 0, 0, 0, 0, 0, 0, 0, 0)
-                    grouped[day] = (
-                        profile.followersCount,
-                        profile.followingCount,
-                        profile.mediaCount,
-                        profile.totalLikes,
-                        profile.totalComments,
-                        profile.totalShares,
-                        profile.totalViews,
-                        profile.engagementRate,
-                        current.count + 1
-                    )
+                    cur.followers = profile.followersCount
+                    cur.following = profile.followingCount
+                    cur.media = profile.mediaCount
+                    cur.likes = profile.totalLikes
+                    cur.comments = profile.totalComments
+                    cur.shares = profile.totalShares
+                    cur.views = profile.totalViews
+                    cur.engagementRate = profile.engagementRate
                 }
             case .followerChange:
                 if let point = try? JSONDecoder().decode(APITrendDataPoint.self, from: event.payload) {
-                    let current = grouped[day] ?? (0, 0, 0, 0, 0, 0, 0, 0, 0)
-                    grouped[day] = (
-                        point.followersCount,
-                        point.followingCount,
-                        point.mediaCount,
-                        current.likes,
-                        current.comments,
-                        current.shares,
-                        current.views,
-                        point.engagementRate,
-                        current.count + 1
-                    )
+                    cur.followers = point.followersCount
+                    cur.following = point.followingCount
+                    cur.media = point.mediaCount
+                    // likes/comments/shares/views NOT touched — only profileSnapshot sets these
+                    cur.engagementRate = point.engagementRate
                 }
             default:
                 break
             }
+            cur.count += 1
+            grouped[day] = cur
         }
 
         return grouped.map { (day, values) in
@@ -204,66 +201,58 @@ final class AggregationService: AggregationServiceProtocol {
             ])
         }
 
-        // Week metrics：按周聚合
-        var weekly: [Date: (followersSum: Double, engagementSum: Double, count: Int)] = [:]
+        // Week metrics：按周聚合（全部 6 种 metricType）
+        var weekly: [Date: (fSum: Double, eSum: Double, lSum: Double, cSum: Double, sSum: Double, vSum: Double, count: Int)] = [:]
         for snapshot in snapshots {
-            guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: snapshot.observedAt)?.start else {
-                continue
-            }
-            let current = weekly[weekStart] ?? (0, 0, 0)
+            guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: snapshot.observedAt)?.start else { continue }
+            let cur = weekly[weekStart] ?? (0, 0, 0, 0, 0, 0, 0)
             weekly[weekStart] = (
-                current.followersSum + Double(snapshot.followersCount),
-                current.engagementSum + snapshot.engagementRate,
-                current.count + 1
+                cur.fSum + Double(snapshot.followersCount),
+                cur.eSum + snapshot.engagementRate,
+                cur.lSum + Double(snapshot.totalLikes),
+                cur.cSum + Double(snapshot.totalComments),
+                cur.sSum + Double(snapshot.totalShares),
+                cur.vSum + Double(snapshot.totalViews),
+                cur.count + 1
             )
         }
-        for (weekStart, values) in weekly where values.count > 0 {
-            metrics.append(Metric(
-                accountId: accountId,
-                metricType: .followerGrowth,
-                value: values.followersSum / Double(values.count),
-                window: .week,
-                observedAt: weekStart,
-                createdAt: Date()
-            ))
-            metrics.append(Metric(
-                accountId: accountId,
-                metricType: .engagementTrend,
-                value: values.engagementSum / Double(values.count),
-                window: .week,
-                observedAt: weekStart,
-                createdAt: Date()
-            ))
+        for (weekStart, v) in weekly where v.count > 0 {
+            let cnt = Double(v.count)
+            metrics.append(contentsOf: [
+                Metric(accountId: accountId, metricType: .followerGrowth, value: v.fSum / cnt, window: .week, observedAt: weekStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .engagementTrend, value: v.eSum / cnt, window: .week, observedAt: weekStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .averageLikes, value: v.lSum / cnt, window: .week, observedAt: weekStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .averageComments, value: v.cSum / cnt, window: .week, observedAt: weekStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .averageShares, value: v.sSum / cnt, window: .week, observedAt: weekStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .profileViews, value: v.vSum / cnt, window: .week, observedAt: weekStart, createdAt: Date()),
+            ])
         }
 
-        // Month metrics：按月聚合
-        var monthly: [Date: (followersSum: Double, engagementSum: Double, count: Int)] = [:]
+        // Month metrics：按月聚合（全部 6 种 metricType）
+        var monthly: [Date: (fSum: Double, eSum: Double, lSum: Double, cSum: Double, sSum: Double, vSum: Double, count: Int)] = [:]
         for snapshot in snapshots {
             let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: snapshot.observedAt)) ?? snapshot.observedAt
-            let current = monthly[monthStart] ?? (0, 0, 0)
+            let cur = monthly[monthStart] ?? (0, 0, 0, 0, 0, 0, 0)
             monthly[monthStart] = (
-                current.followersSum + Double(snapshot.followersCount),
-                current.engagementSum + snapshot.engagementRate,
-                current.count + 1
+                cur.fSum + Double(snapshot.followersCount),
+                cur.eSum + snapshot.engagementRate,
+                cur.lSum + Double(snapshot.totalLikes),
+                cur.cSum + Double(snapshot.totalComments),
+                cur.sSum + Double(snapshot.totalShares),
+                cur.vSum + Double(snapshot.totalViews),
+                cur.count + 1
             )
         }
-        for (monthStart, values) in monthly where values.count > 0 {
-            metrics.append(Metric(
-                accountId: accountId,
-                metricType: .followerGrowth,
-                value: values.followersSum / Double(values.count),
-                window: .month,
-                observedAt: monthStart,
-                createdAt: Date()
-            ))
-            metrics.append(Metric(
-                accountId: accountId,
-                metricType: .engagementTrend,
-                value: values.engagementSum / Double(values.count),
-                window: .month,
-                observedAt: monthStart,
-                createdAt: Date()
-            ))
+        for (monthStart, v) in monthly where v.count > 0 {
+            let cnt = Double(v.count)
+            metrics.append(contentsOf: [
+                Metric(accountId: accountId, metricType: .followerGrowth, value: v.fSum / cnt, window: .month, observedAt: monthStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .engagementTrend, value: v.eSum / cnt, window: .month, observedAt: monthStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .averageLikes, value: v.lSum / cnt, window: .month, observedAt: monthStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .averageComments, value: v.cSum / cnt, window: .month, observedAt: monthStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .averageShares, value: v.sSum / cnt, window: .month, observedAt: monthStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .profileViews, value: v.vSum / cnt, window: .month, observedAt: monthStart, createdAt: Date()),
+            ])
         }
 
         return metrics

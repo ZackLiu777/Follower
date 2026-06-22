@@ -15,25 +15,20 @@ final class TrendsViewModelTests: XCTestCase {
         XCTAssertEqual(p.id, p.date); XCTAssertEqual(p.value, 42.0)
     }
 
-    // MARK: - barWidthRatio
+    // MARK: - barWidth (adaptive)
 
-    func testBarWidthRatioDay()   { XCTAssertEqual(TrendChart.barWidthRatio(for: 7), 0.80) }
-    func testBarWidthRatioWeek()  { XCTAssertEqual(TrendChart.barWidthRatio(for: 4), 0.90) }
-    func testBarWidthRatioMonth() { XCTAssertEqual(TrendChart.barWidthRatio(for: 12), 0.70) }
-    func testBarWidthRatioEmpty() { XCTAssertEqual(TrendChart.barWidthRatio(for: 0), 0.70, accuracy: 0.001) }
-    func testBarWidthRatioYear()  { XCTAssertEqual(TrendChart.barWidthRatio(for: 365), 0.50) }
-    func testBarWidthRatioQuarter() { XCTAssertEqual(TrendChart.barWidthRatio(for: 20), 0.60) }
-
-    func testBarWidthRatioBoundaries() {
-        XCTAssertEqual(TrendChart.barWidthRatio(for: 1), 0.90)
-        XCTAssertEqual(TrendChart.barWidthRatio(for: 4), 0.90)
-        XCTAssertEqual(TrendChart.barWidthRatio(for: 5), 0.80)
-        XCTAssertEqual(TrendChart.barWidthRatio(for: 7), 0.80)
-        XCTAssertEqual(TrendChart.barWidthRatio(for: 8), 0.70)
-        XCTAssertEqual(TrendChart.barWidthRatio(for: 12), 0.70)
-        XCTAssertEqual(TrendChart.barWidthRatio(for: 13), 0.60)
-        XCTAssertEqual(TrendChart.barWidthRatio(for: 24), 0.60)
-        XCTAssertEqual(TrendChart.barWidthRatio(for: 25), 0.50)
+    func testBarWidthSmall()  { XCTAssertEqual(TrendChart.barWidth(for: 7), 24) }
+    func testBarWidthMedium()  { XCTAssertEqual(TrendChart.barWidth(for: 12), 18) }
+    func testBarWidthLarge() { XCTAssertEqual(TrendChart.barWidth(for: 30), 14) }
+    func testBarWidthVeryLarge()  { XCTAssertEqual(TrendChart.barWidth(for: 100), 10) }
+    func testBarWidthBoundaries() {
+        XCTAssertEqual(TrendChart.barWidth(for: 1), 24)
+        XCTAssertEqual(TrendChart.barWidth(for: 7), 24)
+        XCTAssertEqual(TrendChart.barWidth(for: 8), 18)
+        XCTAssertEqual(TrendChart.barWidth(for: 20), 18)
+        XCTAssertEqual(TrendChart.barWidth(for: 21), 14)
+        XCTAssertEqual(TrendChart.barWidth(for: 50), 14)
+        XCTAssertEqual(TrendChart.barWidth(for: 51), 10)
     }
 
     // MARK: - visibleMetricTypes
