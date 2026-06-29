@@ -17,18 +17,18 @@ final class TrendsViewModelTests: XCTestCase {
 
     // MARK: - barWidth (adaptive)
 
-    func testBarWidthSmall()  { XCTAssertEqual(TrendChart.barWidth(for: 7), 24) }
+    func testBarWidthSmall()  { XCTAssertEqual(TrendChart.barWidth(for: 7), 28) }
     func testBarWidthMedium()  { XCTAssertEqual(TrendChart.barWidth(for: 12), 18) }
-    func testBarWidthLarge() { XCTAssertEqual(TrendChart.barWidth(for: 30), 14) }
-    func testBarWidthVeryLarge()  { XCTAssertEqual(TrendChart.barWidth(for: 100), 10) }
+    func testBarWidthLarge() { XCTAssertEqual(TrendChart.barWidth(for: 24), 8) }
+    func testBarWidthVeryLarge()  { XCTAssertEqual(TrendChart.barWidth(for: 100), 4) }
     func testBarWidthBoundaries() {
-        XCTAssertEqual(TrendChart.barWidth(for: 1), 24)
-        XCTAssertEqual(TrendChart.barWidth(for: 7), 24)
+        XCTAssertEqual(TrendChart.barWidth(for: 1), 28)
+        XCTAssertEqual(TrendChart.barWidth(for: 7), 28)
         XCTAssertEqual(TrendChart.barWidth(for: 8), 18)
-        XCTAssertEqual(TrendChart.barWidth(for: 20), 18)
-        XCTAssertEqual(TrendChart.barWidth(for: 21), 14)
-        XCTAssertEqual(TrendChart.barWidth(for: 50), 14)
-        XCTAssertEqual(TrendChart.barWidth(for: 51), 10)
+        XCTAssertEqual(TrendChart.barWidth(for: 12), 18)
+        XCTAssertEqual(TrendChart.barWidth(for: 13), 8)
+        XCTAssertEqual(TrendChart.barWidth(for: 24), 8)
+        XCTAssertEqual(TrendChart.barWidth(for: 25), 4)
     }
 
     // MARK: - visibleMetricTypes
