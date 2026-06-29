@@ -46,13 +46,11 @@ struct TrendsView: View {
                         ) { metricType in
 
                             TrendChart(
-                                dataPoints: viewModel.chartData(
-                                    for: metricType
-                                ),
+                                dataPoints: viewModel.chartData(for: metricType),
                                 barGradientStart: theme.chartBarGradientStart,
                                 barGradientEnd: theme.chartBarGradientEnd,
-                                title:
-                                "\(metricType.localizedName) — \(viewModel.selectedWindow.localizedName)"
+                                title: metricType.localizedName,
+                                timeWindow: viewModel.selectedWindow
                             )
                             .padding(.horizontal,12)
 
@@ -257,37 +255,15 @@ extension MetricType {
 
 extension TimeWindow: CaseIterable {
 
-    public static var allCases:[
-        TimeWindow
-    ] {
-        [
-            .day,
-            .week,
-            .month
-        ]
-    }
+    public static var allCases: [TimeWindow] { [.day, .week, .month, .year] }
 
-    var localizedName:String {
-
+    var localizedName: String {
         switch self {
-
-        case .day:
-            return loc(
-                L10n.Trends.daily
-            )
-
-        case .week:
-            return loc(
-                L10n.Trends.weekly
-            )
-
-        case .month:
-            return loc(
-                L10n.Trends.monthly
-            )
-
+        case .day:   return loc(L10n.Trends.daily)
+        case .week:  return loc(L10n.Trends.weekly)
+        case .month: return loc(L10n.Trends.monthly)
+        case .year:  return loc(L10n.Trends.yearly)
         }
-
     }
 
 }

@@ -118,47 +118,76 @@ final actor SyncEngine: SyncEngineProtocol {
 
     // MARK: - Mock Data (Alpha)
 
-    private func generateMockProfile() -> APIProfileResponse {
-        APIProfileResponse(
-            username: "demo_user",
-            displayName: "Demo User",
-            followersCount: Int.random(in: 500...5000),
-            followingCount: Int.random(in: 100...500),
-            mediaCount: Int.random(in: 20...200),
-            totalLikes: Int.random(in: 1000...50000),
-            totalComments: Int.random(in: 100...5000),
-            totalShares: Int.random(in: 50...2000),
-            totalViews: Int.random(in: 2000...100000),
-            engagementRate: Double.random(in: 0.01...0.15),
-            fetchedAt: Date()
-        )
-    }
-
+    /// 生成一整年逐日数据，每月趋势明显差异，便于年/月/周/日对比
     private func generateMockTrend() -> APITrendResponse {
         let calendar = Calendar.current
-        let days = 30
+        let days = 365
         var dataPoints: [APITrendDataPoint] = []
 
-        var followers = Double.random(in: 500...5000)
+        let startFollowers = Double.random(in: 1200...2500)
+        var followers = startFollowers
 
-        for i in 0..<days {
-            let date = calendar.date(byAdding: .day, value: -i, to: Date()) ?? Date()
-            let change = Double.random(in: -20...50)
-            followers += change
+        // 每月大致趋势：增长(+)、下降(-)、平稳(~)
+        let monthlyTrend: [Double] = [
+            3.5,    // Jan: 新年活动增长
+            5.0,    // Feb: 持续增长
+            -2.0,   // Mar: 小幅回调
+            1.0,    // Apr: 平稳
+            4.0,    // May: 春末增长
+            6.5,    // Jun: 夏初高峰
+            -3.0,   // Jul: 夏季低谷
+            -1.5,   // Aug: 持续低迷
+            2.5,    // Sep: 秋季回暖
+            5.5,    // Oct: 金秋增长
+            4.0,    // Nov: 节日季开始
+            7.0,    // Dec: 年底高峰
+        ]
 
-            dataPoints.append(APITrendDataPoint(
-                date: date,
-                followersCount: Int(max(0, followers)),
-                followingCount: Int.random(in: 100...500),
-                mediaCount: Int.random(in: 20...200),
-                engagementRate: Double.random(in: 0.01...0.15)
-            ))
+        var pointIndex = days - 1
+        for monthOffset in 0..<12 {
+            let monthStart = calendar.date(byAdding: .month, value: -monthOffset, to: Date()) ?? Date()
+            let daysInMonth = calendar.range(of: .day, in: .month, for: monthStart)?.count ?? 30
+            let baseTrend = monthlyTrend[11 - monthOffset]
+
+            for day in 0..<daysInMonth {
+                guard pointIndex >= 0 else { break }
+                let date = calendar.date(byAdding: .day, value: -pointIndex, to: Date()) ?? Date()
+                let dailyChange = baseTrend + Double.random(in: -8...12)
+                followers = max(200, followers + dailyChange)
+
+                let monthFactor = abs(baseTrend) / 7.0 + 0.5
+                let baseLikes = followers * (0.8 + monthFactor * 0.4)
+                let baseComments = followers * (0.05 + monthFactor * 0.03)
+
+                dataPoints.append(APITrendDataPoint(
+                    date: date,
+                    followersCount: Int(followers),
+                    followingCount: Int.random(in: 60...350),
+                    mediaCount: Int.random(in: 8...120),
+                    engagementRate: Double.random(in: 0.015...0.10) * (0.7 + monthFactor * 0.3)
+                ))
+                pointIndex -= 1
+            }
         }
 
-        return APITrendResponse(
+        return APITrendResponse(username: "demo_user", dataPoints: dataPoints, period: "year")
+    }
+
+    private func generateMockProfile() -> APIProfileResponse {
+        let followers = Int.random(in: 1200...2800)
+        let engagement = Double.random(in: 0.025...0.09)
+        return APIProfileResponse(
             username: "demo_user",
-            dataPoints: dataPoints,
-            period: "month"
+            displayName: "Demo User",
+            followersCount: followers,
+            followingCount: Int.random(in: 60...350),
+            mediaCount: Int.random(in: 8...120),
+            totalLikes: Int(followers) * Int(engagement * 150),
+            totalComments: Int(followers) * Int(engagement * 15),
+            totalShares: Int(followers) * Int(engagement * 8),
+            totalViews: Int(followers) * Int(engagement * 200),
+            engagementRate: engagement,
+            fetchedAt: Date()
         )
     }
 }

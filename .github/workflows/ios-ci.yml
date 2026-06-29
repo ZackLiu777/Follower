@@ -2,7 +2,7 @@ name: iOS CI
 
 on:
   pull_request:
-    branches: ["main", "gamma", "lambda"]
+    branches: ["main", "gamma", "lambda", "sigma"]
 
 jobs:
   unit-tests:

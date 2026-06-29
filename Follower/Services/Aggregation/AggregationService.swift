@@ -255,6 +255,33 @@ final class AggregationService: AggregationServiceProtocol {
             ])
         }
 
+        // Year metrics：按年聚合（全部 6 种 metricType）
+        var yearly: [Date: (fSum: Double, eSum: Double, lSum: Double, cSum: Double, sSum: Double, vSum: Double, count: Int)] = [:]
+        for snapshot in snapshots {
+            let yearStart = calendar.date(from: calendar.dateComponents([.year], from: snapshot.observedAt)) ?? snapshot.observedAt
+            let cur = yearly[yearStart] ?? (0, 0, 0, 0, 0, 0, 0)
+            yearly[yearStart] = (
+                cur.fSum + Double(snapshot.followersCount),
+                cur.eSum + snapshot.engagementRate,
+                cur.lSum + Double(snapshot.totalLikes),
+                cur.cSum + Double(snapshot.totalComments),
+                cur.sSum + Double(snapshot.totalShares),
+                cur.vSum + Double(snapshot.totalViews),
+                cur.count + 1
+            )
+        }
+        for (yearStart, v) in yearly where v.count > 0 {
+            let cnt = Double(v.count)
+            metrics.append(contentsOf: [
+                Metric(accountId: accountId, metricType: .followerGrowth, value: v.fSum / cnt, window: .year, observedAt: yearStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .engagementTrend, value: v.eSum / cnt, window: .year, observedAt: yearStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .averageLikes, value: v.lSum / cnt, window: .year, observedAt: yearStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .averageComments, value: v.cSum / cnt, window: .year, observedAt: yearStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .averageShares, value: v.sSum / cnt, window: .year, observedAt: yearStart, createdAt: Date()),
+                Metric(accountId: accountId, metricType: .profileViews, value: v.vSum / cnt, window: .year, observedAt: yearStart, createdAt: Date()),
+            ])
+        }
+
         return metrics
     }
 }
