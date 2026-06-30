@@ -63,6 +63,7 @@ enum L10n {
         static let daily = "trends.daily"
         static let weekly = "trends.weekly"
         static let monthly = "trends.monthly"
+        static let yearly = "trends.yearly"
         static let followers = "trends.followers"
         static let engagement = "trends.engagement"
         static let likes = "trends.likes"

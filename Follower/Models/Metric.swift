@@ -35,6 +35,7 @@ enum TimeWindow: String, Codable, DatabaseValueConvertible {
     case day
     case week
     case month
+    case year
 }
 
 // MARK: - Metric
