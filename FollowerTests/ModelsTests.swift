@@ -96,7 +96,7 @@ final class ModelsTests: XCTestCase {
     }
 
     func testTimeWindowAllCases() {
-        XCTAssertEqual(TimeWindow.allCases.count, 3)
+        XCTAssertEqual(TimeWindow.allCases.count, 4)
     }
 
     func testPremiumFeatureKeyAllCases() {

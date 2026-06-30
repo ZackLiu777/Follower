@@ -45,11 +45,44 @@
     "💡 %@" : {
 
     },
+    "%lld people this week" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld people this week" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "今週%lld人" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "本周%lld人" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "本週%lld人" } }
+      }
+    },
+    "~%lld next month" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "~%lld next month" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "来月約%lld" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "下月约%lld" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "下月約%lld" } }
+      }
+    },
     "📅 Wednesday 7 PM" : {
 
     },
+    "3-5 posts per week is optimal. Consistency matters more than volume." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "3-5 posts per week is optimal. Consistency matters more than volume." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "週3〜5回の投稿が最適です。量より継続が重要です。" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "每周3-5篇帖子最佳。持续性比数量更重要。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "每週3-5篇貼文最佳。持續性比數量更重要。" } }
+      }
+    },
     "7-Day Growth" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "7-Day Growth" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "7日間の成長" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "7日增长" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "7日成長" } }
+      }
     },
     "account.addAccount" : {
       "extractionState" : "manual",
@@ -579,8 +612,41 @@
     "Based on your 90-day growth trend, you're on track to reach ~%@ followers. Keep posting consistently to maintain this growth rate." : {
 
     },
+    "Engage Back" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Engage Back" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "エンゲージメント返し" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "互动回应" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "互動回應" } }
+      }
+    },
+    "Hashtag Strategy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hashtag Strategy" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ハッシュタグ戦略" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "标签策略" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "標籤策略" } }
+      }
+    },
+    "Post Frequency" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Post Frequency" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "投稿頻度" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "发布频率" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "發佈頻率" } }
+      }
+    },
     "Best Time to Post" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Best Time to Post" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "投稿のベストタイミング" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最佳发布时间" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "最佳發佈時間" } }
+      }
     },
     "Breakdown" : {
 
@@ -792,7 +858,13 @@
       }
     },
     "Content Strategy" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Content Strategy" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コンテンツ戦略" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "内容策略" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "內容策略" } }
+      }
     },
     "Daily Engagement" : {
 
@@ -1219,7 +1291,13 @@
 
     },
     "Follower Prediction" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Follower Prediction" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フォロワー予測" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "粉丝预测" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "粉絲預測" } }
+      }
     },
     "High" : {
 
@@ -1234,7 +1312,13 @@
 
     },
     "No posts yet. Sync to load content." : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No posts yet. Sync to load content." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "まだ投稿がありません。同期して読み込みます。" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无帖子，同步后加载内容。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "暫無帖子，同步後載入內容。" } }
+      }
     },
     "Post Detail" : {
 
@@ -1246,7 +1330,13 @@
 
     },
     "Premium Insights" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Premium Insights" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プレミアム分析" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "高级洞察" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "進階洞察" } }
+      }
     },
     "premium.benefit1" : {
       "extractionState" : "manual",
@@ -1716,7 +1806,13 @@
 
     },
     "Recent Content" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Recent Content" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最近のコンテンツ" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最近内容" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "最近內容" } }
+      }
     },
     "settings.appearance" : {
       "extractionState" : "manual",
@@ -1788,19 +1884,19 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "アカウント"
+            "value" : "ネイティブ"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "账号"
+            "value" : "原生"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "帳號"
+            "value" : "原生"
           }
         }
       }
@@ -3265,13 +3361,31 @@
 
     },
     "View All" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "View All" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべて表示" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "查看全部" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "查看全部" } }
+      }
     },
     "vs last 7 days" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "vs last 7 days" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "過去7日間比" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "较前7天" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "較前7天" } }
+      }
     },
     "Who Unfollowed You" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Who Unfollowed You" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "フォロー解除した人" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "谁取关了你" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "誰取消追蹤了你" } }
+      }
     },
     "Window" : {
 
