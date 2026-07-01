@@ -480,3 +480,252 @@ extension Calendar {
 ---
 
 **报告完。** 如需进一步细化某个章节或补充单元测试代码示例，请告知。
+
+---
+
+# Part Two — Sigma 迭代：Charts 渲染崩溃与混合架构演进
+
+> **日期**：2026-07-01 · **涉及轮次**：6 轮迭代 · **核心问题**：Charts 内部断言崩溃、窗口交叉污染、坐标系统不一致
+
+---
+
+## 8. 背景 / Background
+
+在完成 Gamma-2 迭代（LineMark → BarMark 迁移、4 窗口支持）后，柱状图在 iOS 27 / Xcode 26 beta 环境中暴露出系统性的渲染问题。本部分记录从"修补 Charts 参数"到"分离式混合架构"的完整演进过程。
+
+### 8.1 触发条件
+
+原有的 Charts 配置（`unit:` + `.ratio()` + `range: .plotDimension(padding: 0)`）在 iOS 27 beta 中可正常渲染，但存在柱子溢出域边界、首尾柱被裁切、Grid line 与柱子不对齐等视觉问题。任何试图修复这些问题的 API 参数调整都会触发 `ChartInternal.swift:170` 内部断言崩溃。
+
+---
+
+## 9. 核心 Bug #1：Charts API 三元组不可拆分
+
+### 9.1 现象
+
+尝试以下任一修改均导致即时崩溃（SIGTRAP）：
+
+| 尝试的修改 | 错误信息 |
+|-----------|---------|
+| 添加 `type: .category` 到 `chartXScale` | `scale type is incompatible with data values` |
+| 移除 `unit:` 参数 | 同上（内部断言） |
+| `.ratio()` → `.automatic` | 同上（内部断言） |
+| 移除 `range: .plotDimension(padding: 0)` | 同上（内部断言） |
+| 使用 `RuleMark` + `category` scale | `Double` 值与 category scale 类型冲突 |
+
+### 9.2 根因
+
+在 iOS 27 / Xcode 26 beta 的 Swift Charts 实现中，`unit:` + `.ratio()` + `range: .plotDimension(padding: 0)` 构成了一个**不可拆分的 API 契约三元组**：
+
+```
+BarMark(x:unit:) + width:ratio() + chartXScale(range:plotDimension(padding:0))
+     ↑                    ↑                        ↑
+  三者缺一不可，拆分任意一个 → ChartInternal.swift:170 断言失败
+```
+
+这是 iOS 27 beta 的 Swift Charts 内部实现限制，不是标准的 Swift Charts API 行为。推测 beta 版本的 Charts 在处理 BarMark 布局时，对这三个参数的组合有硬编码的预检查逻辑。
+
+### 9.3 结论
+
+**在当前 beta 环境（iOS 27 + Xcode 26）下，无法通过调参修复 Charts 的溢出/对齐问题**。任何参数调整都会触发崩溃，只能保持原有"能渲染但不完美"的配置，或绕过 Charts 框架。
+
+---
+
+## 10. 核心 Bug #2：四窗口共享配置导致的交叉污染
+
+### 10.1 现象
+
+```
+修复 Day → Week 溢出  →  Month 网格线错位
+修复 Month → 调 ratio →  Year 柱子变宽
+修复 Year  → 改 domain →  Day 标签消失
+```
+
+每次修复一个窗口的问题，都会在其他窗口制造新问题。
+
+### 10.2 根因
+
+四个窗口（Day / Week / Month / Year）共享同一个 `BarMark` 配置块和一个 `chartXScale(range:)` 配置。但四个窗口的数据特征完全不同：
+
+| 窗口 | 数据点数 | 数据间隔 | `unit:` | 适用策略 |
+|------|---------|---------|---------|---------|
+| Day | 24 | 均匀 (1h) | `.hour` | ratio 工作正常 |
+| Week | 7 | 均匀 (1d) | `.day` | `unit:` 偏移导致溢出 |
+| Month | 28-31 | 均匀 (1d) | `.day` | ratio 工作正常 |
+| Year | 12 | 不均匀 (28-31d) | `.month` | 月份长度差异导致对齐偏差 |
+
+共享的 `width: .ratio()` 在各窗口语义不同：
+- Day: `0.6 * 1 hour cell` ✓
+- Week: `0.7 * 1 day cell` → `unit: .day` 偏移半格 → ✗ 首尾溢出
+- Month: `0.6 * 1 day cell` ✓（数据充足时）
+- Year: `0.65 * ~30 day cell` → 视觉过宽
+
+### 10.3 解决方案：分离式设计
+
+将 `TrendChart` 重构为**四个独立实现的汇聚点**：
+
+```swift
+struct TrendChart {
+    var body: some View {
+        switch timeWindow {
+        case .day:   dayChart     // Charts: BarMark(unit: .hour,  ratio: 0.6)
+        case .week:  weekChart    // Pure SwiftUI: HStack + Path grid
+        case .month: monthChart   // Charts: BarMark(unit: .day,   ratio: 0.6)
+        case .year:  yearChart    // Charts: BarMark(unit: .month, ratio: 0.65)
+        }
+    }
+}
+```
+
+每个窗口拥有独立的 `Chart`（或 SwiftUI view）、独立的 `BarMark` 配置、独立的 domain 和 `AxisMarks`。共享的只有 Y 轴、渐变色和卡片 UI。
+
+---
+
+## 11. 核心 Bug #3：Week 视图的 Charts 不可用
+
+### 11.1 现象
+
+Week 视图（7 天）在 Charts 中始终存在柱子溢出的问题。尝试过的修复：
+
+| 尝试 | 参数 | 结果 |
+|------|------|------|
+| A | 保持 `ratio: 0.7` + `padding: 0` | 首尾柱被裁 |
+| B | `ratio: 0.5` + `padding: 0` | 仍溢出 |
+| C | `ratio: 0.5` + `startPadding: 0.25, endPadding: 0.25` | 仍然溢出 |
+| D | 扩展 domain ±12h + `ratio: 0.5` + `padding: 0` | 仍然溢出 |
+
+### 11.2 根因
+
+Week 窗口是唯一一个被 `unit: .day` 的偏移效应严重影响的窗口。具体原因：
+
+```
+柱子设计位置: 每天 12:00 (noon, cell 中心)
+unit: .day 效果: Charts 把柱子挪到 day-unit 的"中部" → 实际偏移 0.5 天
+偏移后: 周一柱子从 Mon 12:00 移到 Mon 00:00 ~ Tue 00:00 中间某处
+       周日柱子同理右移 → 首尾溢出域边界
+
+Day 视图不受影响: 24 个 cell 密集，unit: .hour 偏移仅 0.5h，margin 足够
+Month 视图不受影响: 数据充足时 cell 宽度小 (1/30)，0.5 day 偏移被吸收
+Year 视图不受影响: unit: .month 偏移 0.5 月，但只有 12 根柱子，域足够宽
+```
+
+### 11.3 解决方案：纯 SwiftUI Week 视图
+
+Week 是最简单的窗口（7 个等宽 cell），用纯 SwiftUI 实现零风险：
+
+```
+HStack(alignment: .bottom, spacing: 0) {
+    7 个 VStack { Spacer(); Rectangle() }  // 底部对齐
+}
++ ZStack overlay: Path 水平 4 条虚线 + 垂直 8 条虚线
++ Y 轴标签 VStack
++ X 轴星期缩写 HStack
+```
+
+**关键优势**：
+- 7 天等宽，无日历日期计算
+- 无 Charts API 依赖 → 零崩溃风险
+- `maxWidth: .infinity` 自动均分，无需 ratio 计算
+- Grid line 用 Path 精确控制，不依赖 AxisMarks
+
+---
+
+## 12. 核心技术决策 / Key Technical Decisions
+
+### 12.1 混合架构
+
+```
+TrendChart
+├── Day   → Charts (BarMark)      ← Charts 在此窗口正常工作
+├── Week  → Pure SwiftUI          ← Charts 在 Week 窗口有 bug，切换方案
+├── Month → Charts (BarMark)      ← Charts 在此窗口正常工作
+└── Year  → Charts (BarMark)      ← Charts 在此窗口正常工作
+```
+
+**原则**：不为框架 bug 牺牲整个页面的一致性。哪个窗口在 Charts 下工作正常，就保留 Charts；哪个窗口有问题，就切换到纯 SwiftUI。外层卡片 UI 保持统一。
+
+### 12.2 分离式数据流
+
+```
+TrendsViewModel.chartData(for:)
+    → Day:   hourlyData[type]     (24 点，实时生成)
+    → Week:  dailyMetrics → 自然周 7 点
+    → Month: monthlyMetrics → 月内所有点
+    → Year:  yearlyMetrics → 12 点
+         ↓
+TrendChart (dispatcher)
+    → dayChart   ← 独立 Chart + BarMark(.hour)
+    → weekChart  ← 独立 SwiftUI (HStack + Path)
+    → monthChart ← 独立 Chart + BarMark(.day)
+    → yearChart  ← 独立 Chart + BarMark(.month)
+```
+
+每个窗口的 ViewModel 数据输出和 View 渲染逻辑完全独立，互不依赖。
+
+### 12.3 诊断方法论
+
+通过本次迭代总结出的高效排查路径：
+
+1. **先定位崩溃层**：是 Charts 内部（断言/崩溃）还是布局层（对齐/溢出）？
+2. **再判断窗口独立性**：修改一个窗口是否影响其他窗口？→ 说明耦合需要分离
+3. **最后选择策略**：Charts 能工作 → 保持 Charts；Charts 有问题 → 纯 SwiftUI
+
+---
+
+## 13. 经验教训 / Lessons Learned
+
+### 13.1 Beta 框架的防御性编程
+
+iOS 27 beta 的 Swift Charts 存在未文档化的内部约束。当框架行为不符合预期时：
+
+1. **不要假设 API 是正交的** — `unit:` + `.ratio()` + `range:` 可能在内部耦合
+2. **保存能工作的"基线配置"** — 用 git tag 标记最后一个可渲染版本
+3. **遇到断言 → 立即换方案** — 不要在内部断言上反复调参
+
+### 13.2 分离优于统一
+
+初始设计倾向"一套配置适配所有窗口"。但实际上四个窗口的数据特征差异太大：
+
+- Day/Week: 等间距数据，适合 ratio + HStack
+- Month/Year: 日历依赖的数据，需要 date-fraction 定位
+
+**分离式设计虽然代码量更多，但能消除交叉污染，长期维护成本更低。**
+
+### 13.3 纯 SwiftUI 作为逃生舱
+
+当系统框架（Charts）表现不稳定时，完全有能力用纯 SwiftUI 独立实现图表。关键是保持视觉一致性：
+
+| 元素 | Charts 版本 | 纯 SwiftUI 版本 |
+|------|------------|----------------|
+| 柱子 | BarMark + LinearGradient | Rectangle + LinearGradient |
+| 水平网格 | AxisMarks + AxisGridLine | Path + StrokeStyle |
+| 垂直网格 | AxisMarks + AxisGridLine | Path + StrokeStyle |
+| X 轴标签 | AxisMarks + AxisValueLabel | Text + position |
+| Y 轴标签 | AxisMarks + AxisValueLabel | VStack + Text |
+
+---
+
+## 14. 最终架构总结
+
+```
+Follower/Features/Shared/TrendChart.swift
+├── struct TrendChart (dispatcher)
+│   ├── dayChart    → import Charts, BarMark(unit: .hour)
+│   ├── weekChart   → import SwiftUI, HStack + Path (0 Charts dependency)
+│   ├── monthChart  → import Charts, BarMark(unit: .day)
+│   ├── yearChart   → import Charts, BarMark(unit: .month)
+│   ├── sharedYAxis → @AxisContentBuilder (Charts Y axis shared)
+│   ├── formatY()   → 智能格式化 (1.2k, 3.4k)
+│   └── emptyState  → 通用空状态
+└── #Preview × 4    → Day / Week / Month / Year 独立预览
+```
+
+**关键指标**：
+- 崩溃风险：仅 Week 窗口零 Charts 依赖，Day/Month/Year 使用已验证可渲染的 Charts 配置
+- 交叉污染：零 — 每个窗口独立实现
+- 可维护性：修改单个窗口只需改动其对应方法，不影响其他窗口
+- 预览覆盖：4 个独立 Preview，开发时可同时对比
+
+---
+
+**报告完。**
