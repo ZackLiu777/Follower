@@ -8,33 +8,46 @@ import SwiftUI
 
 /// Premium 详情页：展示最近取关用户列表
 struct UnfollowListView: View {
+    @Environment(\.theme) private var theme
+
     /// 取关用户数据列表
     let followers: [MockFollower]
 
     /// 取关用户列表：头像圆圈 + 用户名 + 取关日期
     var body: some View {
-        List(followers) { f in
-            HStack {
-                // 头像圆圈（首字母 + 背景色）
-                ZStack {
-                    Circle().fill(Color(hex: f.avatarColor) ?? .gray).frame(width: 44, height: 44)
-                    Text(String(f.displayName.prefix(1))).font(.headline).foregroundColor(.white)
+        ZStack {
+            // Theme background gradient
+            LinearGradient(
+                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                startPoint: .top, endPoint: .bottom
+            ).ignoresSafeArea()
+
+            List(followers) { f in
+                HStack {
+                    // 头像圆圈（首字母 + 背景色）
+                    ZStack {
+                        Circle().fill(Color(hex: f.avatarColor) ?? .gray).frame(width: 44, height: 44)
+                        Text(String(f.displayName.prefix(1))).font(.headline).foregroundColor(.white)
+                    }
+                    // 用户名
+                    VStack(alignment: .leading) {
+                        Text(f.displayName).font(.subheadline).fontWeight(.medium)
+                        Text("@\(f.username)").font(.caption).foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    // 日期 + 取关标签
+                    VStack(alignment: .trailing) {
+                        Text(f.date.formatted(.dateTime.day().month(.abbreviated)))
+                            .font(.caption).foregroundColor(.secondary)
+                        Text("Unfollowed").font(.caption2).foregroundColor(theme.negativeRed)
+                    }
                 }
-                // 用户名
-                VStack(alignment: .leading) {
-                    Text(f.displayName).font(.subheadline).fontWeight(.medium)
-                    Text("@\(f.username)").font(.caption).foregroundColor(.secondary)
-                }
-                Spacer()
-                // 日期 + 取关标签
-                VStack(alignment: .trailing) {
-                    Text(f.date.formatted(.dateTime.day().month(.abbreviated)))
-                        .font(.caption).foregroundColor(.secondary)
-                    Text("Unfollowed").font(.caption2).foregroundColor(.red)
-                }
+                .padding(.vertical, 4)
+                .listRowBackground(Color.clear)
             }
-            .padding(.vertical, 4)
+            .scrollContentBackground(.hidden)
         }
-        .navigationTitle("Who Unfollowed You")
+        .navigationTitle(loc(L10n.Premium.whoUnfollowedYou))
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

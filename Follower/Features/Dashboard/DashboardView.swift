@@ -122,17 +122,17 @@ struct DashboardView: View {
     private var postSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text("Recent Content").font(.headline)
+                Text(loc(L10n.Dashboard.recentContent)).font(.headline)
                 Spacer()
                 if !viewModel.recentPosts.isEmpty {
-                    NavigationLink("View All") { PostListView(posts: MockPostGenerator().generate(count: 20)) }
+                    NavigationLink(loc(L10n.Dashboard.viewAll)) { PostListView(posts: MockPostGenerator().generate(count: 20)) }
                         .font(.subheadline)
                 }
             }
             .padding(.horizontal)
 
             if viewModel.recentPosts.isEmpty {
-                Text("No posts yet. Sync to load content.").font(.caption).foregroundColor(.secondary).padding(.horizontal)
+                Text(loc(L10n.Dashboard.noPostsHint)).font(.caption).foregroundColor(.secondary).padding(.horizontal)
             } else {
                 VStack(spacing: 0) {
                     ForEach(viewModel.recentPosts) { post in
@@ -155,32 +155,76 @@ struct DashboardView: View {
 
     // MARK: - Premium
 
-    /// Premium Insights 区域：解锁后显示可导航详情行，锁定状态显示锁 + 升级入口
+    /// Premium Insights 区域 — 解锁后展示全部 9 张分析卡片，锁定状态仅显示锁+升级入口
     private var premiumSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "crown.fill").foregroundColor(.orange).font(.caption)
-                Text("Premium Insights").font(.headline)
+                Text(loc(L10n.Premium.premiumInsights)).font(.headline)
                 Spacer()
             }
             .padding(.horizontal)
 
             if appState.premiumEnabledFlags[PremiumFeatureKey.trendPrediction.rawValue] == true {
-                // 解锁后：可点击的详情 NavigationLink
                 VStack(spacing: 6) {
-                    premiumNavRow(icon: "person.2.slash", title: "Who Unfollowed You", value: "\(viewModel.unfollowList.count) people this week", destination: UnfollowListView(followers: viewModel.unfollowList))
-                    premiumNavRow(icon: "clock", title: "Best Time to Post", value: viewModel.bestPostingTime, destination: BestTimeView())
-                    premiumNavRow(icon: "lightbulb", title: "Content Strategy", value: viewModel.contentTip, destination: ContentStrategyView(tip: viewModel.contentTip))
-                    premiumNavRow(icon: "chart.line.uptrend.xy", title: "Follower Prediction", value: "~\(viewModel.predictedFollowers) next month", destination: PredictionDetailView(predicted: viewModel.predictedFollowers))
+                    // 1. Follower Prediction — 粉丝预测
+                    premiumNavRow(icon: "chart.line.uptrend.xy", title: loc(L10n.Premium.followerPrediction),
+                        value: viewModel.predictionResult.map { "~\(Int($0.predictedValue)) \(loc(L10n.Premium.in30Days))" } ?? loc(L10n.Premium.analyzing),
+                        destination: PredictionDetailView(predicted: viewModel.predictedFollowers))
+
+                    // 2. Activity Analysis — 活跃度分析
+                    premiumNavRow(icon: "bolt.fill", title: loc(L10n.Premium.activityAnalysis),
+                        value: viewModel.activityResult.map { "\($0.label) · \($0.activeDays)/\($0.totalDays) \(loc(L10n.Premium.daysActive))" } ?? loc(L10n.Premium.analyzing),
+                        destination: ActivityDetailView(result: viewModel.activityResult))
+
+                    // 3. Engagement Quality — 互动质量评分
+                    premiumNavRow(icon: "star.fill", title: loc(L10n.Premium.engagementQuality),
+                        value: viewModel.qualityScore.map { "Score: \(String(format: "%.1f", $0.score)) — \($0.label)" } ?? loc(L10n.Premium.analyzing),
+                        destination: QualityDetailView(result: viewModel.qualityScore))
+
+                    // 4. Retention & Churn — 留存与流失
+                    premiumNavRow(icon: "person.2.fill", title: loc(L10n.Premium.retentionChurn),
+                        value: viewModel.retentionResult.map { "Growth: \(String(format: "%+.1f%%", $0.netGrowthRate)) · Risk: \($0.churnRiskLevel)" } ?? loc(L10n.Premium.analyzing),
+                        destination: RetentionDetailView(result: viewModel.retentionResult))
+
+                    // 5. Geo Distribution — 粉丝地域分布
+                    premiumNavRow(icon: "globe.asia.australia.fill", title: loc(L10n.Premium.geoDistribution),
+                        value: viewModel.geoDistribution.map { "\($0.regions.prefix(2).map(\.name).joined(separator: ", "))" } ?? loc(L10n.Premium.analyzing),
+                        destination: GeoDetailView(result: viewModel.geoDistribution))
+
+                    // 6. Long-term Comparison — 长期趋势对比
+                    premiumNavRow(icon: "arrow.left.arrow.right", title: loc(L10n.Premium.longTermComparison),
+                        value: viewModel.comparisonResult.map { "\($0.direction.rawValue) · \(String(format: "%+.2f", $0.absoluteChange))" } ?? loc(L10n.Premium.analyzing),
+                        destination: ComparisonDetailView(result: viewModel.comparisonResult))
+
+                    // 7. Unfollow List — 取关列表
+                    premiumNavRow(icon: "person.2.slash", title: loc(L10n.Premium.whoUnfollowedYou),
+                        value: "\(viewModel.unfollowList.count) \(loc(L10n.Premium.peopleThisWeek))",
+                        destination: UnfollowListView(followers: viewModel.unfollowList))
+
+                    // 8. Best Time to Post — 最佳发帖时间
+                    premiumNavRow(icon: "clock", title: loc(L10n.Premium.bestTimeToPost),
+                        value: viewModel.activityResult?.mostActiveDay != nil ? "\(loc(L10n.Premium.mostActiveDay)) \(viewModel.activityResult!.mostActiveDay!)" : viewModel.bestPostingTime,
+                        destination: BestTimeView())
+
+                    // 9. Content Strategy — 内容策略
+                    premiumNavRow(icon: "lightbulb", title: loc(L10n.Premium.contentStrategy),
+                        value: viewModel.aiSummary.isEmpty ? viewModel.contentTip : viewModel.aiSummary,
+                        destination: ContentStrategyView(tip: viewModel.contentTip))
                 }
                 .padding(.horizontal)
             } else {
-                // 锁定：显示锁 + 点击弹出升级
+                // 锁定状态 — 9 行全部加锁
                 VStack(spacing: 6) {
-                    lockedRow(icon: "person.2.slash", title: "Who Unfollowed You")
-                    lockedRow(icon: "clock", title: "Best Time to Post")
-                    lockedRow(icon: "lightbulb", title: "Content Strategy")
-                    lockedRow(icon: "chart.line.uptrend.xy", title: "Follower Prediction")
+                    lockedRow(icon: "chart.line.uptrend.xy", title: loc(L10n.Premium.followerPrediction))
+                    lockedRow(icon: "bolt.fill", title: loc(L10n.Premium.activityAnalysis))
+                    lockedRow(icon: "star.fill", title: loc(L10n.Premium.engagementQuality))
+                    lockedRow(icon: "person.2.fill", title: loc(L10n.Premium.retentionChurn))
+                    lockedRow(icon: "globe.asia.australia.fill", title: loc(L10n.Premium.geoDistribution))
+                    lockedRow(icon: "arrow.left.arrow.right", title: loc(L10n.Premium.longTermComparison))
+                    lockedRow(icon: "person.2.slash", title: loc(L10n.Premium.whoUnfollowedYou))
+                    lockedRow(icon: "clock", title: loc(L10n.Premium.bestTimeToPost))
+                    lockedRow(icon: "lightbulb", title: loc(L10n.Premium.contentStrategy))
                 }
                 .padding(.horizontal)
                 .premiumGate(feature: .trendPrediction)
@@ -189,32 +233,32 @@ struct DashboardView: View {
         .padding(.vertical, 8)
     }
 
-    /// Premium 已解锁：可点击导航到对应详情页的行视图
+    /// Premium 已解锁 — 可点击导航到对应详情页的行视图
     private func premiumNavRow<D: View>(icon: String, title: String, value: String, destination: D) -> some View {
         NavigationLink(destination: destination) {
             HStack {
-                Image(systemName: icon).frame(width: 24).foregroundColor(.orange)
+                Image(systemName: icon).frame(width: 24).foregroundColor(theme.accentPrimary)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.subheadline).fontWeight(.medium)
-                    Text(value).font(.caption).foregroundColor(.secondary)
+                    Text(title).font(.subheadline).fontWeight(.medium).foregroundColor(theme.textPrimary)
+                    Text(value).font(.caption).foregroundColor(theme.textSecondary).lineLimit(1)
                 }
                 Spacer()
-                Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary)
+                Image(systemName: "chevron.right").font(.caption).foregroundColor(theme.textSecondary)
             }
             .padding(10)
-            .background(Color.orange.opacity(0.05))
+            .background(theme.accentPrimary.opacity(0.06))
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
     }
 
-    /// Premium 锁定行：仅显示标题与锁图标，点击触发升级弹窗
+    /// Premium 锁定行 — 仅显示标题与锁图标，点击触发升级弹窗
     private func lockedRow(icon: String, title: String) -> some View {
         HStack {
-            Image(systemName: icon).frame(width: 24).foregroundColor(.orange)
-            Text(title).font(.subheadline).fontWeight(.medium).foregroundColor(.secondary)
+            Image(systemName: icon).frame(width: 24).foregroundColor(theme.accentPrimary)
+            Text(title).font(.subheadline).fontWeight(.medium).foregroundColor(theme.textSecondary)
             Spacer()
-            Image(systemName: "lock.fill").font(.caption).foregroundColor(.secondary)
+            Image(systemName: "lock.fill").font(.caption).foregroundColor(theme.textSecondary)
         }
         .padding(10)
         .background(Color.orange.opacity(0.05))

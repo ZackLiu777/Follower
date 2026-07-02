@@ -46,12 +46,18 @@ struct SplashView: View {
             .opacity(opacity)
         }
         .onAppear {
+            // 入场动画 — 缩放 + 淡入
             withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
                 opacity = 1
                 scale = 1
             }
+            // 2 秒后触发退出 — 先缩小再回调，父级 .transition(.opacity) 接管淡出
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                withAnimation(.easeOut(duration: 0.4)) {
+                withAnimation(.easeIn(duration: 0.25)) {
+                    scale = 0.95
+                    opacity = 0.5
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                     onComplete()
                 }
             }

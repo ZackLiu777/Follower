@@ -7,16 +7,19 @@
 import XCTest
 @testable import Follower
 
+/// Unit tests for localization system — covers language switching, translation lookup, and L10n key coverage
 final class LocalizationTests: XCTestCase {
 
     // MARK: - Language Enum
 
+    /// 所有语言 → displayName 均非空
     func testAllLanguagesHaveDisplayNames() {
         for lang in AppLanguage.allCases {
             XCTAssertFalse(lang.displayName.isEmpty)
         }
     }
 
+    /// 语言切换持久化 → 读写往返一致
     func testLanguagePersistenceRoundTrip() {
         let store = LanguageStore.shared
         let original = store.current
@@ -33,6 +36,7 @@ final class LocalizationTests: XCTestCase {
 
     // MARK: - Translation
 
+    /// 翻译查找 → 所有测试 key 均返回非空且不等同自身
     func testTranslationReturnsNonEmptyForAllKeys() {
         let store = LanguageStore.shared
         let testKeys = [
@@ -51,6 +55,7 @@ final class LocalizationTests: XCTestCase {
         }
     }
 
+    /// 回退英文 → 已知 key 可正确翻译
     func testTranslationFallsBackToEnglish() {
         let store = LanguageStore.shared
 
@@ -62,6 +67,7 @@ final class LocalizationTests: XCTestCase {
 
     // MARK: - L10n Key Coverage
 
+    /// L10n key 覆盖 → 80+ 个 key 均有正确的 dot 分隔符且无空格
     func testAllL10nKeysAreValid() {
         // 确保所有 key 都前缀正确，没有拼写错误
         let allKeys: [String] = [
@@ -105,6 +111,7 @@ final class LocalizationTests: XCTestCase {
 
     // MARK: - Language Switching
 
+    /// 切换语言 → Dashboard 的英/中文翻译不同
     func testSwitchLanguageUpdatesLocalizedStrings() {
         let store = LanguageStore.shared
         let original = store.current

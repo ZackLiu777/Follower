@@ -46,6 +46,8 @@ jobs:
             -only-testing:FollowerTests/GammaServicesTests \
             -only-testing:FollowerTests/LambdaTests \
             -only-testing:FollowerTests/PremiumSyncTests \
+            -only-testing:FollowerTests/PremiumServicesTests \
+            -only-testing:FollowerTests/PremiumViewModelTests \
             -only-testing:FollowerTests/FollowerTests \
             -derivedDataPath /tmp/FollowerDD CODE_SIGNING_ALLOWED=NO
 

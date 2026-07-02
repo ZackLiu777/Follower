@@ -34,7 +34,15 @@ private struct ContentViewInner: View {
         _dashboardVM = StateObject(wrappedValue: DashboardViewModel(
             snapshotRepo: container.snapshotRepository,
             accountRepo: container.accountRepository,
-            syncEngine: container.syncEngine
+            syncEngine: container.syncEngine,
+            eventRepo: container.eventRepository,
+            predictionService: container.predictionService,
+            activityService: container.activityAnalysisService,
+            retentionService: container.retentionAnalysisService,
+            scoringService: container.scoringService,
+            geoService: container.geoDistributionService,
+            comparisonService: container.comparisonService,
+            aiService: container.aiAnalysisService
         ))
         _trendsVM = StateObject(wrappedValue: TrendsViewModel(
             snapshotRepo: container.snapshotRepository,

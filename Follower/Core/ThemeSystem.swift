@@ -71,33 +71,43 @@ struct Theme: Sendable {
         displayName: "Apple Native", liquidGlassEnabled: true, isDark: false
     )
 
-    // MARK: - Instagram（暖玫瑰 → 柔桃色）
+    // MARK: - Instagram（亮珊瑚暖橘渐变 → 高级光影白紫）
 
+    /// Instagram 品牌灵感 — 暖珊瑚橘向明亮柔紫过渡，与玫瑰金的粉藕色调拉开差距
     static let instagram = Theme(
         backgroundPrimary: Color(.systemBackground),
         backgroundSecondary: Color(.secondarySystemBackground),
         backgroundGrouped: Color(.systemGroupedBackground),
-        backgroundGradientStart: Color(red: 0.99, green: 0.90, blue: 0.93),
-        backgroundGradientEnd: Color(red: 0.99, green: 0.96, blue: 0.94),
-        cardSurface: Color(red: 0.99, green: 0.90, blue: 0.93).opacity(0.55),
-        cardElevated: Color(red: 0.99, green: 0.90, blue: 0.93).opacity(0.80),
-        textPrimary: Color(red: 0.15, green: 0.05, blue: 0.10), textSecondary: Color(red: 0.50, green: 0.25, blue: 0.35),
-        textTertiary: Color(red: 0.70, green: 0.45, blue: 0.55), textInverted: .white,
-        accentPrimary: Color(red: 0.88, green: 0.15, blue: 0.45), accentSecondary: Color(red: 0.98, green: 0.50, blue: 0.28),
-        positiveGreen: Color(red: 0.20, green: 0.75, blue: 0.30), negativeRed: Color(red: 0.92, green: 0.20, blue: 0.15),
-        warningOrange: Color(red: 0.98, green: 0.50, blue: 0.28),
-        chartLine: Color(red: 0.88, green: 0.15, blue: 0.45),
-        chartArea: Color(red: 0.88, green: 0.15, blue: 0.45).opacity(0.15),
-        chartGrid: Color(red: 0.90, green: 0.80, blue: 0.85),
-        chartBarGradientStart: Color(red: 0.98, green: 0.50, blue: 0.28),
-        chartBarGradientEnd: Color(red: 0.88, green: 0.15, blue: 0.45),
-        badgePremiumStart: Color(red: 0.98, green: 0.50, blue: 0.28),
-        badgePremiumEnd: Color(red: 0.88, green: 0.15, blue: 0.45),
-        badgeTrial: Color(red: 0.98, green: 0.50, blue: 0.28), badgeLocked: Color(.systemGray3),
-        buttonPrimaryBg: Color(red: 0.88, green: 0.15, blue: 0.45), buttonDestructiveBg: .red,
+        // 背景渐变：亮珊瑚暖橘 → 柔紫白光（高级光影效果，温暖不腻）
+        backgroundGradientStart: Color(red: 1.00, green: 0.89, blue: 0.82),
+        backgroundGradientEnd: Color(red: 0.97, green: 0.93, blue: 1.00),
+        cardSurface: Color(red: 1.00, green: 0.89, blue: 0.82).opacity(0.48),
+        cardElevated: Color(red: 1.00, green: 0.89, blue: 0.82).opacity(0.75),
+        textPrimary: Color(red: 0.18, green: 0.06, blue: 0.04),
+        textSecondary: Color(red: 0.50, green: 0.22, blue: 0.18),
+        textTertiary: Color(red: 0.68, green: 0.42, blue: 0.38), textInverted: .white,
+        // Instagram 经典渐变：橙 → 粉
+        accentPrimary: Color(red: 0.96, green: 0.33, blue: 0.16),
+        accentSecondary: Color(red: 0.87, green: 0.15, blue: 0.48),
+        positiveGreen: Color(red: 0.20, green: 0.75, blue: 0.30),
+        negativeRed: Color(red: 0.92, green: 0.22, blue: 0.18),
+        warningOrange: Color(red: 0.96, green: 0.33, blue: 0.16),
+        chartLine: Color(red: 0.87, green: 0.15, blue: 0.48),
+        chartArea: Color(red: 0.87, green: 0.15, blue: 0.48).opacity(0.12),
+        chartGrid: Color(red: 0.94, green: 0.84, blue: 0.82),
+        // 柱状图：Instagram 橙 → 粉渐变
+        chartBarGradientStart: Color(red: 0.96, green: 0.33, blue: 0.16),
+        chartBarGradientEnd: Color(red: 0.87, green: 0.15, blue: 0.48),
+        badgePremiumStart: Color(red: 0.96, green: 0.33, blue: 0.16),
+        badgePremiumEnd: Color(red: 0.87, green: 0.15, blue: 0.48),
+        badgeTrial: Color(red: 0.96, green: 0.33, blue: 0.16),
+        badgeLocked: Color(.systemGray3),
+        buttonPrimaryBg: Color(red: 0.87, green: 0.15, blue: 0.48),
+        buttonDestructiveBg: .red,
         buttonDisabledFg: Color(.systemGray3),
-        divider: Color(red: 0.90, green: 0.80, blue: 0.85),
-        navigationBg: Color(.systemBackground), emptyStateIcon: Color(red: 0.70, green: 0.45, blue: 0.55),
+        divider: Color(red: 0.94, green: 0.84, blue: 0.82),
+        navigationBg: Color(.systemBackground),
+        emptyStateIcon: Color(red: 0.68, green: 0.42, blue: 0.38),
         displayName: "Instagram", liquidGlassEnabled: true, isDark: false
     )
 

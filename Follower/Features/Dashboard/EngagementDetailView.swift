@@ -9,6 +9,8 @@ import Charts
 
 /// 互动详情页：展示互动率 Hero 数字、维度分解条、每日互动柱状图
 struct EngagementDetailView: View {
+    @Environment(\.theme) private var theme
+
     /// 总互动率
     let engagementRate: Double
     /// 点赞数
@@ -22,46 +24,55 @@ struct EngagementDetailView: View {
 
     /// 互动率 Hero + 维度分解 + 每日柱状图 UI
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Rate hero 卡片
-                VStack(spacing: 4) {
-                    Text(String(format: "%.1f%%", engagementRate * 100))
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                    Text("Engagement Rate").font(.subheadline).foregroundColor(.secondary)
-                }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(.regularMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                .padding(.horizontal)
+        ZStack {
+            // Theme background gradient
+            LinearGradient(
+                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                startPoint: .top, endPoint: .bottom
+            ).ignoresSafeArea()
 
-                // Breakdown 分解条
-                VStack(spacing: 12) {
-                    Text("Breakdown").font(.headline)
-                    engagementBar(label: "Likes", value: likes, total: views, color: .pink)
-                    engagementBar(label: "Comments", value: comments, total: views, color: .blue)
-                    engagementBar(label: "Shares", value: shares, total: views, color: .teal)
-                }
-                .padding()
-                .background(.regularMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .padding(.horizontal)
-
-                // Mock 每日互动柱状图
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Daily Engagement").font(.headline).padding(.horizontal)
-                    Chart {
-                        ForEach(Array(MockEngagementGenerator.daily().enumerated()), id: \.0) { i, val in
-                            BarMark(x: .value("", i), y: .value("", val))
-                                .foregroundStyle(.pink.opacity(0.6))
-                        }
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Rate hero 卡片
+                    VStack(spacing: 4) {
+                        Text(String(format: "%.1f%%", engagementRate * 100))
+                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                        Text("Engagement Rate").font(.subheadline).foregroundColor(.secondary)
                     }
-                    .frame(height: 160)
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(.regularMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
                     .padding(.horizontal)
+
+                    // Breakdown 分解条
+                    VStack(spacing: 12) {
+                        Text("Breakdown").font(.headline)
+                        engagementBar(label: "Likes", value: likes, total: views, color: theme.accentPrimary)
+                        engagementBar(label: "Comments", value: comments, total: views, color: theme.positiveGreen)
+                        engagementBar(label: "Shares", value: shares, total: views, color: theme.chartLine)
+                    }
+                    .padding()
+                    .background(.regularMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .padding(.horizontal)
+
+                    // Mock 每日互动柱状图
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Daily Engagement").font(.headline).padding(.horizontal)
+                        Chart {
+                            ForEach(Array(MockEngagementGenerator.daily().enumerated()), id: \.0) { i, val in
+                                BarMark(x: .value("", i), y: .value("", val))
+                                    .foregroundStyle(theme.accentPrimary.opacity(0.6))
+                            }
+                        }
+                        .frame(height: 160)
+                        .padding(.horizontal)
+                    }
                 }
+                .padding(.vertical)
             }
-            .padding(.vertical)
+            .scrollContentBackground(.hidden)
         }
         .navigationTitle("Engagement")
         .navigationBarTitleDisplayMode(.inline)

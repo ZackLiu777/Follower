@@ -7,16 +7,19 @@
 
 import XCTest
 
+/// UI tests for App launch — covers launch screenshot capture
 final class FollowerUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true
     }
 
+    /// 测试准备 — 设置 continueAfterFailure = false
     override func setUpWithError() throws {
         continueAfterFailure = false
     }
 
+    /// App 启动截图 → 使用 UI_TEST 参数启动并保存启动截图
     @MainActor
     func testLaunch() throws {
         let app = XCUIApplication()

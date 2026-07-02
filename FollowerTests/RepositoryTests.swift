@@ -7,6 +7,7 @@
 import XCTest
 @testable import Follower
 
+/// Unit tests for Repository layer — covers Account, Event, Snapshot, Metric, and PremiumFeature repositories
 final class RepositoryTests: XCTestCase {
     var db: DatabaseManager!
     var accountRepo: AccountRepository!
@@ -15,6 +16,7 @@ final class RepositoryTests: XCTestCase {
     var metricRepo: MetricRepository!
     var premiumRepo: PremiumFeatureRepository!
 
+    /// 测试准备 — 配置数据库和仓库实例
     override func setUp() async throws {
         db = DatabaseManager.shared
         accountRepo = AccountRepository(db: db)
@@ -26,6 +28,7 @@ final class RepositoryTests: XCTestCase {
 
     // MARK: - Account Repository
 
+    /// 插入 Account 后按 ID 查询 → 返回的 username 匹配
     func testAccountInsertAndFetch() async throws {
         let account = Account(platform: .instagram, username: "u1_\(UUID())", displayName: "U1", authState: .authorized, createdAt: Date(), updatedAt: Date())
         let saved = try await accountRepo.insert(account)
@@ -34,6 +37,7 @@ final class RepositoryTests: XCTestCase {
         XCTAssertEqual(fetched?.username, account.username)
     }
 
+    /// 插入 Account → count 自增 1
     func testAccountCount() async throws {
         let before = try await accountRepo.count()
         let a = Account(platform: .instagram, username: "ct_\(UUID())", displayName: "C", authState: .authorized, createdAt: Date(), updatedAt: Date())
@@ -42,6 +46,7 @@ final class RepositoryTests: XCTestCase {
         XCTAssertEqual(after, before + 1)
     }
 
+    /// 删除 Account → fetch 返回 nil
     func testAccountDelete() async throws {
         let a = Account(platform: .instagram, username: "del2_\(UUID())", displayName: "D", authState: .authorized, createdAt: Date(), updatedAt: Date())
         let saved = try await accountRepo.insert(a)
@@ -53,6 +58,7 @@ final class RepositoryTests: XCTestCase {
 
     // MARK: - Event Repository
 
+    /// 插入单个 Event → saved.id 不为 nil
     func testEventInsert() async throws {
         let accountId = try await createAccount()
         let event = Event(accountId: accountId, eventType: .profileSnapshot, payload: Data("p".utf8), source: .api, observedAt: Date(), createdAt: Date())
@@ -60,6 +66,7 @@ final class RepositoryTests: XCTestCase {
         XCTAssertNotNil(saved.id)
     }
 
+    /// 批量插入 5 个 Event → 返回 count 为 5
     func testEventBatchInsert() async throws {
         let accountId = try await createAccount()
         let events = (0..<5).map { _ in
@@ -69,6 +76,7 @@ final class RepositoryTests: XCTestCase {
         XCTAssertEqual(saved.count, 5)
     }
 
+    /// 按类型查询 Event → 仅返回匹配类型的记录
     func testEventFetchByType() async throws {
         let accountId = try await createAccount()
         let e1 = Event(accountId: accountId, eventType: .profileSnapshot, payload: Data("a".utf8), source: .api, observedAt: Date(), createdAt: Date())
@@ -80,6 +88,7 @@ final class RepositoryTests: XCTestCase {
 
     // MARK: - Snapshot Repository
 
+    /// Upsert 相同 day 的 Snapshot → id 不变且最新数据覆盖
     func testSnapshotUpsertReplacesExisting() async throws {
         let accountId = try await createAccount()
         let day = Calendar.current.startOfDay(for: Date())
@@ -95,6 +104,7 @@ final class RepositoryTests: XCTestCase {
 
     // MARK: - Metric Repository
 
+    /// Upsert 相同 metric → id 不变且 value 更新
     func testMetricUpsertReplacesExisting() async throws {
         let accountId = try await createAccount()
         let day = Calendar.current.startOfDay(for: Date())
@@ -107,6 +117,7 @@ final class RepositoryTests: XCTestCase {
 
     // MARK: - Premium Feature Repository
 
+    /// 设置 Premium 开关 → isEnabled 反映最新状态
     func testPremiumFeatureIsEnabled() async throws {
         try await premiumRepo.setEnabled(true, for: .trendPrediction)
         let enabled = try await premiumRepo.isEnabled(key: .trendPrediction)
@@ -116,6 +127,7 @@ final class RepositoryTests: XCTestCase {
         XCTAssertFalse(disabled)
     }
 
+    /// Premium 已过期 → isEnabled 返回 false
     func testPremiumFeatureExpiry() async throws {
         try await premiumRepo.setEnabled(true, expiresAt: Date().addingTimeInterval(-1), for: .csvExport)
         let enabled = try await premiumRepo.isEnabled(key: .csvExport)
@@ -124,6 +136,7 @@ final class RepositoryTests: XCTestCase {
 
     // MARK: - Helper
 
+    /// 创建测试用 Account，预填充默认值
     private func createAccount() async throws -> Int64 {
         let a = Account(platform: .instagram, username: "repo_\(UUID())", displayName: "R", authState: .authorized, createdAt: Date(), updatedAt: Date())
         let saved = try await accountRepo.insert(a)

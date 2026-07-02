@@ -34,8 +34,12 @@ struct FollowerApp: App {
                     .task { await appState.container.trialManager.startTrialIfNeeded() }
 
                 if showSplash && !skipSplash {
-                    SplashView { showSplash = false }
-                        .transition(.opacity)
+                    SplashView {
+                        withAnimation(.easeOut(duration: 0.6)) {
+                            showSplash = false
+                        }
+                    }
+                    .transition(.opacity)
                 }
             }
             .preferredColorScheme(appState.currentTheme.theme.isDark ? .dark : .light)

@@ -7,11 +7,13 @@
 import XCTest
 @testable import Follower
 
+/// Unit tests for AccountViewModel — covers account creation without SyncEngine, revoke, delete, and validation
 final class AccountViewModelTests: XCTestCase {
     var db: DatabaseManager!
     var accountRepo: AccountRepository!
     var eventRepo: EventRepository!
 
+    /// 测试准备 — 配置数据库和仓库实例
     override func setUp() async throws {
         db = DatabaseManager.shared
         accountRepo = AccountRepository(db: db)
@@ -20,8 +22,8 @@ final class AccountViewModelTests: XCTestCase {
 
     // MARK: - Account Creation (without sync)
 
+    /// 无 SyncEngine 创建账号 → 返回有效 id（Beta-2.0.1 修复验证）
     func testAddAccountCreatesRecordWithoutSync() async throws {
-        // 模拟没有 SyncEngine 的创建（Beta-2.0.1 修复）
         let account = Account(
             platform: .instagram,
             username: "vm_test_\(UUID())",
@@ -34,6 +36,7 @@ final class AccountViewModelTests: XCTestCase {
         XCTAssertNotNil(saved.id, "Account creation should return an id")
     }
 
+    /// 插入新账号 → 列表计数 +1
     func testAddAccountShowsInList() async throws {
         let before = try await accountRepo.count()
         let account = Account(
@@ -51,6 +54,7 @@ final class AccountViewModelTests: XCTestCase {
 
     // MARK: - Revoke
 
+    /// 将已授权账号标记为 revoked → authState 更新为 .revoked
     func testRevokeChangesAuthState() async throws {
         let account = Account(
             platform: .instagram,
@@ -77,6 +81,7 @@ final class AccountViewModelTests: XCTestCase {
 
     // MARK: - Delete
 
+    /// 删除已存在账号 → fetch 返回 nil
     func testDeleteRemovesAccount() async throws {
         let account = Account(
             platform: .instagram,
@@ -96,6 +101,7 @@ final class AccountViewModelTests: XCTestCase {
 
     // MARK: - Validation
 
+    /// 空 username 和空 displayName → 验证拦截逻辑生效
     func testEmptyUsernameShouldFailValidation() {
         // addAccount 应在 username/displayName 为空时返回错误
         // 这个逻辑在 AccountViewModel 中，通过 guard 检查

@@ -4,9 +4,11 @@
 
 import XCTest
 
+/// UI tests for Settings — covers tab existence and cross-tab navigation stability
 final class SettingsUITests: XCTestCase {
     var app: XCUIApplication!
 
+    /// 测试准备 — 配置 UI_TEST 参数并启动 App
     override func setUp() {
         continueAfterFailure = false
         app = XCUIApplication()
@@ -14,6 +16,7 @@ final class SettingsUITests: XCTestCase {
         app.launch()
     }
 
+    /// Settings Tab 存在 → 点击最后一个 Tab 应渲染内容
     func testSettingsTabExists() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
         let tabs = app.tabBars.buttons
@@ -27,6 +30,7 @@ final class SettingsUITests: XCTestCase {
         XCTAssertTrue(app.tables.firstMatch.exists || app.scrollViews.firstMatch.exists || app.tabBars.firstMatch.exists)
     }
 
+    /// 遍历所有 Tab → 切换后 App 不崩溃
     func testAppSurvivesAllTabs() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
         for i in 0..<app.tabBars.buttons.count {

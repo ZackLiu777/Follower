@@ -7,6 +7,7 @@
 import XCTest
 @testable import Follower
 
+/// Unit tests for Service layer — covers AggregationService, ExportService, TrialManager, and SyncEngine
 final class ServicesTests: XCTestCase {
     var db: DatabaseManager!
     var eventRepo: EventRepository!
@@ -15,6 +16,7 @@ final class ServicesTests: XCTestCase {
     var premiumRepo: PremiumFeatureRepository!
     var accountRepo: AccountRepository!
 
+    /// 测试准备 — 配置数据库和仓库实例
     override func setUp() async throws {
         db = DatabaseManager.shared
         accountRepo = AccountRepository(db: db)
@@ -30,6 +32,7 @@ final class ServicesTests: XCTestCase {
 
     // MARK: - Aggregation Service
 
+    /// 聚合创建快照 → snapshotsUpdated >= 1 且 metricsUpdated > 0
     func testAggregationCreatesSnapshots() async throws {
         let accountId = try await createTestAccount("agg_test")
         let now = Date()
@@ -49,6 +52,7 @@ final class ServicesTests: XCTestCase {
         XCTAssertGreaterThan(result.metricsUpdated, 0)
     }
 
+    /// 空数据聚合 → snapshotsUpdated 和 metricsUpdated 均为 0
     func testEmptyAggregationReturnsZero() async throws {
         let aggregation = AggregationService(eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo)
         let result = try await aggregation.aggregate(accountId: 99999, from: Date.distantPast, to: Date())
@@ -58,6 +62,7 @@ final class ServicesTests: XCTestCase {
 
     // MARK: - Export Service
 
+    /// JSON 导出 → 生成有效文件并可反序列化为 JSONExportData
     func testJSONExportProducesValidFile() async throws {
         let accountId = try await createTestAccount("json_export")
         let day = Calendar.current.startOfDay(for: Date())
@@ -75,6 +80,7 @@ final class ServicesTests: XCTestCase {
         XCTAssertEqual(decoded.accountId, accountId)
     }
 
+    /// CSV 导出 → 生成有效文件且包含正确的表头
     func testCSVExportProducesValidFile() async throws {
         let accountId = try await createTestAccount("csv_export")
         let day = Calendar.current.startOfDay(for: Date())
@@ -90,12 +96,14 @@ final class ServicesTests: XCTestCase {
 
     // MARK: - Trial Manager
 
+    /// 试用默认未激活 → isTrialActive 返回 false
     func testTrialDefaultsToInactive() async {
         let tm = TrialManager(premiumFeatureRepo: premiumRepo)
         let active = await tm.isTrialActive()
         XCTAssertFalse(active)
     }
 
+    /// 启动试用 → Premium 功能被激活且 trendPrediction 可用
     func testStartTrialActivatesPremium() async throws {
         let tm = TrialManager(premiumFeatureRepo: premiumRepo)
         await tm.startTrialIfNeeded()
@@ -106,6 +114,7 @@ final class ServicesTests: XCTestCase {
         XCTAssertTrue(pfEnabled)
     }
 
+    /// 试用过期 → Premium 功能自动停用
     func testExpiredTrialDeactivatesPremium() async throws {
         let tm = TrialManager(premiumFeatureRepo: premiumRepo)
         await tm.startTrialIfNeeded()
@@ -125,6 +134,7 @@ final class ServicesTests: XCTestCase {
 
     // MARK: - Helper
 
+    /// 创建测试用 Account，预填充默认值
     private func createTestAccount(_ username: String) async throws -> Int64 {
         let account = Account(platform: .instagram, username: "\(username)_\(UUID())", displayName: "T", authState: .authorized, createdAt: Date(), updatedAt: Date())
         let saved = try await accountRepo.insert(account)

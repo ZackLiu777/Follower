@@ -56,6 +56,9 @@ enum L10n {
         static let comments = "dashboard.comments"
         static let shares = "dashboard.shares"
         static let views = "dashboard.views"
+        static let recentContent = "dashboard.recentContent"
+        static let viewAll = "dashboard.viewAll"
+        static let noPostsHint = "dashboard.noPostsHint"
     }
     
     // MARK: Trends
@@ -132,8 +135,132 @@ enum L10n {
         static let noAccountSelected = "account.noAccountSelected"
     }
     
-    // MARK: Premium
+    // MARK: Premium Insights
     enum Premium {
+        // MARK: Section header
+        static let premiumInsights = "premium.insights"
+
+        // MARK: Card titles (Dashboard)
+        static let followerPrediction = "premium.followerPrediction"
+        static let activityAnalysis = "premium.activityAnalysis"
+        static let engagementQuality = "premium.engagementQuality"
+        static let retentionChurn = "premium.retentionChurn"
+        static let geoDistribution = "premium.geoDistribution"
+        static let longTermComparison = "premium.longTermComparison"
+        static let whoUnfollowedYou = "premium.whoUnfollowedYou"
+        static let bestTimeToPost = "premium.bestTimeToPost"
+        static let contentStrategy = "premium.contentStrategy"
+
+        // MARK: Card value snippets
+        static let analyzing = "premium.analyzing"
+        static let in30Days = "premium.in30Days"
+        static let daysActive = "premium.daysActive"
+        static let peopleThisWeek = "premium.peopleThisWeek"
+        static let mostActiveDay = "premium.mostActiveDay"
+
+        // MARK: Activity Detail
+        static let activityLevel = "premium.activityLevel"
+        static let activeDaysRatio = "premium.activeDaysRatio"
+        static let avgEventsPerDay = "premium.avgEventsPerDay"
+        static let bestDay = "premium.bestDay"
+        static let noDataActivity = "premium.noDataActivity"
+        static let noDataActivityDesc = "premium.noDataActivityDesc"
+
+        // MARK: Activity labels
+        static let highlyActive = "premium.highlyActive"
+        static let active = "premium.active"
+        static let moderate = "premium.moderate"
+        static let lowActivity = "premium.lowActivity"
+        static let tipHighlyActive = "premium.tipHighlyActive"
+        static let tipActive = "premium.tipActive"
+        static let tipModerate = "premium.tipModerate"
+        static let tipLowActivity = "premium.tipLowActivity"
+
+        // MARK: Retention Detail
+        static let netGrowthRate = "premium.netGrowthRate"
+        static let churnRiskLevel = "premium.churnRiskLevel"
+        static let churnDetected = "premium.churnDetected"
+        static let start = "premium.start"
+        static let end = "premium.end"
+        static let avgDailyChange = "premium.avgDailyChange"
+        static let noDataRetention = "premium.noDataRetention"
+        static let noDataRetentionDesc = "premium.noDataRetentionDesc"
+
+        // MARK: Churn risk levels
+        static let churnNone = "premium.churnNone"
+        static let churnLow = "premium.churnLow"
+        static let churnMedium = "premium.churnMedium"
+        static let churnHigh = "premium.churnHigh"
+        static let tipChurnNone = "premium.tipChurnNone"
+        static let tipChurnLow = "premium.tipChurnLow"
+        static let tipChurnMedium = "premium.tipChurnMedium"
+        static let tipChurnHigh = "premium.tipChurnHigh"
+
+        // MARK: Quality Detail
+        static let qualityScore = "premium.qualityScore"
+        static let engagementRate = "premium.engagementRate"
+        static let weightBreakdown = "premium.weightBreakdown"
+        static let weightBreakdownDesc = "premium.weightBreakdownDesc"
+        static let likes = "premium.likes"
+        static let comments = "premium.comments"
+        static let shares = "premium.shares"
+        static let noDataQuality = "premium.noDataQuality"
+        static let noDataQualityDesc = "premium.noDataQualityDesc"
+
+        // MARK: Quality labels
+        static let excellent = "premium.excellent"
+        static let great = "premium.great"
+        static let good = "premium.good"
+        static let fair = "premium.fair"
+        static let lowQuality = "premium.lowQuality"
+        static let tipExcellent = "premium.tipExcellent"
+        static let tipGreat = "premium.tipGreat"
+        static let tipGood = "premium.tipGood"
+        static let tipFair = "premium.tipFair"
+        static let tipLowQuality = "premium.tipLowQuality"
+
+        // MARK: Geo Detail
+        static let topRegion = "premium.topRegion"
+        static let distributionByRegion = "premium.distributionByRegion"
+        static let noDataGeo = "premium.noDataGeo"
+        static let noDataGeoDesc = "premium.noDataGeoDesc"
+
+        // MARK: Comparison Detail
+        static let previousPeriod = "premium.previousPeriod"
+        static let currentPeriod = "premium.currentPeriod"
+        static let absoluteChange = "premium.absoluteChange"
+        static let noDataComparison = "premium.noDataComparison"
+        static let noDataComparisonDesc = "premium.noDataComparisonDesc"
+
+        // MARK: Comparison directions
+        static let growing = "premium.growing"
+        static let declining = "premium.declining"
+        static let stable = "premium.stable"
+        static let tipStable = "premium.tipStable"
+
+        // MARK: Best Time
+        static let yourBestPostingTime = "premium.yourBestPostingTime"
+        static let hourlyHeatmap = "premium.hourlyHeatmap"
+        static let lowEngagement = "premium.lowEngagement"
+        static let highEngagement = "premium.highEngagement"
+
+        // MARK: Prediction
+        static let predictedFollowersNext = "premium.predictedFollowersNext"
+        static let predictionDescription = "premium.predictionDescription"
+
+        // MARK: No data generic
+        static let noDataAvailable = "premium.noDataAvailable"
+
+        // MARK: Day names (short, for activity)
+        static let daySun = "premium.daySun"
+        static let dayMon = "premium.dayMon"
+        static let dayTue = "premium.dayTue"
+        static let dayWed = "premium.dayWed"
+        static let dayThu = "premium.dayThu"
+        static let dayFri = "premium.dayFri"
+        static let daySat = "premium.daySat"
+
+        // MARK: Existing keys (keep for backward compatibility)
         static let premiumFeature = "premium.feature"
         static let upgradeTitle = "premium.upgradeTitle"
         static let upgradeTo = "premium.upgradeTo"

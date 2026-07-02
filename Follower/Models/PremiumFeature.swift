@@ -30,11 +30,11 @@ enum PremiumFeatureKey: String, Codable, DatabaseValueConvertible, CaseIterable 
         switch self {
         case .trendPrediction: return "Trend Prediction"
         case .followerGrowthPrediction: return "Growth Prediction"
-        case .activityAnalysis: return "Activity Analysis"
+        case .activityAnalysis: return loc(L10n.Premium.activityAnalysis)
         case .retentionAnalysis: return "Retention Analysis"
         case .churnAnalysis: return "Churn Analysis"
-        case .geoDistribution: return "Geo Distribution"
-        case .engagementQualityScore: return "Engagement Quality"
+        case .geoDistribution: return loc(L10n.Premium.geoDistribution)
+        case .engagementQualityScore: return loc(L10n.Premium.engagementQuality)
         case .longTermTrendComparison: return "Long-term Trends"
         case .csvExport: return "CSV Export"
         case .excelExport: return "Excel Export"
