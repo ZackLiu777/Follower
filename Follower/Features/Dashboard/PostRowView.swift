@@ -6,9 +6,12 @@
 
 import SwiftUI
 
+/// 帖子列表行视图：缩略图占位 + 标题 + 日期 + 赞/评论/曝光统计
 struct PostRowView: View {
+    /// 帖子数据模型
     let post: MockPost
 
+    /// 水平布局：缩略图 | 标题+日期 | 三项互动统计
     var body: some View {
         HStack(spacing: 12) {
             // 缩略图占位
@@ -21,6 +24,7 @@ struct PostRowView: View {
                     .foregroundColor(.white)
             }
 
+            // 标题 + 日期
             VStack(alignment: .leading, spacing: 3) {
                 Text(post.caption)
                     .font(.subheadline).lineLimit(1)
@@ -30,6 +34,7 @@ struct PostRowView: View {
 
             Spacer()
 
+            // 三项互动统计：点赞 / 评论 / 曝光
             HStack(spacing: 16) {
                 VStack(spacing: 1) {
                     Text(post.formattedLikes).font(.caption).fontWeight(.medium)
@@ -49,6 +54,9 @@ struct PostRowView: View {
     }
 }
 
+// MARK: - Color(hex:) 扩展
+
+/// 从十六进制字符串（如 "#FF5733"）创建 Color
 extension Color {
     init?(hex: String) {
         let r, g, b: Double

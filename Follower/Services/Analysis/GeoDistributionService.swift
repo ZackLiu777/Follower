@@ -6,22 +6,27 @@
 
 import Foundation
 
+/// 地域分布数据：地区名 / 占比 / 国旗
 struct GeoRegion: Sendable, Codable {
     let name: String
     let percentage: Double
     let flag: String
 }
 
+/// 地域分布分析结果：地区列表 + 地区数 + 最高占比地区
 struct GeoDistributionResult: Sendable {
     let regions: [GeoRegion]
     let totalRegions: Int
     let topRegion: GeoRegion?
 }
 
+/// 地域分布服务协议（Premium）
 protocol GeoDistributionServiceProtocol: Sendable {
+    /// 获取粉丝地域分布数据
     func fetchDistribution(accountId: Int64) async -> GeoDistributionResult
 }
 
+/// 地域分布服务实现：Mock 数据，预留真实 API 接口
 final class GeoDistributionService: GeoDistributionServiceProtocol {
 
     /// Mock 数据：全球主要地区分布（基于公开的 Instagram 用户统计趋势）

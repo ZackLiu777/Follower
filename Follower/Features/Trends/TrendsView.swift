@@ -25,6 +25,7 @@
 
 import SwiftUI
 
+/// 趋势统计图表页 — 多指标柱状图 + 时间窗选择 + 增长摘要网格
 struct TrendsView: View {
 
     // ── 环境依赖 ──
@@ -51,16 +52,27 @@ struct TrendsView: View {
                     VStack(spacing: 12) {
                         /// 时间窗分段选择器（日/周/月/年）
                         timeWindowPicker
-                        /// 六个统计图表卡片 — 每个指标一张
-                        /// 指标列表由 TrendsViewModel.visibleMetricTypes 定义
+                        /// 六个统计图表卡片 — 每张可点击进入详情页
                         ForEach(TrendsViewModel.visibleMetricTypes, id: \.self) { metricType in
-                            TrendChart(
-                                dataPoints: viewModel.chartData(for: metricType),
-                                barGradientStart: theme.chartBarGradientStart,
-                                barGradientEnd: theme.chartBarGradientEnd,
-                                title: metricType.localizedName,
-                                timeWindow: viewModel.selectedWindow
-                            )
+                            let points = viewModel.chartData(for: metricType)
+                            NavigationLink {
+                                TrendDetailView(
+                                    metricType: metricType,
+                                    dataPoints: points,
+                                    timeWindow: viewModel.selectedWindow,
+                                    barGradientStart: theme.chartBarGradientStart,
+                                    barGradientEnd: theme.chartBarGradientEnd
+                                )
+                            } label: {
+                                TrendChart(
+                                    dataPoints: points,
+                                    barGradientStart: theme.chartBarGradientStart,
+                                    barGradientEnd: theme.chartBarGradientEnd,
+                                    title: metricType.localizedName,
+                                    timeWindow: viewModel.selectedWindow
+                                )
+                            }
+                            .buttonStyle(.plain)
                             .padding(.horizontal, 12)
                         }
                         /// 增长摘要 — 仅当任一指标有数据时展示
@@ -147,37 +159,5 @@ struct TrendsView: View {
         .padding()
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-}
-
-// MARK: - MetricType 本地化
-extension MetricType {
-    /// 返回当前语言的指标名称（粉丝/互动/点赞/评论/分享/浏览/触达）
-    var localizedName: String {
-        switch self {
-        case .followerGrowth:  return loc(L10n.Trends.followers)
-        case .engagementTrend: return loc(L10n.Trends.engagement)
-        case .averageLikes:    return loc(L10n.Trends.likes)
-        case .averageComments: return loc(L10n.Trends.comments)
-        case .averageShares:   return loc(L10n.Trends.shares)
-        case .profileViews:    return loc(L10n.Trends.views)
-        case .reachEstimate:   return loc(L10n.Trends.reach)
-        default:               return "\(self)"
-        }
-    }
-}
-
-// MARK: - TimeWindow 扩展
-extension TimeWindow: CaseIterable {
-    /// 四窗口枚举顺序：日 → 周 → 月 → 年
-    public static var allCases: [TimeWindow] { [.day, .week, .month, .year] }
-    /// 返回当前语言的窗口名称（日/周/月/年）
-    var localizedName: String {
-        switch self {
-        case .day:   return loc(L10n.Trends.daily)
-        case .week:  return loc(L10n.Trends.weekly)
-        case .month: return loc(L10n.Trends.monthly)
-        case .year:  return loc(L10n.Trends.yearly)
-        }
     }
 }

@@ -6,6 +6,7 @@
 
 import Foundation
 
+/// 留存/流失分析结果：净增长率 / 日均变化 / 是否流失 / 流失风险等级
 struct RetentionResult: Sendable {
     let netGrowthRate: Double        // 净增长率（正=增长，负=流失）
     let avgDailyChange: Double
@@ -15,13 +16,18 @@ struct RetentionResult: Sendable {
     let endFollowers: Int
 }
 
+/// 留存/流失分析服务协议（Premium）
 protocol RetentionAnalysisServiceProtocol: Sendable {
+    /// 分析 Snapshot 序列的留存/流失情况
     func analyze(snapshots: [Snapshot]) async -> RetentionResult
+    /// 根据连续下降天数返回流失风险等级
     func churnRisk(consecutiveNegativeDays: Int) -> String
 }
 
+/// 留存/流失分析服务实现：检测连续负增长，评估流失风险
 final class RetentionAnalysisService: RetentionAnalysisServiceProtocol {
 
+    /// 基于 Snapshot 序列计算净增长率、日均变化和连续下降天数
     func analyze(snapshots: [Snapshot]) async -> RetentionResult {
         let sorted = snapshots.sorted { $0.observedAt < $1.observedAt }
         guard let first = sorted.first, let last = sorted.last, sorted.count >= 2 else {
@@ -58,6 +64,7 @@ final class RetentionAnalysisService: RetentionAnalysisServiceProtocol {
         )
     }
 
+    /// 将连续下降天数映射为流失风险等级：None / Low / Medium / High
     func churnRisk(consecutiveNegativeDays: Int) -> String {
         switch consecutiveNegativeDays {
         case 0..<2:  return "None"

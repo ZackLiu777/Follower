@@ -4,9 +4,11 @@
 
 import XCTest
 
+/// UI tests for Account settings — covers navigation and toolbar button presence
 final class AccountUITests: XCTestCase {
     var app: XCUIApplication!
 
+    /// 测试准备 — 配置 UI_TEST 参数并启动 App
     override func setUp() {
         continueAfterFailure = false
         app = XCUIApplication()
@@ -14,6 +16,7 @@ final class AccountUITests: XCTestCase {
         app.launch()
     }
 
+    /// 导航到 Settings Tab → 页面应正常渲染
     func testNavigateToSettings() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
         let tabs = app.tabBars.buttons
@@ -23,6 +26,7 @@ final class AccountUITests: XCTestCase {
         XCTAssertTrue(app.tables.firstMatch.exists || app.navigationBars.firstMatch.exists)
     }
 
+    /// Settings 页面 → 导航栏应包含按钮
     func testSettingsHasToolbarButton() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
         let tabs = app.tabBars.buttons

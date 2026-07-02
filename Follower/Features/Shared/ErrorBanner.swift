@@ -6,6 +6,7 @@
 
 import SwiftUI
 
+/// 统一错误横幅 — 红色半透明毛玻璃条，带重试和关闭按钮
 struct ErrorBanner: View {
     let message: String
     let onDismiss: (() -> Void)?
@@ -13,6 +14,7 @@ struct ErrorBanner: View {
 
     @Environment(\.theme) private var theme
 
+    /// 水平布局：警告图标 + 错误消息 + 重试按钮 + 关闭按钮
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -43,6 +45,7 @@ struct ErrorBanner: View {
     }
 }
 
+/// 预览 — 带重试和关闭的错误横幅
 #Preview {
     VStack {
         ErrorBanner(message: "Something went wrong", onDismiss: {}, onRetry: {})

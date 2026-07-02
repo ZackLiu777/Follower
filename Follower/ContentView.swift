@@ -6,6 +6,7 @@
 
 import SwiftUI
 
+/// 应用主入口 — 主题和语言切换即时响应
 struct ContentView: View {
     @EnvironmentObject private var appState: AppState
 
@@ -19,6 +20,7 @@ struct ContentView: View {
 
 // MARK: - ContentViewInner
 
+/// 内部实现 — 创建 ViewModel 并组装 TabView
 private struct ContentViewInner: View {
     let container: DIContainer
     @EnvironmentObject private var appState: AppState
@@ -32,7 +34,15 @@ private struct ContentViewInner: View {
         _dashboardVM = StateObject(wrappedValue: DashboardViewModel(
             snapshotRepo: container.snapshotRepository,
             accountRepo: container.accountRepository,
-            syncEngine: container.syncEngine
+            syncEngine: container.syncEngine,
+            eventRepo: container.eventRepository,
+            predictionService: container.predictionService,
+            activityService: container.activityAnalysisService,
+            retentionService: container.retentionAnalysisService,
+            scoringService: container.scoringService,
+            geoService: container.geoDistributionService,
+            comparisonService: container.comparisonService,
+            aiService: container.aiAnalysisService
         ))
         _trendsVM = StateObject(wrappedValue: TrendsViewModel(
             snapshotRepo: container.snapshotRepository,

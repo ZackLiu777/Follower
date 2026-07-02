@@ -11,16 +11,23 @@ import GRDB
 
 // MARK: - SnapshotRepositoryProtocol
 
+/// Snapshot 数据访问协议，面向 UI 展示，提供最新快照查询与 upsert 操作
 protocol SnapshotRepositoryProtocol: Sendable {
+    /// 获取指定账号的最新一条 Snapshot（Dashboard 卡片用）
     func latest(accountId: Int64) async throws -> Snapshot?
+    /// 按时间区间查询 Snapshot（趋势图表用）
     func fetch(accountId: Int64, from: Date, to: Date) async throws -> [Snapshot]
+    /// 获取指定账号的全部 Snapshot（按时间降序）
     func fetchAll(accountId: Int64) async throws -> [Snapshot]
+    /// Upsert 单条 Snapshot
     func upsert(_ snapshot: Snapshot) async throws -> Snapshot
+    /// 批量 upsert Snapshot
     func upsertBatch(_ snapshots: [Snapshot]) async throws -> [Snapshot]
 }
 
 // MARK: - SnapshotRepository
 
+/// SnapshotRepository 实现，基于 GRDB 提供面向 UI 的 Snapshot 持久化
 final class SnapshotRepository: SnapshotRepositoryProtocol {
     private let db: DatabaseManager
 
@@ -50,6 +57,7 @@ final class SnapshotRepository: SnapshotRepositoryProtocol {
         }
     }
 
+    /// 查询全部 Snapshot，按 observedAt 降序
     func fetchAll(accountId: Int64) async throws -> [Snapshot] {
         try await db.read { db in
             try Snapshot
@@ -80,6 +88,7 @@ final class SnapshotRepository: SnapshotRepositoryProtocol {
         }
     }
 
+    /// 批量 upsert Snapshot，同 account + observedAt 存在则更新
     func upsertBatch(_ snapshots: [Snapshot]) async throws -> [Snapshot] {
         try await db.batchWrite { db in
             var results: [Snapshot] = []

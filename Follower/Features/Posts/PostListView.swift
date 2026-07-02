@@ -6,6 +6,7 @@
 
 import SwiftUI
 
+/// 完整帖子列表 — NavigationLink 进入 PostDetailView
 struct PostListView: View {
     let posts: [MockPost]
 

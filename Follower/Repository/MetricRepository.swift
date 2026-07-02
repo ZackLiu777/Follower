@@ -9,16 +9,23 @@ import GRDB
 
 // MARK: - MetricRepositoryProtocol
 
+/// Metric 数据访问协议，提供聚合指标的查询与 upsert 操作
 protocol MetricRepositoryProtocol: Sendable {
+    /// 按账号+指标类型+时间窗获取指标列表，支持 limit
     func fetch(accountId: Int64, metricType: MetricType, window: TimeWindow, limit: Int) async throws -> [Metric]
+    /// 按账号+时间窗+时间区间查询指标
     func fetch(accountId: Int64, window: TimeWindow, from: Date, to: Date) async throws -> [Metric]
+    /// Upsert 单条 Metric（同一复合键存在则更新，否则插入）
     func upsert(_ metric: Metric) async throws -> Metric
+    /// 批量 upsert Metric
     func upsertBatch(_ metrics: [Metric]) async throws -> [Metric]
+    /// 清理指定账号在某个时间点之前的旧指标数据
     func deleteOldMetrics(accountId: Int64, olderThan: Date) async throws -> Int
 }
 
 // MARK: - MetricRepository
 
+/// MetricRepository 实现，基于 GRDB 提供 Metric 的查询与 upsert 持久化
 final class MetricRepository: MetricRepositoryProtocol {
     private let db: DatabaseManager
 
@@ -26,6 +33,7 @@ final class MetricRepository: MetricRepositoryProtocol {
         self.db = db
     }
 
+    /// 按账号 + 指标类型 + 时间窗查询，limit 控制返回条数
     func fetch(accountId: Int64, metricType: MetricType, window: TimeWindow, limit: Int = 365) async throws -> [Metric] {
         try await db.read { db in
             try Metric
@@ -38,6 +46,7 @@ final class MetricRepository: MetricRepositoryProtocol {
         }
     }
 
+    /// 按账号 + 时间窗 + 时间范围查询，结果按时间升序
     func fetch(accountId: Int64, window: TimeWindow, from: Date, to: Date) async throws -> [Metric] {
         try await db.read { db in
             try Metric
@@ -49,6 +58,7 @@ final class MetricRepository: MetricRepositoryProtocol {
         }
     }
 
+    /// Upsert 单条 Metric：以 (accountId, metricType, window, observedAt) 作为唯一性判断
     func upsert(_ metric: Metric) async throws -> Metric {
         try await db.write { db in
             var record = metric
@@ -69,6 +79,7 @@ final class MetricRepository: MetricRepositoryProtocol {
         }
     }
 
+    /// 批量 upsert：遍历并逐条判断存在则更新、不存在则插入
     func upsertBatch(_ metrics: [Metric]) async throws -> [Metric] {
         try await db.batchWrite { db in
             var results: [Metric] = []
@@ -92,6 +103,7 @@ final class MetricRepository: MetricRepositoryProtocol {
         }
     }
 
+    /// 清理旧指标数据，返回被删除的行数（用于数据回收策略）
     func deleteOldMetrics(accountId: Int64, olderThan: Date) async throws -> Int {
         try await db.write { db in
             try Metric

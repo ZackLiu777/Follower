@@ -13,6 +13,7 @@ import Foundation
 
 // MARK: - AggregationResult
 
+/// 聚合操作的返回结果：Snapshot 和 Metric 的更新计数
 struct AggregationResult {
     let snapshotsUpdated: Int
     let metricsUpdated: Int
@@ -20,6 +21,7 @@ struct AggregationResult {
 
 // MARK: - AggregationServiceProtocol
 
+/// 聚合服务协议：Event → Snapshot → Metric 的转换管道
 protocol AggregationServiceProtocol: Sendable {
     /// 对指定时间范围的 Event 执行聚合，生成 Snapshot 和 Metric
     func aggregate(accountId: Int64, from: Date, to: Date) async throws -> AggregationResult
@@ -29,11 +31,13 @@ protocol AggregationServiceProtocol: Sendable {
 
 // MARK: - AggregationService
 
+/// 聚合服务实现：将原始 Event 按日/周/月/年聚合为 Snapshot 和 Metric
 final class AggregationService: AggregationServiceProtocol {
     private let eventRepo: EventRepositoryProtocol
     private let snapshotRepo: SnapshotRepositoryProtocol
     private let metricRepo: MetricRepositoryProtocol
 
+    /// 注入 Event / Snapshot / Metric 三个 Repository
     init(
         eventRepo: EventRepositoryProtocol,
         snapshotRepo: SnapshotRepositoryProtocol,
@@ -67,6 +71,7 @@ final class AggregationService: AggregationServiceProtocol {
         )
     }
 
+    /// 全量重建：清空旧 Metric 后重新聚合所有历史 Event
     func rebuildAll(accountId: Int64) async throws -> AggregationResult {
         // 先清掉所有旧 Metric（含之前错误 0 值数据）
         _ = try await metricRepo.deleteOldMetrics(accountId: accountId, olderThan: Date.distantFuture)

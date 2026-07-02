@@ -9,6 +9,7 @@ import GRDB
 
 // MARK: - Platform
 
+/// 支持的社交媒体平台
 enum Platform: String, Codable, DatabaseValueConvertible {
     case instagram
     case tiktok
@@ -16,6 +17,7 @@ enum Platform: String, Codable, DatabaseValueConvertible {
 
 // MARK: - AuthState
 
+/// 账号授权状态：已授权 / 已过期 / 已撤销
 enum AuthState: String, Codable, DatabaseValueConvertible {
     case authorized
     case expired
@@ -24,6 +26,7 @@ enum AuthState: String, Codable, DatabaseValueConvertible {
 
 // MARK: - Account
 
+/// 已连接社交媒体账号的持久化模型
 struct Account: Codable, FetchableRecord, PersistableRecord {
     var id: Int64?
     var platform: Platform
@@ -35,6 +38,7 @@ struct Account: Codable, FetchableRecord, PersistableRecord {
 
     static let databaseTableName = "account"
 
+    /// 插入成功后回填自增 rowID
     mutating func didInsert(_ inserted: InsertionSuccess) {
         id = inserted.rowID
     }
@@ -43,6 +47,7 @@ struct Account: Codable, FetchableRecord, PersistableRecord {
 // MARK: - Column Names
 
 extension Account {
+    /// GRDB 列名映射，避免字符串硬编码
     enum Columns {
         static let id = Column(CodingKeys.id)
         static let platform = Column(CodingKeys.platform)
@@ -57,12 +62,15 @@ extension Account {
 // MARK: - DerivableRequest
 
 extension DerivableRequest<Account> {
+    /// 按平台过滤查询
     func filter(platform: Platform) -> Self {
         filter(Account.Columns.platform == platform)
     }
+    /// 按授权状态过滤
     func filter(authState: AuthState) -> Self {
         filter(Account.Columns.authState == authState)
     }
+    /// 按用户名精确过滤
     func filter(username: String) -> Self {
         filter(Account.Columns.username == username)
     }

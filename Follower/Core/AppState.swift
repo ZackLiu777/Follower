@@ -8,6 +8,7 @@ import Foundation
 import Combine
 import SwiftUI
 
+// 全局应用状态管理器 — 持有主题、语言、试用状态和 Premium 标志位
 @MainActor
 final class AppState: ObservableObject {
     let databaseManager: DatabaseManager
@@ -22,6 +23,7 @@ final class AppState: ObservableObject {
     /// Lambda: Premium 解锁状态（同步，所有 PremiumGate 直接读取）
     @Published var premiumEnabledFlags: [String: Bool] = [:]
 
+    /// 从数据库刷新所有 Premium Feature 的启用状态
     func refreshPremiumFlags() {
         let repo = container.premiumFeatureRepository
         Task {
@@ -33,6 +35,7 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// 初始化：创建 DI 容器、监听 Premium 解锁通知、首次加载标志位
     init(databaseManager: DatabaseManager) {
         self.databaseManager = databaseManager
         self.container = DIContainer(databaseManager: databaseManager)
@@ -44,12 +47,14 @@ final class AppState: ObservableObject {
         refreshPremiumFlags()
     }
 
+    /// 切换应用语言并持久化
     func setLanguage(_ language: AppLanguage) {
         LanguageStore.shared.current = language
         currentLanguage = language
     }
 }
 
+// 全局通知名称扩展
 extension Notification.Name {
     static let premiumUnlocked = Notification.Name("com.follower.premiumUnlocked")
 }

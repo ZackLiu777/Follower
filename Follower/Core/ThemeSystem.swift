@@ -9,6 +9,7 @@ import SwiftUI
 
 // MARK: - Theme
 
+/// 主题色板 — 定义背景、文字、图表、徽章、按钮等全套颜色 token
 struct Theme: Sendable {
     let backgroundPrimary: Color
     let backgroundSecondary: Color
@@ -41,11 +42,14 @@ struct Theme: Sendable {
     let divider: Color
     let navigationBg: Color
     let emptyStateIcon: Color
+    /// 主题展示名称
     let displayName: String
+    /// 是否启用 Liquid Glass 毛玻璃效果
     let liquidGlassEnabled: Bool
+    /// 深色模式标志 — 驱动 preferredColorScheme
     let isDark: Bool
 
-    // MARK: - Apple Native (明亮天蓝 → 纯白)
+    // MARK: - Apple Native（明亮天蓝 → 纯白）
 
     static let appleNative = Theme(
         backgroundPrimary: Color(.systemBackground),
@@ -67,37 +71,47 @@ struct Theme: Sendable {
         displayName: "Apple Native", liquidGlassEnabled: true, isDark: false
     )
 
-    // MARK: - Instagram (暖玫瑰 → 柔桃色)
+    // MARK: - Instagram（亮珊瑚暖橘渐变 → 高级光影白紫）
 
+    /// Instagram 品牌灵感 — 暖珊瑚橘向明亮柔紫过渡，与玫瑰金的粉藕色调拉开差距
     static let instagram = Theme(
         backgroundPrimary: Color(.systemBackground),
         backgroundSecondary: Color(.secondarySystemBackground),
         backgroundGrouped: Color(.systemGroupedBackground),
-        backgroundGradientStart: Color(red: 0.99, green: 0.90, blue: 0.93),
-        backgroundGradientEnd: Color(red: 0.99, green: 0.96, blue: 0.94),
-        cardSurface: Color(red: 0.99, green: 0.90, blue: 0.93).opacity(0.55),
-        cardElevated: Color(red: 0.99, green: 0.90, blue: 0.93).opacity(0.80),
-        textPrimary: Color(red: 0.15, green: 0.05, blue: 0.10), textSecondary: Color(red: 0.50, green: 0.25, blue: 0.35),
-        textTertiary: Color(red: 0.70, green: 0.45, blue: 0.55), textInverted: .white,
-        accentPrimary: Color(red: 0.88, green: 0.15, blue: 0.45), accentSecondary: Color(red: 0.98, green: 0.50, blue: 0.28),
-        positiveGreen: Color(red: 0.20, green: 0.75, blue: 0.30), negativeRed: Color(red: 0.92, green: 0.20, blue: 0.15),
-        warningOrange: Color(red: 0.98, green: 0.50, blue: 0.28),
-        chartLine: Color(red: 0.88, green: 0.15, blue: 0.45),
-        chartArea: Color(red: 0.88, green: 0.15, blue: 0.45).opacity(0.15),
-        chartGrid: Color(red: 0.90, green: 0.80, blue: 0.85),
-        chartBarGradientStart: Color(red: 0.98, green: 0.50, blue: 0.28),
-        chartBarGradientEnd: Color(red: 0.88, green: 0.15, blue: 0.45),
-        badgePremiumStart: Color(red: 0.98, green: 0.50, blue: 0.28),
-        badgePremiumEnd: Color(red: 0.88, green: 0.15, blue: 0.45),
-        badgeTrial: Color(red: 0.98, green: 0.50, blue: 0.28), badgeLocked: Color(.systemGray3),
-        buttonPrimaryBg: Color(red: 0.88, green: 0.15, blue: 0.45), buttonDestructiveBg: .red,
+        // 背景渐变：亮珊瑚暖橘 → 柔紫白光（高级光影效果，温暖不腻）
+        backgroundGradientStart: Color(red: 1.00, green: 0.89, blue: 0.82),
+        backgroundGradientEnd: Color(red: 0.97, green: 0.93, blue: 1.00),
+        cardSurface: Color(red: 1.00, green: 0.89, blue: 0.82).opacity(0.48),
+        cardElevated: Color(red: 1.00, green: 0.89, blue: 0.82).opacity(0.75),
+        textPrimary: Color(red: 0.18, green: 0.06, blue: 0.04),
+        textSecondary: Color(red: 0.50, green: 0.22, blue: 0.18),
+        textTertiary: Color(red: 0.68, green: 0.42, blue: 0.38), textInverted: .white,
+        // Instagram 经典渐变：橙 → 粉
+        accentPrimary: Color(red: 0.96, green: 0.33, blue: 0.16),
+        accentSecondary: Color(red: 0.87, green: 0.15, blue: 0.48),
+        positiveGreen: Color(red: 0.20, green: 0.75, blue: 0.30),
+        negativeRed: Color(red: 0.92, green: 0.22, blue: 0.18),
+        warningOrange: Color(red: 0.96, green: 0.33, blue: 0.16),
+        chartLine: Color(red: 0.87, green: 0.15, blue: 0.48),
+        chartArea: Color(red: 0.87, green: 0.15, blue: 0.48).opacity(0.12),
+        chartGrid: Color(red: 0.94, green: 0.84, blue: 0.82),
+        // 柱状图：Instagram 橙 → 粉渐变
+        chartBarGradientStart: Color(red: 0.96, green: 0.33, blue: 0.16),
+        chartBarGradientEnd: Color(red: 0.87, green: 0.15, blue: 0.48),
+        badgePremiumStart: Color(red: 0.96, green: 0.33, blue: 0.16),
+        badgePremiumEnd: Color(red: 0.87, green: 0.15, blue: 0.48),
+        badgeTrial: Color(red: 0.96, green: 0.33, blue: 0.16),
+        badgeLocked: Color(.systemGray3),
+        buttonPrimaryBg: Color(red: 0.87, green: 0.15, blue: 0.48),
+        buttonDestructiveBg: .red,
         buttonDisabledFg: Color(.systemGray3),
-        divider: Color(red: 0.90, green: 0.80, blue: 0.85),
-        navigationBg: Color(.systemBackground), emptyStateIcon: Color(red: 0.70, green: 0.45, blue: 0.55),
+        divider: Color(red: 0.94, green: 0.84, blue: 0.82),
+        navigationBg: Color(.systemBackground),
+        emptyStateIcon: Color(red: 0.68, green: 0.42, blue: 0.38),
         displayName: "Instagram", liquidGlassEnabled: true, isDark: false
     )
 
-    // MARK: - Apple Dark (深靛蓝 → 暗蓝灰渐变)
+    // MARK: - Apple Dark（深靛蓝 → 暗蓝灰渐变）
 
     static let appleDark = Theme(
         backgroundPrimary: Color(red: 0.06, green: 0.08, blue: 0.14),
@@ -128,7 +142,7 @@ struct Theme: Sendable {
         displayName: "Apple Dark", liquidGlassEnabled: true, isDark: true
     )
 
-    // MARK: - Forest (鲜亮薄荷绿 → 柔白翠绿)
+    // MARK: - Forest（鲜亮薄荷绿 → 柔白翠绿）
 
     static let forest = Theme(
         backgroundPrimary: Color(red: 0.74, green: 0.92, blue: 0.82),
@@ -162,7 +176,7 @@ struct Theme: Sendable {
         displayName: "Forest", liquidGlassEnabled: true, isDark: false
     )
 
-    // MARK: - Rose Gold (暖玫瑰粉 → 柔白)
+    // MARK: - Rose Gold（暖玫瑰粉 → 柔白）
 
     static let roseGold = Theme(
         backgroundPrimary: Color(red: 0.98, green: 0.94, blue: 0.95),
@@ -196,7 +210,7 @@ struct Theme: Sendable {
         displayName: "Rose Gold", liquidGlassEnabled: true, isDark: false
     )
 
-    // MARK: - Mono Stone (暖灰 → 净白)
+    // MARK: - Mono Stone（暖灰 → 净白，非 Liquid Glass）
 
     static let monoStone = Theme(
         backgroundPrimary: Color(red: 0.95, green: 0.94, blue: 0.93),
@@ -234,9 +248,11 @@ struct Theme: Sendable {
 
 // MARK: - AppTheme
 
+/// 主题枚举 — 6 套可选主题，提供 theme / displayName 计算属性
 enum AppTheme: String, CaseIterable {
     case appleNative, instagram, appleDark, forest, roseGold, monoStone
 
+    /// 将枚举值映射到对应的 Theme 实例
     var theme: Theme {
         switch self {
         case .appleNative: .appleNative
@@ -248,6 +264,7 @@ enum AppTheme: String, CaseIterable {
         }
     }
 
+    /// 本地化后的主题展示名称
     var displayName: String {
         switch self {
         case .appleNative: loc(L10n.Settings.appleNative)
@@ -262,16 +279,21 @@ enum AppTheme: String, CaseIterable {
 
 // MARK: - Environment
 
+/// 自定义 Environment key：注入当前 Theme
 private struct ThemeKey: EnvironmentKey { static let defaultValue: Theme = .appleNative }
+/// 自定义 Environment key：控制 Liquid Glass 效果
 private struct LiquidGlassKey: EnvironmentKey { static let defaultValue: Bool = true }
 
 extension EnvironmentValues {
+    /// 从环境读取当前主题
     var theme: Theme { get { self[ThemeKey.self] } set { self[ThemeKey.self] = newValue } }
+    /// 从环境读取 Liquid Glass 开关状态
     var useLiquidGlass: Bool { get { self[LiquidGlassKey.self] } set { self[LiquidGlassKey.self] = newValue } }
 }
 
 // MARK: - Modifiers
 
+/// ViewModifier：将 Theme 注入 SwiftUI 环境
 struct ThemeModifier: ViewModifier {
     let theme: Theme
     func body(content: Content) -> some View {
@@ -279,6 +301,7 @@ struct ThemeModifier: ViewModifier {
     }
 }
 
+/// ViewModifier：毛玻璃卡片样式（Material + 半透明色板 + 分割线 + 阴影）
 struct LiquidGlassCard: ViewModifier {
     @Environment(\.theme) private var theme
     func body(content: Content) -> some View {
@@ -297,6 +320,8 @@ struct LiquidGlassCard: ViewModifier {
 }
 
 extension View {
+    /// 为视图子树注入指定主题
     func withTheme(_ theme: Theme) -> some View { modifier(ThemeModifier(theme: theme)) }
+    /// 应用 Liquid Glass 毛玻璃卡片样式
     func liquidGlassCard() -> some View { modifier(LiquidGlassCard()) }
 }

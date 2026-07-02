@@ -6,6 +6,7 @@
 
 import Foundation
 
+/// Mock 粉丝 / 取关用户数据：用户名 / 显示名 / 头像颜色 / 日期 / 是否取关
 struct MockFollower: Identifiable, Sendable {
     let id: String
     let username: String
@@ -15,6 +16,7 @@ struct MockFollower: Identifiable, Sendable {
     let isUnfollow: Bool
 }
 
+/// Mock 取关列表生成器（Lambda）：用于 UI 预览和 Alpha 测试
 struct MockFollowerListGenerator: Sendable {
     private let usernames = [
         "emma.wilson", "alex.martinez", "sophia.chen", "james.lee", "olivia.park",
@@ -22,6 +24,7 @@ struct MockFollowerListGenerator: Sendable {
         "isabella.white", "ethan.harris", "charlotte.king", "mason.wright",
     ]
 
+    /// 生成指定数量的模拟取关用户，按日期降序排列
     func generateUnfollows(count: Int = 5) -> [MockFollower] {
         var followers: [MockFollower] = []
         for i in 0..<count {

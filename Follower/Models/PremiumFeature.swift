@@ -9,6 +9,7 @@ import GRDB
 
 // MARK: - PremiumFeatureKey
 
+/// Premium 功能键枚举，覆盖预测 / 分析 / 导出 / 安全 / 同步等方向
 enum PremiumFeatureKey: String, Codable, DatabaseValueConvertible, CaseIterable {
     case trendPrediction
     case followerGrowthPrediction
@@ -24,15 +25,16 @@ enum PremiumFeatureKey: String, Codable, DatabaseValueConvertible, CaseIterable 
     case advancedEncryption
     case multiDeviceSync
 
+    /// 用户可见的功能名称
     var displayName: String {
         switch self {
         case .trendPrediction: return "Trend Prediction"
         case .followerGrowthPrediction: return "Growth Prediction"
-        case .activityAnalysis: return "Activity Analysis"
+        case .activityAnalysis: return loc(L10n.Premium.activityAnalysis)
         case .retentionAnalysis: return "Retention Analysis"
         case .churnAnalysis: return "Churn Analysis"
-        case .geoDistribution: return "Geo Distribution"
-        case .engagementQualityScore: return "Engagement Quality"
+        case .geoDistribution: return loc(L10n.Premium.geoDistribution)
+        case .engagementQualityScore: return loc(L10n.Premium.engagementQuality)
         case .longTermTrendComparison: return "Long-term Trends"
         case .csvExport: return "CSV Export"
         case .excelExport: return "Excel Export"
@@ -45,6 +47,7 @@ enum PremiumFeatureKey: String, Codable, DatabaseValueConvertible, CaseIterable 
 
 // MARK: - PremiumFeature
 
+/// Premium 功能开关的持久化模型
 struct PremiumFeature: Codable, FetchableRecord, PersistableRecord {
     var id: Int64?
     var key: PremiumFeatureKey
@@ -54,6 +57,7 @@ struct PremiumFeature: Codable, FetchableRecord, PersistableRecord {
 
     static let databaseTableName = "premiumFeature"
 
+    /// 插入成功后回填自增 rowID
     mutating func didInsert(_ inserted: InsertionSuccess) {
         id = inserted.rowID
     }
@@ -62,6 +66,7 @@ struct PremiumFeature: Codable, FetchableRecord, PersistableRecord {
 // MARK: - Column Names
 
 extension PremiumFeature {
+    /// GRDB 列名映射
     enum Columns {
         static let id = Column(CodingKeys.id)
         static let key = Column(CodingKeys.key)
@@ -74,9 +79,11 @@ extension PremiumFeature {
 // MARK: - DerivableRequest
 
 extension DerivableRequest<PremiumFeature> {
+    /// 按功能键过滤
     func filter(key: PremiumFeatureKey) -> Self {
         filter(PremiumFeature.Columns.key == key)
     }
+    /// 按启用状态过滤
     func filter(enabled: Bool) -> Self {
         filter(PremiumFeature.Columns.enabled == enabled)
     }

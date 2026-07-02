@@ -6,6 +6,7 @@
 
 import SwiftUI
 
+/// 账号管理页面 — 连接 / 撤销 / 删除 Instagram 账号
 struct AccountView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var viewModel: AccountViewModel
@@ -13,6 +14,7 @@ struct AccountView: View {
     var body: some View {
         NavigationStack {
             Form {
+                // MARK: 已连接账号列表
                 if !viewModel.accounts.isEmpty {
                     Section {
                         ForEach(viewModel.accounts, id: \.id) { account in
@@ -29,6 +31,7 @@ struct AccountView: View {
                         Text(loc(L10n.Account.connectedAccounts))
                     }
                 }
+                // MARK: 添加新账号
                 Section {
                     if viewModel.isAddingAccount { addAccountForm }
                     else {
@@ -77,6 +80,7 @@ struct AccountView: View {
         }
     }
 
+    /// 单行账号信息 — 头像 + 用户名 + 认证状态 badge
     @ViewBuilder
     private func accountRow(_ account: Account) -> some View {
         HStack {
@@ -100,6 +104,7 @@ struct AccountView: View {
         }
     }
 
+    /// 添加账号表单 — 用户名 + 显示名输入
     private var addAccountForm: some View {
         Group {
             TextField(loc(L10n.Account.username), text: $viewModel.username)
@@ -109,6 +114,7 @@ struct AccountView: View {
         }
     }
 
+    /// 将 AuthState 转换为本地化显示字符串
     private func authDisplayName(_ state: AuthState) -> String {
         switch state {
         case .authorized: return loc(L10n.Account.authorized)

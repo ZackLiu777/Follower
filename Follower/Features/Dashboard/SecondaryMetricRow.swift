@@ -6,13 +6,20 @@
 
 import SwiftUI
 
+/// 单个次要指标项：数值 + delta 箭头 + 标题
 struct SecondaryMetricItem: View {
+    /// 指标标题，如 "Engagement Rate"
     let title: String
+    /// 格式化后的主数值
     let value: String
+    /// 变化量（带符号格式化字符串）
     let delta: String
+    /// 变化方向（正数 = 绿色向上）
     let isPositive: Bool
+    /// 背景色调
     let tint: Color
 
+    /// 主数值 + delta 趋势 + 标题的垂直卡片布局
     var body: some View {
         VStack(spacing: 4) {
             Text(value)
@@ -35,14 +42,22 @@ struct SecondaryMetricItem: View {
     }
 }
 
+/// 三列次要指标行：互动率 / Reach / 帖子数
 struct SecondaryMetricRow: View {
+    /// 互动率
     let engagementRate: Double
+    /// Reach 曝光数
     let reach: Int
+    /// 帖子数
     let posts: Int
+    /// 互动率环比变化
     let engagementDelta: Double
+    /// Reach 环比变化
     let reachDelta: Int
+    /// 帖子数环比变化
     let postsDelta: Int
 
+    /// 三列等宽水平布局
     var body: some View {
         HStack(spacing: 10) {
             SecondaryMetricItem(

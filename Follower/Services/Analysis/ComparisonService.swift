@@ -8,6 +8,7 @@ import Foundation
 
 // MARK: - ComparisonResult
 
+/// 周期对比结果：两个时间段的均值、变化量、变化方向和百分比
 struct ComparisonResult: Sendable {
     let currentAvg: Double
     let previousAvg: Double
@@ -16,6 +17,7 @@ struct ComparisonResult: Sendable {
     let direction: ComparisonDirection
 }
 
+/// 对比方向枚举：上升 / 下降 / 持平
 enum ComparisonDirection: String, Sendable {
     case up = "UP"
     case down = "DOWN"
@@ -24,7 +26,9 @@ enum ComparisonDirection: String, Sendable {
 
 // MARK: - ComparisonServiceProtocol
 
+/// 趋势对比服务协议（Premium）：对比两个时间周期的指标变化
 protocol ComparisonServiceProtocol: Sendable {
+    /// 对比两个 Snapshot 集合的提取指标，返回变化量和方向
     func compare(
         currentSnapshots: [Snapshot],
         previousSnapshots: [Snapshot],
@@ -34,6 +38,7 @@ protocol ComparisonServiceProtocol: Sendable {
 
 // MARK: - ComparisonService
 
+/// 趋势对比服务实现：计算均值并判定方向（阈值 0.5%）
 final class ComparisonService: ComparisonServiceProtocol {
 
     /// 对比两个集合的均值，返回变化量和方向

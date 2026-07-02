@@ -7,10 +7,12 @@
 
 import Foundation
 
+/// 时间桶粒度枚举：hour / day / week / month / year
 enum TimeBucket {
     case hour, day, week, month, year
 }
 
+/// 统一时间桶聚合引擎：将 Metric 数组按指定桶粒度聚合为 TrendDataPoint 序列
 final class TimeSeriesEngine {
     static let calendar: Calendar = Calendar.current
 

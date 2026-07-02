@@ -8,6 +8,7 @@ import Foundation
 import SwiftUI
 import Combine
 
+/// 设置页 ViewModel — 试用 / 导出 / Premium / 删除数据
 @MainActor
 final class SettingsViewModel: ObservableObject {
     // MARK: - Dependencies
@@ -38,6 +39,7 @@ final class SettingsViewModel: ObservableObject {
 
     // MARK: - Init
 
+    /// 注入依赖：TrialManager / ExportService / AccountRepo / PremiumRepo
     init(
         trialManager: TrialManagerProtocol,
         exportService: ExportServiceProtocol,
@@ -52,6 +54,7 @@ final class SettingsViewModel: ObservableObject {
 
     // MARK: - Public
 
+    /// 加载试用状态、账号列表、Premium 功能开关
     func loadSettings() async {
         // Trial
         await trialManager.checkTrialStatus()
@@ -76,12 +79,14 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
+    /// 切换主题风格
     func updateTheme(_ theme: AppTheme) {
         currentTheme = theme
     }
 
     // MARK: - Export
 
+    /// 根据 exportFormat 导出数据为 JSON 或 CSV 文件
     func exportData() async {
         guard let accountId = selectedAccountId else {
             errorMessage = loc(L10n.Account.noAccountSelected)
@@ -104,6 +109,7 @@ final class SettingsViewModel: ObservableObject {
 
     // MARK: - Premium Unlock (dev mode: one-tap unlock all)
 
+    /// 一键解锁所有 Premium 功能（开发模式）
     func unlockAllPremium() async {
         for key in PremiumFeatureKey.allCases {
             try? await premiumFeatureRepo.setEnabled(true, expiresAt: nil, for: key)
@@ -129,24 +135,11 @@ final class SettingsViewModel: ObservableObject {
 
     // MARK: - Private
 
+    /// 将 TimeInterval 格式化为 "X 分 Y 秒" 的剩余时间字符串
     private func formatRemainingTime(_ time: TimeInterval?) -> String {
         guard let time = time, time > 0 else { return loc(L10n.Premium.trialEnded) }
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
         return String(format: loc(L10n.Premium.trialRemaining), minutes, seconds)
-    }
-}
-
-// MARK: - Export Format
-
-enum ExportFormat: String, CaseIterable {
-    case json
-    case csv
-
-    var displayName: String {
-        switch self {
-        case .json: return "JSON"
-        case .csv: return "CSV"
-        }
     }
 }

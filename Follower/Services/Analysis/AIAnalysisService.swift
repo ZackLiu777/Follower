@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// AI 生成的洞察结果：包含类型、标题、详情和严重程度
 struct AIInsight: Sendable, Codable {
     let type: InsightType
     let title: String
@@ -14,6 +15,7 @@ struct AIInsight: Sendable, Codable {
     let severity: InsightSeverity
 }
 
+/// 洞察类型枚举：异常 / 趋势 / 摘要 / 建议
 enum InsightType: String, Sendable, Codable {
     case anomaly
     case trend
@@ -21,16 +23,20 @@ enum InsightType: String, Sendable, Codable {
     case recommendation
 }
 
+/// 洞察严重程度枚举：info / warning / critical
 enum InsightSeverity: String, Sendable, Codable {
     case info
     case warning
     case critical
 }
 
+/// AI 分析服务协议（Premium）：输入 Snapshot，输出 AI 洞察
 protocol AIAnalysisServiceProtocol: Sendable {
+    /// 对 Snapshot 序列执行 AI 分析，返回洞察列表
     func analyze(snapshots: [Snapshot]) async -> [AIInsight]
 }
 
+/// AI 分析服务实现：规则引擎做异常检测 + 摘要生成（Alpha 阶段，未来替换为 ML 模型）
 final class AIAnalysisService: AIAnalysisServiceProtocol {
 
     /// 规则引擎：检测异常 + 生成摘要 + 建议
@@ -55,6 +61,7 @@ final class AIAnalysisService: AIAnalysisServiceProtocol {
         return insights
     }
 
+    /// 检测粉丝数是否在最近 3 天出现超过 10% 的突变
     private func detectFollowerAnomaly(_ snapshots: [Snapshot]) -> AIInsight? {
         let recent = snapshots.suffix(3)
         let earlier = snapshots.prefix(snapshots.count - 3)
@@ -75,6 +82,7 @@ final class AIAnalysisService: AIAnalysisServiceProtocol {
         )
     }
 
+    /// 检测互动率是否在最近 3 天下降超过 1 个百分点
     private func detectEngagementDrop(_ snapshots: [Snapshot]) -> AIInsight? {
         let recent = snapshots.suffix(3)
         let earlier = snapshots.prefix(max(snapshots.count - 3, 1))
@@ -94,6 +102,7 @@ final class AIAnalysisService: AIAnalysisServiceProtocol {
         )
     }
 
+    /// 生成周期摘要：粉丝变化量 + 当前互动率
     private func generateSummary(_ snapshots: [Snapshot]) -> AIInsight {
         let first = snapshots.first!
         let last = snapshots.last!

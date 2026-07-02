@@ -8,6 +8,7 @@ import Foundation
 
 // MARK: - ScoringResult
 
+/// 互动质量评分结果：0-100 分 / 各维度权重 / 互动率 / 评级标签
 struct ScoringResult: Sendable {
     let score: Double          // 0-100
     let likesWeight: Double
@@ -19,12 +20,15 @@ struct ScoringResult: Sendable {
 
 // MARK: - ScoringServiceProtocol
 
+/// 互动质量评分服务协议（Premium）
 protocol ScoringServiceProtocol: Sendable {
+    /// 对 Snapshot 序列做加权互动评分
     func scoreEngagement(snapshots: [Snapshot]) async -> ScoringResult
 }
 
 // MARK: - ScoringService
 
+/// 互动质量评分服务实现：加权计算 (likes×1 + comments×3 + shares×5) / views × 100
 final class ScoringService: ScoringServiceProtocol {
 
     /// 互动质量评分：加权计算 (likes + comments×3 + shares×5) / views，归一化到 0-100

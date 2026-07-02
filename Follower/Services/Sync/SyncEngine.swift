@@ -14,6 +14,7 @@ import Foundation
 
 // MARK: - SyncEngineProtocol
 
+/// 同步引擎协议：管理外部账号的全量/增量同步与状态查询
 protocol SyncEngineProtocol: Sendable {
     /// 执行单次全量同步
     func sync(accountId: Int64) async throws -> SyncResult
@@ -25,6 +26,7 @@ protocol SyncEngineProtocol: Sendable {
 
 // MARK: - SyncStatus
 
+/// 同步状态：idle / syncing / success / error（含时间戳）
 struct SyncStatus {
     enum State {
         case idle
@@ -44,17 +46,19 @@ struct SyncStatus {
 
 // MARK: - SyncEngine
 
+/// 同步引擎实现：actor 隔离保证同步状态线程安全，Alpha 阶段使用 Mock 数据
 final actor SyncEngine: SyncEngineProtocol {
     private let eventRepo: EventRepositoryProtocol
     private let accountRepo: AccountRepositoryProtocol
     private let ingestionService: IngestionServiceProtocol
 
-    /// 同步状态缓存
+    /// 同步状态缓存（actor-isolated，保证线程安全）
     private var statusCache: [Int64: SyncStatus.State] = [:]
 
     /// 最短同步间隔（秒）
     private let minSyncInterval: TimeInterval = 60
 
+    /// 注入 EventRepository / AccountRepository / IngestionService
     init(
         eventRepo: EventRepositoryProtocol,
         accountRepo: AccountRepositoryProtocol,
@@ -67,6 +71,7 @@ final actor SyncEngine: SyncEngineProtocol {
 
     // MARK: - Public
 
+    /// 执行单次全量同步：生成 Mock 数据 → Ingestion → 聚合（actor-isolated）
     func sync(accountId: Int64) async throws -> SyncResult {
         statusCache[accountId] = .syncing
 
@@ -92,6 +97,7 @@ final actor SyncEngine: SyncEngineProtocol {
         }
     }
 
+    /// 执行增量同步：检查上次同步时间，间隔不足 60s 则跳过（actor-isolated）
     func incrementalSync(accountId: Int64) async throws -> SyncResult {
         // 获取上次同步时间
         let latestEvent = try? await eventRepo.latestObservedAt(accountId: accountId)
@@ -111,6 +117,7 @@ final actor SyncEngine: SyncEngineProtocol {
         return try await sync(accountId: accountId)
     }
 
+    /// 查询当前同步状态（actor-isolated 读操作）
     func syncStatus(accountId: Int64) async -> SyncStatus {
         let state = statusCache[accountId] ?? .idle
         return SyncStatus(state: state, accountId: accountId)
@@ -118,7 +125,7 @@ final actor SyncEngine: SyncEngineProtocol {
 
     // MARK: - Mock Data (Alpha)
 
-    /// 生成一整年逐日数据，每月趋势明显差异，便于年/月/周/日对比
+    /// 生成一整年逐日 Mock Trend 数据，每月趋势明显差异，便于年/月/周/日对比
     private func generateMockTrend() -> APITrendResponse {
         let calendar = Calendar.current
         let days = 365
@@ -173,6 +180,7 @@ final actor SyncEngine: SyncEngineProtocol {
         return APITrendResponse(username: "demo_user", dataPoints: dataPoints, period: "year")
     }
 
+    /// 生成随机 Mock Profile 数据（Alpha 阶段）
     private func generateMockProfile() -> APIProfileResponse {
         let followers = Int.random(in: 1200...2800)
         let engagement = Double.random(in: 0.025...0.09)

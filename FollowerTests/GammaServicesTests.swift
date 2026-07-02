@@ -7,10 +7,12 @@
 import XCTest
 @testable import Follower
 
+/// Unit tests for Gamma Premium 服务 — covers Scoring, Comparison, Prediction, Activity, Retention, Geo, AI analysis
 final class GammaServicesTests: XCTestCase {
 
     // MARK: - ScoringService
 
+    /// 有效互动数据 → 评分 > 0 且 <= 100
     func testScoringWithDataReturnsValidScore() async {
         let service = ScoringService()
         let snapshots = [
@@ -22,6 +24,7 @@ final class GammaServicesTests: XCTestCase {
         XCTAssertLessThanOrEqual(result.score, 100, "Score should be <= 100")
     }
 
+    /// 空 Snapshot → 评分 0，标签 "No data"
     func testScoringEmptyReturnsZero() async {
         let service = ScoringService()
         let result = await service.scoreEngagement(snapshots: [])
@@ -29,6 +32,7 @@ final class GammaServicesTests: XCTestCase {
         XCTAssertEqual(result.label, "No data")
     }
 
+    /// comments 权重 3x vs likes 权重 1x → comments 得分应高于 likes
     func testScoringCommentsWeightedHigherThanLikes() async {
         let service = ScoringService()
         // 仅有点赞
@@ -43,6 +47,7 @@ final class GammaServicesTests: XCTestCase {
 
     // MARK: - ComparisonService
 
+    /// current > previous → 方向 UP，百分比变化 100%
     func testComparisonUpDirection() async {
         let service = ComparisonService()
         let current = [makeSnapshot(followers: 200)]
@@ -52,6 +57,7 @@ final class GammaServicesTests: XCTestCase {
         XCTAssertEqual(result.percentChange, 100.0)
     }
 
+    /// current = previous → 方向 FLAT
     func testComparisonFlatDirection() async {
         let service = ComparisonService()
         let s = [makeSnapshot(followers: 100)]
@@ -59,6 +65,7 @@ final class GammaServicesTests: XCTestCase {
         XCTAssertEqual(result.direction, .flat)
     }
 
+    /// current < previous → 方向 DOWN
     func testComparisonDownDirection() async {
         let service = ComparisonService()
         let current = [makeSnapshot(followers: 80)]
@@ -69,6 +76,7 @@ final class GammaServicesTests: XCTestCase {
 
     // MARK: - PredictionService
 
+    /// 10 个数据点 + window=7 → 应返回 1 个有效预测结果
     func testSMAWithSufficientData() async {
         let service = PredictionService()
         let data = (0..<10).map { i in
@@ -79,6 +87,7 @@ final class GammaServicesTests: XCTestCase {
         XCTAssertGreaterThan(results[0].confidence, 0)
     }
 
+    /// 数据点数 < window → 返回空数组
     func testSMAWithInsufficientData() async {
         let service = PredictionService()
         let data = [(Date(), 100.0), (Date(), 200.0)]
@@ -86,6 +95,7 @@ final class GammaServicesTests: XCTestCase {
         XCTAssertTrue(results.isEmpty)
     }
 
+    /// 30 个线性递增数据点 → 线性回归应产生 "Linear" 方法非 nil 结果
     func testLinearRegressionProducesPrediction() async {
         let service = PredictionService()
         let data = (0..<30).map { i in
@@ -97,6 +107,7 @@ final class GammaServicesTests: XCTestCase {
         XCTAssertEqual(result!.method, "Linear")
     }
 
+    /// 数据点不足 → 线性回归返回 nil
     func testLinearRegressionWithTooFewPoints() async {
         let service = PredictionService()
         let data = [(Date(), 100.0), (Date(), 200.0)]
@@ -106,6 +117,7 @@ final class GammaServicesTests: XCTestCase {
 
     // MARK: - Helpers
 
+    /// 创建测试用 Snapshot，预填充默认值
     private func makeSnapshot(likes: Int = 0, comments: Int = 0, shares: Int = 0, views: Int = 100, followers: Int = 100) -> Snapshot {
         Snapshot(
             accountId: 1, followersCount: followers, followingCount: 10,
@@ -116,6 +128,7 @@ final class GammaServicesTests: XCTestCase {
         )
     }
 
+    /// 创建测试用 Event，预填充默认值
     private func makeEvent(accountId: Int64, daysAgo: Int) -> Event {
         let date = Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date()) ?? Date()
         return Event(accountId: accountId, eventType: .profileSnapshot, payload: Data(), source: .api, observedAt: date, createdAt: date)
@@ -123,6 +136,7 @@ final class GammaServicesTests: XCTestCase {
 
     // MARK: - ActivityAnalysisService
 
+    /// 3/7 天有事件 → activeDays > 0 且 ratio <= 1.0
     func testActivityAnalysisCalculatesRatio() async {
         let service = ActivityAnalysisService()
         let now = Date()
@@ -133,6 +147,7 @@ final class GammaServicesTests: XCTestCase {
         XCTAssertLessThanOrEqual(result.activeDaysRatio, 1.0)
     }
 
+    /// 空事件 → activeDays = 0，标签 "Low"
     func testActivityAnalysisEmptyEvents() async {
         let service = ActivityAnalysisService()
         let now = Date()
@@ -143,6 +158,7 @@ final class GammaServicesTests: XCTestCase {
 
     // MARK: - RetentionAnalysisService
 
+    /// 粉丝递增 100→110→120 → 正增长率，非流失状态
     func testRetentionGrowingFollowers() async {
         let service = RetentionAnalysisService()
         let snapshots = [makeSnapshot(followers: 100), makeSnapshot(followers: 110), makeSnapshot(followers: 120)]
@@ -151,6 +167,7 @@ final class GammaServicesTests: XCTestCase {
         XCTAssertFalse(result.isChurning)
     }
 
+    /// 粉丝连降 4 天 120→...→90 → 负增长率，处于流失状态，风险 "Low"
     func testRetentionChurnDetection() async {
         let service = RetentionAnalysisService()
         let snapshots = [makeSnapshot(followers: 120), makeSnapshot(followers: 110), makeSnapshot(followers: 100), makeSnapshot(followers: 90)]
@@ -160,6 +177,7 @@ final class GammaServicesTests: XCTestCase {
         XCTAssertEqual(result.churnRiskLevel, "Low")
     }
 
+    /// 仅 1 个 Snapshot → 风险等级 "None"（数据不足）
     func testRetentionInsufficientData() async {
         let service = RetentionAnalysisService()
         let result = await service.analyze(snapshots: [makeSnapshot(followers: 100)])
@@ -168,6 +186,7 @@ final class GammaServicesTests: XCTestCase {
 
     // MARK: - GeoDistributionService
 
+    /// 调用 fetchDistribution → 返回 9 个 mock 地区，topRegion 为美国
     func testGeoDistributionReturnsMockData() async {
         let service = GeoDistributionService()
         let result = await service.fetchDistribution(accountId: 1)
@@ -178,6 +197,7 @@ final class GammaServicesTests: XCTestCase {
 
     // MARK: - AIAnalysisService
 
+    /// 粉丝在最后 3/10 天突变 100→150 → 应检测到 anomaly
     func testAIAnomalyDetection() async {
         let service = AIAnalysisService()
         let snapshots = (0..<10).map { i in makeSnapshot(likes: 50, views: 500, followers: i < 7 ? 100 : 150) }
@@ -186,12 +206,14 @@ final class GammaServicesTests: XCTestCase {
         XCTAssertTrue(insights.contains { $0.type == InsightType.summary })
     }
 
+    /// 空 Snapshot → 洞察列表为空
     func testAIEmptyData() async {
         let service = AIAnalysisService()
         let insights = await service.analyze(snapshots: [])
         XCTAssertTrue(insights.isEmpty)
     }
 
+    /// 粉丝从 100 骤升至 200（后 3 天）→ 应检测到 anomaly
     func testAIFollowerSurgeDetection() async {
         let service = AIAnalysisService()
         var snapshots: [Snapshot] = []

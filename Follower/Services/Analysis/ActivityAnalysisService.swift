@@ -6,6 +6,7 @@
 
 import Foundation
 
+/// 活跃度分析结果：活跃天数比例、最活跃星期、事件密度等
 struct ActivityResult: Sendable {
     let activeDaysRatio: Double        // 0-1，有数据的天数占比
     let mostActiveDay: Int?            // 1=Sun...7=Sat
@@ -15,13 +16,17 @@ struct ActivityResult: Sendable {
     let label: String                  // "Highly Active" / "Active" / "Moderate" / "Low"
 }
 
+/// 活跃度分析服务协议（Premium）
 protocol ActivityAnalysisServiceProtocol: Sendable {
+    /// 分析事件的时间分布，返回活跃度指标
     func analyze(events: [Event], from: Date, to: Date) async -> ActivityResult
 }
 
+/// 活跃度分析服务实现：按天统计 Event 分布 + 星期分布 + 活跃级别标签
 final class ActivityAnalysisService: ActivityAnalysisServiceProtocol {
     private let calendar = Calendar.current
 
+    /// 统计 Event 在时间范围内的分布：活跃天比例 / 最活跃星期 / 日均事件数
     func analyze(events: [Event], from: Date, to: Date) async -> ActivityResult {
         let totalDays = max(1, calendar.dateComponents([.day], from: from, to: to).day ?? 1)
 

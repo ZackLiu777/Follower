@@ -6,13 +6,14 @@
 
 import SwiftUI
 
+/// 帖子详情页 — Mock 大图 + 互动数据（赞/评/曝光/收藏）
 struct PostDetailView: View {
     let post: MockPost
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // 图片占位
+                // MARK: 图片占位
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color(hex: post.colorHex) ?? .gray)
@@ -25,7 +26,7 @@ struct PostDetailView: View {
                 }
                 .padding(.horizontal)
 
-                // 互动数据
+                // MARK: 互动数据卡片
                 VStack(spacing: 12) {
                     detailRow(icon: "heart.fill", color: .pink, label: "Likes", value: post.formattedLikes)
                     detailRow(icon: "text.bubble.fill", color: .blue, label: "Comments", value: "\(post.comments)")
@@ -37,7 +38,7 @@ struct PostDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .padding(.horizontal)
 
-                // 文案
+                // MARK: 帖文与日期
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Caption").font(.headline)
                     Text(post.caption).font(.body)
@@ -52,6 +53,7 @@ struct PostDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
+    /// 互动指标行 — icon + 标签 + 数值
     private func detailRow(icon: String, color: Color, label: String, value: String) -> some View {
         HStack {
             Image(systemName: icon).foregroundColor(color).frame(width: 24)
