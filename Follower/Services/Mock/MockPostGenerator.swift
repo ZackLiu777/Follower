@@ -6,12 +6,14 @@
 
 import Foundation
 
+/// 帖子类型枚举：image / video / carousel
 enum PostType: String, CaseIterable, Sendable {
     case image = "photo"
     case video = "video.fill"
     case carousel = "square.on.square"
 }
 
+/// Mock 帖子数据：类型 / 日期 / 互动数据 / 文案 / 占位颜色
 struct MockPost: Identifiable, Sendable {
     let id: String
     let type: PostType
@@ -27,6 +29,7 @@ struct MockPost: Identifiable, Sendable {
     var formattedReach: String { reach >= 1000 ? String(format: "%.1fK", Double(reach) / 1000) : "\(reach)" }
 }
 
+/// Mock 帖子生成器（Lambda）：用于 UI 预览和 Alpha 测试
 struct MockPostGenerator: Sendable {
     private let captions = [
         "Sunset vibes 🌅", "New recipe just dropped!", "Morning coffee routine ☕",
@@ -38,6 +41,7 @@ struct MockPostGenerator: Sendable {
     private let colors = ["#E85D75", "#4ECDC4", "#FF6B6B", "#45B7D1", "#96CEB4",
                            "#FFEAA7", "#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE"]
 
+    /// 生成指定数量的随机 Mock 帖子，按日期降序排列
     func generate(count: Int = 5) -> [MockPost] {
         var posts: [MockPost] = []
         for i in 0..<count {

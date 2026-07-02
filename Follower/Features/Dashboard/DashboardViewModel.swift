@@ -8,46 +8,73 @@ import Foundation
 import SwiftUI
 import Combine
 
+/// Dashboard 的 ViewModel：管理账户选择、快照数据、增量计算、帖子与 Premium Mock 数据
 @MainActor
 final class DashboardViewModel: ObservableObject {
+    /// Snapshot 数据仓库
     private let snapshotRepo: SnapshotRepositoryProtocol
+    /// 账户数据仓库
     private let accountRepo: AccountRepositoryProtocol
+    /// 同步引擎
     private let syncEngine: SyncEngineProtocol
 
-    // MARK: - Published
+    // MARK: - Published: 核心状态
 
+    /// 最新 Snapshot
     @Published var latestSnapshot: Snapshot?
+    /// 所有已连接账户
     @Published var accounts: [Account] = []
+    /// 当前选中账户 ID
     @Published var selectedAccountId: Int64?
+    /// 加载中标记
     @Published var isLoading: Bool = false
+    /// 同步中标记
     @Published var isSyncing: Bool = false
+    /// 错误消息（非 nil 时展示 ErrorBanner）
     @Published var errorMessage: String?
 
-    // Hero
+    // MARK: - Published: Hero 指标
+
+    /// 粉丝数环比变化（7 天）
     @Published var followerDelta: Int = 0
+    /// 粉丝数环比百分比
     @Published var followerDeltaPercent: Double = 0
+    /// 粉丝趋势 Mini 折线图数据
     @Published var sparklineData: [Double] = []
 
-    // Secondary
+    // MARK: - Published: 次要指标
+
+    /// 互动率环比变化
     @Published var engagementDelta: Double = 0
+    /// Reach 环比变化
     @Published var reachDelta: Int = 0
+    /// 帖子数环比变化
     @Published var postsDelta: Int = 0
 
-    // Post list
+    // MARK: - Published: 帖子列表
+
+    /// 最近帖子（Mock）
     @Published var recentPosts: [MockPost] = []
 
-    // Premium
+    // MARK: - Published: Premium Mock 数据
+
+    /// 取关用户列表（Mock）
     @Published var unfollowList: [MockFollower] = []
+    /// 推荐最佳发帖时间（Mock）
     @Published var bestPostingTime: String = ""
+    /// 内容策略建议（Mock）
     @Published var contentTip: String = ""
+    /// 预测下月粉丝数（Mock）
     @Published var predictedFollowers: Int = 0
 
+    /// 初始化：注入三个核心依赖
     init(snapshotRepo: SnapshotRepositoryProtocol, accountRepo: AccountRepositoryProtocol, syncEngine: SyncEngineProtocol) {
         self.snapshotRepo = snapshotRepo
         self.accountRepo = accountRepo
         self.syncEngine = syncEngine
     }
 
+    /// 加载账户列表并自动选中第一个，随后加载全部数据
     func loadAccounts() async {
         do {
             accounts = try await accountRepo.fetchAll()
@@ -56,6 +83,7 @@ final class DashboardViewModel: ObservableObject {
         } catch { errorMessage = error.localizedDescription }
     }
 
+    /// 加载当前选中账户的 Snapshot、增量、帖子与 Premium 数据
     func loadAllData() async {
         guard let accountId = selectedAccountId else { return }
         isLoading = true; defer { isLoading = false }
@@ -67,6 +95,7 @@ final class DashboardViewModel: ObservableObject {
         } catch { errorMessage = error.localizedDescription }
     }
 
+    /// 触发同步引擎拉取最新数据，完成后刷新 UI
     func sync() async {
         guard let accountId = selectedAccountId else { return }
         isSyncing = true; defer { isSyncing = false }
@@ -76,10 +105,12 @@ final class DashboardViewModel: ObservableObject {
         } catch { errorMessage = error.localizedDescription }
     }
 
+    /// 切换选中账户并重新加载数据
     func selectAccount(_ id: Int64) { selectedAccountId = id; Task { await loadAllData() } }
 
     // MARK: - Private
 
+    /// 计算 7 天环比的 Hero 与次要指标增量
     private func computeDeltas(accountId: Int64) async {
         let now = Date()
         let weekAgo = Calendar.current.date(byAdding: .day, value: -7, to: now) ?? now
@@ -97,10 +128,12 @@ final class DashboardViewModel: ObservableObject {
         }
     }
 
+    /// 加载 Mock 帖子列表
     private func loadPosts() async {
         recentPosts = MockPostGenerator().generate(count: 5)
     }
 
+    /// 加载 Premium Mock 数据：取关列表、最佳时间、策略建议、预测粉丝
     private func loadPremiumInsights() async {
         unfollowList = MockFollowerListGenerator().generateUnfollows(count: 4)
         bestPostingTime = ["Wed 7PM", "Mon 8PM", "Sat 11AM", "Fri 6PM"].randomElement()!

@@ -7,17 +7,24 @@
 import SwiftUI
 import Charts
 
+/// 粉丝详情页：展示粉丝总数 Hero、7 天增长曲线、最近关注/取关动态
 struct FollowerDetailView: View {
+    /// 当前粉丝总数
     let currentFollowers: Int
+    /// 7 天粉丝变化量
     let delta: Int
+    /// 7 天粉丝变化百分比
     let deltaPercent: Double
+    /// 7 天 Mini 折线图数据
     let sparklineData: [Double]
+    /// 当前账户用户名（用于标题）
     let accountName: String
 
+    /// Hero 卡片 + 7 天增长曲线 + 最近动态列表 UI
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Hero summary
+                // Hero summary 卡片
                 VStack(spacing: 4) {
                     Text(currentFollowers.formatted(.number))
                         .font(.system(size: 48, weight: .bold, design: .rounded))
@@ -35,7 +42,7 @@ struct FollowerDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 20))
                 .padding(.horizontal)
 
-                // Growth chart
+                // 7 天增长曲线 Chart
                 VStack(alignment: .leading, spacing: 8) {
                     Text("7-Day Growth").font(.headline).padding(.horizontal)
                     Chart(Array(sparklineData.enumerated()), id: \.0) { i, val in
@@ -48,7 +55,7 @@ struct FollowerDetailView: View {
                     .padding(.horizontal)
                 }
 
-                // Mock follower activity
+                // Mock 粉丝动态列表
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Recent Activity").font(.headline).padding(.horizontal)
                     ForEach(MockFollowerListGenerator().generateUnfollows(count: 6)) { f in

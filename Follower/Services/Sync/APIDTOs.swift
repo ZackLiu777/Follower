@@ -11,7 +11,7 @@ import Foundation
 
 // MARK: - API Patterns
 
-/// API 返回的粉丝数、关注数等基���指标
+/// API 返回的粉丝数、关注数等基础指标
 struct APIProfileResponse: Codable {
     let username: String
     let displayName: String
@@ -55,7 +55,7 @@ struct APITrendResponse: Codable {
 
 // MARK: - Sync Result
 
-/// 同步操作结果
+/// 同步操作结果：记录创建的 Event 数、更新的 Snapshot/Metric 数及错误
 struct SyncResult {
     let accountId: Int64
     let eventsCreated: Int

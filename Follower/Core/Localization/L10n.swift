@@ -16,8 +16,9 @@ func loc(_ key: String, comment: String = "") -> String {
 
 // MARK: - L10n Keys
 
+/// 本地化 Key 枚举 — 按 UI 区域分组，所有文本通过 loc() 查找
 enum L10n {
-
+    
     // MARK: Common
     enum Common {
         static let ok = "common.ok"
@@ -30,7 +31,7 @@ enum L10n {
         static let syncNow = "common.syncNow"
         static let share = "common.share"
     }
-
+    
     // MARK: Tab
     enum Tab {
         static let dashboard = "tab.dashboard"
@@ -38,7 +39,7 @@ enum L10n {
         static let settings = "tab.settings"
         static let my = "tab.my"
     }
-
+    
     // MARK: Dashboard
     enum Dashboard {
         static let title = "dashboard.title"
@@ -56,7 +57,7 @@ enum L10n {
         static let shares = "dashboard.shares"
         static let views = "dashboard.views"
     }
-
+    
     // MARK: Trends
     enum Trends {
         static let title = "trends.title"
@@ -76,7 +77,7 @@ enum L10n {
         static let noData = "trends.noData"
         static let noDataHint = "trends.noDataHint"
     }
-
+    
     // MARK: Settings
     enum Settings {
         static let title = "settings.title"
@@ -108,7 +109,7 @@ enum L10n {
         static let deleteConfirmationMessage = "settings.deleteConfirmation.message"
         static let premiumFeatures = "settings.premiumFeatures"
     }
-
+    
     // MARK: Account
     enum Account {
         static let title = "account.title"
@@ -130,7 +131,7 @@ enum L10n {
         static let requiredFields = "account.requiredFields"
         static let noAccountSelected = "account.noAccountSelected"
     }
-
+    
     // MARK: Premium
     enum Premium {
         static let premiumFeature = "premium.feature"

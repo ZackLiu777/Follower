@@ -22,6 +22,7 @@ struct PremiumGateModifier: ViewModifier {
         appState.premiumEnabledFlags[featureKey.rawValue] ?? false
     }
 
+    /// 包裹原始 content，未解锁时加锁图标、试用中加 Trial 标签、点击触发升级弹窗
     func body(content: Content) -> some View {
         Button {
             if isEnabled {
@@ -45,6 +46,7 @@ struct PremiumGateModifier: ViewModifier {
         }
     }
 
+    /// 锁图标徽章 — 表示该功能需 Premium 解锁
     private var premiumLockBadge: some View {
         Image(systemName: "lock.fill")
             .font(.caption2)
@@ -55,6 +57,7 @@ struct PremiumGateModifier: ViewModifier {
             .padding(6)
     }
 
+    /// 试用中标签 — 橙色 Capsule 提示当前处于试用期
     private var trialBadge: some View {
         Text(loc(L10n.Premium.trialBadge))
             .font(.system(size: 8, weight: .bold))
@@ -72,6 +75,7 @@ struct PremiumGateModifier: ViewModifier {
 
 /// Premium 功能标记（列表/卡片中使用）
 struct PremiumBadge: View {
+    /// 橙色→粉色渐变 PREMIUM 标签
     var body: some View {
         Text("PREMIUM")
             .font(.system(size: 8, weight: .bold))
@@ -106,6 +110,7 @@ struct UpgradePromptView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appState: AppState
 
+    /// 升级页布局：皇冠图标 → 功能名称 → 权益列表 → 升级按钮（或试用提示）
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
@@ -180,6 +185,7 @@ struct UpgradePromptView: View {
         }
     }
 
+    /// 单条权益行 — 绿色对勾 + 文字描述
     private func premiumBenefit(_ text: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "checkmark.circle.fill")

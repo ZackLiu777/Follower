@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+/// 设置页面 — 试用状态、账号管理、外观、导出、存储、隐私、Premium
 struct SettingsView: View {
     @EnvironmentObject private var appState: AppState
     @ObservedObject var viewModel: SettingsViewModel
@@ -57,6 +58,8 @@ struct SettingsView: View {
     }
 
     // MARK: - Trial
+
+    /// 试用状态行 — 显示剩余时间
     private var trialSection: some View {
         HStack {
             Label(title: { Text(viewModel.isTrialActive ? loc(L10n.Settings.trialActive) : loc(L10n.Settings.trialEnded)) },
@@ -67,6 +70,8 @@ struct SettingsView: View {
     }
 
     // MARK: - Account
+
+    /// 已连接账号列表 + 删除操作
     private var accountSection: some View {
         Group {
             ForEach(viewModel.accounts, id: \.id) { account in
@@ -96,6 +101,8 @@ struct SettingsView: View {
     }
 
     // MARK: - Language
+
+    /// 应用语言选择 Picker
     private var languageSection: some View {
         Picker(loc(L10n.Settings.language), selection: Binding(get: { appState.currentLanguage }, set: { appState.setLanguage($0) })) {
             ForEach(AppLanguage.allCases, id: \.self) { lang in Text(lang.displayName).tag(lang) }
@@ -103,6 +110,8 @@ struct SettingsView: View {
     }
 
     // MARK: - Theme
+
+    /// 主题风格选择 — Apple Native / Instagram
     private var themeSection: some View {
         Picker(loc(L10n.Settings.theme), selection: Binding(
             get: { viewModel.currentTheme },
@@ -114,6 +123,8 @@ struct SettingsView: View {
     }
 
     // MARK: - Export
+
+    /// 数据导出 — JSON / CSV 格式 + 分享
     private var exportSection: some View {
         Group {
             Picker(loc(L10n.Settings.format), selection: $viewModel.exportFormat) {
@@ -134,6 +145,8 @@ struct SettingsView: View {
     }
 
     // MARK: - Storage
+
+    /// 存储说明 — 本地优先 + 数据库描述
     private var storageInfoSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             Label(loc(L10n.Settings.localOnly), systemImage: "lock.shield").font(.subheadline)
@@ -142,6 +155,8 @@ struct SettingsView: View {
     }
 
     // MARK: - Privacy
+
+    /// 隐私 — 隐私政策 + 删除全部数据
     private var privacySection: some View {
         Group {
             Button { } label: { Label(loc(L10n.Settings.privacyPolicy), systemImage: "hand.raised") }
@@ -158,6 +173,8 @@ struct SettingsView: View {
     }
 
     // MARK: - Premium
+
+    /// Premium 功能开关列表 + 一键解锁
     private var premiumFeaturesSection: some View {
         Group {
             Button { Task { await viewModel.unlockAllPremium() } } label: {

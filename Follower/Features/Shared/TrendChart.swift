@@ -13,6 +13,7 @@
 import SwiftUI
 import Charts
 
+/// 多时间窗通用柱状图组件 — 日/周/月/年各自独立 Chart 实现，共享外层卡片 UI
 struct TrendChart: View {
     let dataPoints: [TrendDataPoint]
     let barGradientStart: Color
@@ -20,12 +21,15 @@ struct TrendChart: View {
     let title: String
     var timeWindow: TimeWindow = .day
 
+    /// 图表锚点日期，用于计算时间窗起止
     private var referenceDate: Date { Date() }
     private let calendar = Calendar.current
+    /// 数据点总数，用于判断空数据等边界条件
     private var n: Int { dataPoints.count }
 
     // ── Shared Y Domain ──
 
+    /// 自动计算 Y 轴上限，向上取整到美观量级（nice rounding）
     private var yScaleDomain: ClosedRange<Double> {
         let maxValue = dataPoints.map(\.value).max() ?? 0
         guard maxValue > 0 else { return 0...1 }
@@ -34,6 +38,7 @@ struct TrendChart: View {
         return 0...niceMax
     }
 
+    /// 柱状图渐变填充色，由外部主题决定起止颜色
     private var gradient: LinearGradient {
         LinearGradient(
             colors: [barGradientStart, barGradientEnd],
@@ -107,7 +112,9 @@ struct TrendChart: View {
     private var weekChart: some View {
         let yMax = yScaleDomain.upperBound
         let hGridCount = 4
-        let fmt = DateFormatter(); fmt.dateFormat = "EEE"
+        let fmt = DateFormatter()
+        fmt.locale = Locale(identifier: LanguageStore.shared.current.rawValue)
+        fmt.dateFormat = "EEE"
 
         return VStack(spacing: 0) {
             // ── Chart area ──
@@ -181,7 +188,7 @@ struct TrendChart: View {
             HStack(spacing: 0) {
                 Color.clear.frame(width: 40)
                 ForEach(dataPoints) { point in
-                    Text(String(fmt.string(from: point.date).prefix(3)))
+                    Text(fmt.string(from: point.date))
                         .font(.caption2)
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity)
@@ -325,6 +332,9 @@ struct TrendChart: View {
     }
 }
 
+// MARK: - Previews
+
+/// Day 窗口预览 — 24 小时随机数据
 #Preview("Day") {
     let today = Calendar.current.startOfDay(for: Date())
     let sample = (0..<24).map { h in

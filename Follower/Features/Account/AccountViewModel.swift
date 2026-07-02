@@ -14,6 +14,7 @@ import Foundation
 import SwiftUI
 import Combine
 
+/// 账号管理 ViewModel — 添加 / 撤销 / 删除账号（Alpha 阶段使用模拟登录）
 @MainActor
 final class AccountViewModel: ObservableObject {
     // MARK: - Dependencies
@@ -35,6 +36,7 @@ final class AccountViewModel: ObservableObject {
 
     // MARK: - Init
 
+    /// 注入依赖：AccountRepo / SyncEngine
     init(
         accountRepo: AccountRepositoryProtocol,
         syncEngine: SyncEngineProtocol
@@ -45,6 +47,7 @@ final class AccountViewModel: ObservableObject {
 
     // MARK: - Public
 
+    /// 加载所有已连接账号
     func loadAccounts() async {
         isLoading = true
         defer { isLoading = false }

@@ -7,11 +7,13 @@
 
 import SwiftUI
 
+/// 开屏页 — Instagram 渐变背景 + 图标 + 品牌名，2 秒动画后回调进入主界面
 struct SplashView: View {
     @State private var opacity: Double = 0
     @State private var scale: CGFloat = 0.8
     var onComplete: () -> Void
 
+    /// 全屏渐变 + 居中图标/文字，入场缩放淡入 → 2 秒后淡出回调
     var body: some View {
         ZStack {
             // Instagram 渐变背景
@@ -71,6 +73,7 @@ struct SplashView: View {
     }
 }
 
+/// 预览 — 空回调，展示完整入场动画
 #Preview {
     SplashView(onComplete: {})
 }

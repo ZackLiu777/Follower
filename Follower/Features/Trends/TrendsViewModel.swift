@@ -9,32 +9,42 @@ import Foundation
 import SwiftUI
 import Combine
 
+/// 趋势页 ViewModel — 管理多时间窗指标数据加载、缓存与窗口切换
 @MainActor
 final class TrendsViewModel: ObservableObject {
 
+    // ── Repositories ──
     private let snapshotRepo: SnapshotRepositoryProtocol
     private let metricRepo: MetricRepositoryProtocol
     private let accountRepo: AccountRepositoryProtocol
 
+    /// 图表中展示的六个指标类型，顺序固定
     static let visibleMetricTypes: [MetricType] = [
         .followerGrowth, .engagementTrend, .averageLikes,
         .averageComments, .averageShares, .profileViews
     ]
 
+    // ── 多窗口指标缓存 ──
     @Published var dailyMetrics: [MetricType: [Metric]] = [:]
     @Published var weeklyMetrics: [MetricType: [Metric]] = [:]
     @Published var monthlyMetrics: [MetricType: [Metric]] = [:]
     @Published var yearlyMetrics: [MetricType: [Metric]] = [:]
+
+    /// 日视图的 24 小时逐时数据（由最新 Snapshot 实时生成）
     @Published var hourlyData: [MetricType: [TrendDataPoint]] = [:]
+
+    // ── UI 状态 ──
     @Published var selectedWindow: TimeWindow = .day
     @Published var selectedAccountId: Int64?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
+    /// 依赖注入 Repository，建立数据访问通道
     init(snapshotRepo: SnapshotRepositoryProtocol, metricRepo: MetricRepositoryProtocol, accountRepo: AccountRepositoryProtocol) {
         self.snapshotRepo = snapshotRepo; self.metricRepo = metricRepo; self.accountRepo = accountRepo
     }
 
+    /// 页面首次加载 — 获取首个账号并拉取其全部时间窗趋势数据
     func loadInitialAccount() async {
         do {
             let accounts = try await accountRepo.fetchAll()
@@ -44,6 +54,7 @@ final class TrendsViewModel: ObservableObject {
         } catch { errorMessage = error.localizedDescription }
     }
 
+    /// 加载指定账号在所有时间窗下的全部指标数据
     func loadTrends(accountId: Int64) async {
         isLoading = true; defer { isLoading = false }
         do {
@@ -117,11 +128,13 @@ final class TrendsViewModel: ObservableObject {
         return dict
     }
 
+    /// 切换时间窗 — 若切到 day 则重新生成每小时假数据
     func selectWindow(_ window: TimeWindow) async {
         selectedWindow = window
         if window == .day { await generateHourlyData() }
     }
     
+    /// 根据当前时间窗返回指定指标的 TrendDataPoint 数组，供图表渲染
     func chartData(for metricType: MetricType) -> [TrendDataPoint] {
         let calendar = Calendar.current
         let now = Date()
@@ -157,10 +170,4 @@ final class TrendsViewModel: ObservableObject {
                 .map { TrendDataPoint(date: $0.observedAt, value: $0.value) }
         }
     }
-}
-
-struct TrendDataPoint: Identifiable {
-    var id: Date { date }
-    let date: Date
-    let value: Double
 }

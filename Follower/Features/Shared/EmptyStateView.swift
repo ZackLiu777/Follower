@@ -8,6 +8,7 @@
 
 import SwiftUI
 
+/// 空状态占位组件 — 图标 + 标题 + 描述 + 可选操作按钮
 struct EmptyStateView: View {
     let icon: String
     let title: String
@@ -15,6 +16,7 @@ struct EmptyStateView: View {
     var actionLabel: String?
     var action: (() -> Void)?
 
+    /// 垂直居中布局：SF Symbol 图标 → 标题 → 描述 → 操作按钮
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: icon)
@@ -49,6 +51,7 @@ struct EmptyStateView: View {
     }
 }
 
+/// 预览 — 无账号连接提示
 #Preview {
     EmptyStateView(
         icon: "person.crop.circle.badge.exclamationmark",

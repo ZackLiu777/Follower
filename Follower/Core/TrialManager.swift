@@ -13,17 +13,25 @@ import Foundation
 
 // MARK: - TrialManagerProtocol
 
+/// 试用管理器协议 — 提供试用状态查询和生命周期管理
 protocol TrialManagerProtocol: Sendable {
+    /// 试用是否当前活跃
     func isTrialActive() async -> Bool
+    /// 剩余试用时间（秒），试用未开始或已结束返回 nil
     func remainingTime() async -> TimeInterval?
+    /// 试用总时长（秒）
     var totalTrialDuration: TimeInterval { get }
+    /// 首次打开时记录开始时间并启用所有 Premium 功能
     func startTrialIfNeeded() async
+    /// 检查试用是否到期，到期则禁用 Premium
     func checkTrialStatus() async
+    /// 试用是否已过期
     func isTrialExpired() async -> Bool
 }
 
 // MARK: - TrialManager
 
+/// Actor 实现的试用管理器 — 使用 UserDefaults 持久化试用开始/结束状态
 final actor TrialManager: TrialManagerProtocol {
     private let premiumFeatureRepo: PremiumFeatureRepositoryProtocol
 
@@ -50,22 +58,26 @@ final actor TrialManager: TrialManagerProtocol {
         }
     }
 
+    /// 初始化：注入 Premium Feature Repository 用于启用/禁用功能
     init(premiumFeatureRepo: PremiumFeatureRepositoryProtocol) {
         self.premiumFeatureRepo = premiumFeatureRepo
     }
 
     // MARK: - Public
 
+    /// 判断试用是否仍在有效期内
     func isTrialActive() -> Bool {
         guard let start = trialStartDate, !trialManuallyEnded else { return false }
         return Date().timeIntervalSince(start) < totalTrialDuration
     }
 
+    /// 判断试用是否已到期
     func isTrialExpired() -> Bool {
         guard let start = trialStartDate, !trialManuallyEnded else { return false }
         return Date().timeIntervalSince(start) >= totalTrialDuration
     }
 
+    /// 返回剩余试用秒数，试用未开始或已结束返回 nil
     func remainingTime() -> TimeInterval? {
         guard let start = trialStartDate, !trialManuallyEnded else { return nil }
         let elapsed = Date().timeIntervalSince(start)
@@ -73,6 +85,7 @@ final actor TrialManager: TrialManagerProtocol {
         return max(0, remaining)
     }
 
+    /// 首次调用时记录试用开始时间并批量启用所有 Premium 功能
     func startTrialIfNeeded() async {
         guard trialStartDate == nil else { return }
 
@@ -82,6 +95,7 @@ final actor TrialManager: TrialManagerProtocol {
         await enableAllPremiumFeatures(true)
     }
 
+    /// 检查试用状态：若已到期，批量禁用所有 Premium 并标记结束
     func checkTrialStatus() async {
         if isTrialExpired() {
             await enableAllPremiumFeatures(false)
@@ -91,6 +105,7 @@ final actor TrialManager: TrialManagerProtocol {
 
     // MARK: - Private
 
+    /// 批量启用或禁用全部 Premium 功能
     private func enableAllPremiumFeatures(_ enabled: Bool) async {
         for key in PremiumFeatureKey.allCases {
             let expiresAt = enabled ? Date().addingTimeInterval(totalTrialDuration) : nil
@@ -100,6 +115,7 @@ final actor TrialManager: TrialManagerProtocol {
 
     // MARK: - Keys
 
+    /// UserDefaults 存储键
     private enum Keys {
         static let trialStartDate = "com.follower.trialStartDate"
         static let trialManuallyEnded = "com.follower.trialManuallyEnded"

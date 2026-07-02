@@ -8,6 +8,7 @@ import Foundation
 
 // MARK: - PredictionResult
 
+/// 预测结果：预测值 / 置信度 / 方法名 / 预测日期
 struct PredictionResult: Sendable {
     let predictedValue: Double
     let confidence: Double        // 0-1
@@ -17,13 +18,17 @@ struct PredictionResult: Sendable {
 
 // MARK: - PredictionServiceProtocol
 
+/// 趋势预测服务协议（Premium）
 protocol PredictionServiceProtocol: Sendable {
+    /// 简单移动平均预测
     func predictSMA(dataPoints: [(Date, Double)], window: Int) async -> [PredictionResult]
+    /// 线性回归预测 N 天后的值
     func predictLinear(dataPoints: [(Date, Double)], daysAhead: Int) async -> PredictionResult?
 }
 
 // MARK: - PredictionService
 
+/// 预测服务实现：SMA 简单移动平均 + 线性回归
 final class PredictionService: PredictionServiceProtocol {
 
     /// 简单移动平均预测：取最近 `window` 个数据点的均值作为下一个预测值
@@ -74,6 +79,7 @@ final class PredictionService: PredictionServiceProtocol {
         return PredictionResult(predictedValue: predictedValue, confidence: max(0, min(1, rSquared)), method: "Linear", predictionDate: predictionDate)
     }
 
+    /// 计算标准差，用于评估 SMA 预测的置信度
     private func standardDeviation(_ values: [Double]) -> Double {
         let mean = values.reduce(0, +) / Double(values.count)
         let variance = values.map { ($0 - mean) * ($0 - mean) }.reduce(0, +) / Double(values.count)

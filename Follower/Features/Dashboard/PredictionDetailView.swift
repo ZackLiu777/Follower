@@ -7,16 +7,21 @@
 import SwiftUI
 import Charts
 
+/// Premium 详情页：展示预测粉丝数 + 90 天历史趋势曲线 + 说明文字
 struct PredictionDetailView: View {
+    /// 预测下月粉丝数
     let predicted: Int
 
+    /// 90 天 Mock 历史数据（缓慢增长 + 随机波动）
     private var historical: [Double] {
         (0..<90).map { Double(10000 + Int.random(in: -50...100) + $0 * 15) }
     }
 
+    /// 预测数值卡片 + 历史趋势曲线 + 说明文字 UI
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
+                // 预测值 Hero 卡片
                 VStack(spacing: 4) {
                     Text("~\(predicted.formatted(.number))").font(.system(size: 40, weight: .bold, design: .rounded))
                     Text("Predicted Followers Next Month").font(.subheadline).foregroundColor(.secondary)
@@ -27,6 +32,7 @@ struct PredictionDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 20))
                 .padding(.horizontal)
 
+                // 90 天历史趋势折线图
                 Chart {
                     ForEach(Array(historical.enumerated()), id: \.0) { i, val in
                         LineMark(x: .value("", i), y: .value("", val))
@@ -36,6 +42,7 @@ struct PredictionDetailView: View {
                 .frame(height: 200)
                 .padding(.horizontal)
 
+                // 预测说明文字
                 Text("Based on your 90-day growth trend, you're on track to reach ~\(predicted.formatted(.number)) followers. Keep posting consistently to maintain this growth rate.")
                     .font(.caption).foregroundColor(.secondary)
                     .padding(.horizontal)

@@ -6,14 +6,17 @@
 
 import SwiftUI
 
+/// 主 Dashboard：Hero 粉丝卡片 + 次要指标 + 最近帖子 + Premium Insights 区域
 struct DashboardView: View {
     @EnvironmentObject private var appState: AppState
     @ObservedObject var viewModel: DashboardViewModel
     @Environment(\.theme) private var theme
 
+    /// 根布局：加载 / 空状态 / 错误 / 内容分支
     var body: some View {
         NavigationStack {
             ZStack {
+                // 主题渐变背景
                 LinearGradient(colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
                 ScrollView {
                     if let error = viewModel.errorMessage {
@@ -38,6 +41,7 @@ struct DashboardView: View {
         .task { await viewModel.loadAccounts() }
     }
 
+    /// 工具栏：同步按钮 / 同步中进度指示器
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
             if viewModel.isSyncing { ProgressView() }
@@ -47,6 +51,7 @@ struct DashboardView: View {
 
     // MARK: - Content
 
+    /// 主内容区：账户选择器 + Hero + 次要指标 + 帖子 + Premium
     private var contentView: some View {
         VStack(spacing: 16) {
             accountPicker
@@ -89,6 +94,7 @@ struct DashboardView: View {
         .padding(.vertical)
     }
 
+    /// 横向滚动账户选择器（胶囊按钮）
     private var accountPicker: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -112,6 +118,7 @@ struct DashboardView: View {
 
     // MARK: - Posts
 
+    /// 最近帖子列表区域
     private var postSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
@@ -148,6 +155,7 @@ struct DashboardView: View {
 
     // MARK: - Premium
 
+    /// Premium Insights 区域：解锁后显示可导航详情行，锁定状态显示锁 + 升级入口
     private var premiumSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -181,6 +189,7 @@ struct DashboardView: View {
         .padding(.vertical, 8)
     }
 
+    /// Premium 已解锁：可点击导航到对应详情页的行视图
     private func premiumNavRow<D: View>(icon: String, title: String, value: String, destination: D) -> some View {
         NavigationLink(destination: destination) {
             HStack {
@@ -199,6 +208,7 @@ struct DashboardView: View {
         .buttonStyle(.plain)
     }
 
+    /// Premium 锁定行：仅显示标题与锁图标，点击触发升级弹窗
     private func lockedRow(icon: String, title: String) -> some View {
         HStack {
             Image(systemName: icon).frame(width: 24).foregroundColor(.orange)

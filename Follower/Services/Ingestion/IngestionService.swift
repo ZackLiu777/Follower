@@ -12,6 +12,7 @@ import Foundation
 
 // MARK: - IngestionServiceProtocol
 
+/// 数据摄取服务协议：将外部 API 数据转换为内部 Event 并触发聚合
 protocol IngestionServiceProtocol: Sendable {
     /// 摄取 Profile + Trend 数据，返回同步结果
     func ingest(
@@ -26,10 +27,12 @@ protocol IngestionServiceProtocol: Sendable {
 
 // MARK: - IngestionService
 
+/// 数据摄取服务实现：DTO → Event 写入 → 触发 Aggregation 管道
 final class IngestionService: IngestionServiceProtocol {
     private let eventRepo: EventRepositoryProtocol
     private let aggregationService: AggregationServiceProtocol
 
+    /// 注入 EventRepository 和 AggregationService
     init(
         eventRepo: EventRepositoryProtocol,
         aggregationService: AggregationServiceProtocol
@@ -38,6 +41,7 @@ final class IngestionService: IngestionServiceProtocol {
         self.aggregationService = aggregationService
     }
 
+    /// 摄取 Profile + Trend 数据：编码为 Event → 批量写入 → 触发聚合
     func ingest(
         accountId: Int64,
         profile: APIProfileResponse,
@@ -133,6 +137,7 @@ final class IngestionService: IngestionServiceProtocol {
 
 // MARK: - Ingestion Errors
 
+/// 数据摄取错误类型
 enum IngestionError: Error {
     case encodingFailure(String)
     case invalidData(String)

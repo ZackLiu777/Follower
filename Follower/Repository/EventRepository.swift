@@ -11,18 +11,27 @@ import GRDB
 
 // MARK: - EventRepositoryProtocol
 
+/// Event 数据访问协议，仅支持追加和查询，不允许修改或删除原始 Event
 protocol EventRepositoryProtocol: Sendable {
+    /// 获取指定账号的全部 Event（按 observedAt 降序）
     func fetchAll(accountId: Int64) async throws -> [Event]
+    /// 按事件类型查询，支持 limit 分页
     func fetch(accountId: Int64, eventType: EventType, limit: Int) async throws -> [Event]
+    /// 按时间区间查询 Event
     func fetch(accountId: Int64, from: Date, to: Date) async throws -> [Event]
+    /// 追加单条 Event
     func insert(_ event: Event) async throws -> Event
+    /// 批量追加 Event，在同一个事务内执行
     func insertBatch(_ events: [Event]) async throws -> [Event]
+    /// 统计指定账号的 Event 总数
     func count(accountId: Int64) async throws -> Int
+    /// 获取最近一条 Event 的观测时间，用于增量同步判断
     func latestObservedAt(accountId: Int64) async throws -> Date?
 }
 
 // MARK: - EventRepository
 
+/// EventRepository 实现，基于 GRDB 提供 append-only Event 持久化
 final class EventRepository: EventRepositoryProtocol {
     private let db: DatabaseManager
 
@@ -30,6 +39,7 @@ final class EventRepository: EventRepositoryProtocol {
         self.db = db
     }
 
+    /// 查询指定账号全部 Event，按 observedAt 降序排列
     func fetchAll(accountId: Int64) async throws -> [Event] {
         try await db.read { db in
             try Event
@@ -62,6 +72,7 @@ final class EventRepository: EventRepositoryProtocol {
         }
     }
 
+    /// 追加单条 Event，自动填充 createdAt
     func insert(_ event: Event) async throws -> Event {
         try await db.write { db in
             var record = event
@@ -84,6 +95,7 @@ final class EventRepository: EventRepositoryProtocol {
         }
     }
 
+    /// 按账号统计 Event 数量
     func count(accountId: Int64) async throws -> Int {
         try await db.read { db in
             try Event

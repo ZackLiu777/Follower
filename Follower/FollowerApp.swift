@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+/// App 入口 — 初始化 AppState，驱动主题与 Splash
 @main
 struct FollowerApp: App {
     @StateObject private var appState: AppState

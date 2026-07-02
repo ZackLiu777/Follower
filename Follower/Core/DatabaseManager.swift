@@ -10,6 +10,7 @@ import GRDB
 
 // MARK: - DatabaseManager
 
+/// GRDB 数据库管理器 — 单库多表，磁盘失败自动降级到内存库
 final class DatabaseManager: @unchecked Sendable {
     /// 共享单例
     static let shared = DatabaseManager()
@@ -18,6 +19,7 @@ final class DatabaseManager: @unchecked Sendable {
     /// 是否使用内存数据库（降级模式）
     let isInMemoryFallback: Bool
 
+    /// 私有 init：尝试磁盘数据库，失败则降级到内存
     private init() {
         var queue: DatabaseQueue?
         var fallback = false
@@ -55,20 +57,24 @@ final class DatabaseManager: @unchecked Sendable {
 
     // MARK: - Public API
 
+    /// 只读事务 — 可并发执行
     func read<T>(_ block: @escaping @Sendable (Database) throws -> T) async throws -> T {
         try await dbQueue.read(block)
     }
 
+    /// 写入事务 — 串行化执行
     func write<T>(_ block: @escaping @Sendable (Database) throws -> T) async throws -> T {
         try await dbQueue.write(block)
     }
 
+    /// 批量写入 — 与 write 共用串行队列
     func batchWrite<T>(_ block: @escaping @Sendable (Database) throws -> T) async throws -> T {
         try await dbQueue.write(block)
     }
 
     // MARK: - Private
 
+    /// 获取 Application Support 下的数据库文件 URL
     private static func databaseURL() throws -> URL {
         let fileManager = FileManager.default
         let appSupport = try fileManager.url(
@@ -82,6 +88,7 @@ final class DatabaseManager: @unchecked Sendable {
         return directory.appendingPathComponent("follower.sqlite")
     }
 
+    /// 注册并运行数据库迁移
     private static func runMigrations(on dbQueue: DatabaseQueue) throws {
         var migrator = DatabaseMigrator()
         migrator.registerMigration("v1_initial_schema") { db in

@@ -23,6 +23,7 @@
 import Foundation
 import Combine
 
+// DI 容器 — 单一入口创建并持有所有 Repository / Service / Premium 分析服务
 @MainActor
 final class DIContainer: ObservableObject {
     // MARK: - Repositories
@@ -49,6 +50,7 @@ final class DIContainer: ObservableObject {
 
     // MARK: - Init
 
+    /// 构造 DI 容器，按依赖顺序创建 Repository → Service → Premium 分析服务
     init(databaseManager: DatabaseManager) {
         // Repositories
         let accountRepo = AccountRepository(db: databaseManager)

@@ -8,6 +8,7 @@
 
 import SwiftUI
 
+/// 统计指标卡片 — 图标 + 数值 + 标题 + 副标题，毛玻璃圆角卡片
 struct StatCard: View {
     let title: String
     let value: String
@@ -15,6 +16,7 @@ struct StatCard: View {
     let tint: Color
     var subtitle: String?
 
+    /// 垂直布局：图标行（左图标右数值）→ 标题 → 可选副标题
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center) {
@@ -46,6 +48,7 @@ struct StatCard: View {
     }
 }
 
+/// 预览 — 两个 StatCard 并排：Followers（带副标题）和 Engagement
 #Preview {
     HStack {
         StatCard(

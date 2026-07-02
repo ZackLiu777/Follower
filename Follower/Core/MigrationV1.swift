@@ -15,7 +15,9 @@ import GRDB
 
 // MARK: - MigrationV1
 
+/// v1 数据库迁移 — 创建所有表、索引和默认 Premium Feature 记录
 enum MigrationV1 {
+    /// 执行 v1 迁移：建表 + 索引 + 默认 Premium 记录
     nonisolated static func run(in db: Database) throws {
 
         // MARK: account
