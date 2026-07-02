@@ -86,16 +86,16 @@ final class PremiumServicesTests: XCTestCase {
         XCTAssertEqual(result.label, "Low")
     }
 
-    /// shares 权重最高（5x）→ 高 shares 应显著提升分数
+    /// shares 权重最高（5x）→ high shares 应显著提升分数（使用低值避免触碰 100 上限）
     func testScoreEngagement_HighShares_BoostsScore() async {
         let service = ScoringService()
-        // 只有 likes
-        let likesOnly = [makeSnapshot(followers: 100, likes: 100, comments: 0, shares: 0, views: 100)]
+        // 只有 likes — 5 likes / 100 views * 100 = 5 分
+        let likesOnly = [makeSnapshot(followers: 100, likes: 5, comments: 0, shares: 0, views: 100)]
         let r1 = await service.scoreEngagement(snapshots: likesOnly)
-        // 只有 shares（同样数量但权重 5x）
-        let sharesOnly = [makeSnapshot(followers: 100, likes: 0, comments: 0, shares: 100, views: 100)]
+        // 只有 shares（同样数量但权重 5x）— 5*5/100*100 = 25 分
+        let sharesOnly = [makeSnapshot(followers: 100, likes: 0, comments: 0, shares: 5, views: 100)]
         let r2 = await service.scoreEngagement(snapshots: sharesOnly)
-        // shares 权重 5x vs likes 权重 1x → r2 至少是 r1 的 5 倍
+        // shares 权重 5x vs likes 权重 1x → r2 = 5x r1
         XCTAssertGreaterThan(r2.score, r1.score * 4.0)
     }
 
