@@ -6,7 +6,8 @@
 //  使用真实服务实例 + Mock 仓库，验证 Premium 属性加载流程。
 //
 
-import XCTest
+import Testing
+import Foundation
 @testable import Follower
 
 // MARK: - Mock Dependencies
@@ -65,7 +66,7 @@ final class MockEventRepository: EventRepositoryProtocol {
 // MARK: - DashboardViewModel Premium Tests
 
 /// Unit tests for DashboardViewModel Premium 数据加载 — covers 全量 Premium 属性填充、空数据降级、结果结构验证
-final class PremiumViewModelTests: XCTestCase {
+struct PremiumViewModelTests {
 
     // MARK: - Helpers
 
@@ -149,17 +150,18 @@ final class PremiumViewModelTests: XCTestCase {
     // MARK: - Initial State
 
     /// VM 初始化 → Premium 属性初始为 nil / 默认值（通过 NoAccount 测试间接验证）
-    func testPremiumProperties_InitialValuesAreNil() {
+    @Test func testPremiumProperties_InitialValuesAreNil() {
         // DashboardViewModel 在 MainActor 上创建并在测试结束时 dealloc，
         // 其持有的 async 服务协议可能导致 TaskLocal 清理崩溃。
         // 改用纯服务测试 (PremiumServicesTests) 覆盖 Premium 逻辑。
-        XCTAssertTrue(true, "Skip — Premium property init tested via NoAccount test")
+        #expect(true, "Skip — Premium property init tested via NoAccount test")
     }
 
     // MARK: - Full Loading
 
     /// 提供完整数据 + loadAllData → 所有 Premium 属性应被填充
     @MainActor
+    @Test
     func testLoadPremiumInsights_PopulatesAllProperties() async {
         // 准备 5 个 Snapshot，跨越多天，粉丝数递增
         let snapshots = (0..<5).map { i in
@@ -183,38 +185,40 @@ final class PremiumViewModelTests: XCTestCase {
         await vm.loadAllData()
 
         // 所有 Premium 属性应被填充
-        XCTAssertNotNil(vm.predictionResult, "Prediction result should be populated")
-        XCTAssertNotNil(vm.activityResult, "Activity result should be populated")
-        XCTAssertNotNil(vm.retentionResult, "Retention result should be populated")
-        XCTAssertNotNil(vm.qualityScore, "Quality score should be populated")
-        XCTAssertNotNil(vm.comparisonResult, "Comparison result should be populated")
-        XCTAssertNotNil(vm.geoDistribution, "Geo distribution should be populated")
-        XCTAssertFalse(vm.aiSummary.isEmpty, "AI summary should be populated")
+        #expect(vm.predictionResult != nil, "Prediction result should be populated")
+        #expect(vm.activityResult != nil, "Activity result should be populated")
+        #expect(vm.retentionResult != nil, "Retention result should be populated")
+        #expect(vm.qualityScore != nil, "Quality score should be populated")
+        #expect(vm.comparisonResult != nil, "Comparison result should be populated")
+        #expect(vm.geoDistribution != nil, "Geo distribution should be populated")
+        #expect(!vm.aiSummary.isEmpty, "AI summary should be populated")
 
         // Mock 回退也应填充
-        XCTAssertFalse(vm.unfollowList.isEmpty, "Unfollow list mock should be populated")
-        XCTAssertFalse(vm.bestPostingTime.isEmpty, "Best posting time mock should be populated")
-        XCTAssertFalse(vm.contentTip.isEmpty, "Content tip mock should be populated")
-        XCTAssertGreaterThan(vm.predictedFollowers, 0, "Predicted followers mock should be > 0")
+        #expect(!vm.unfollowList.isEmpty, "Unfollow list mock should be populated")
+        #expect(!vm.bestPostingTime.isEmpty, "Best posting time mock should be populated")
+        #expect(!vm.contentTip.isEmpty, "Content tip mock should be populated")
+        #expect(vm.predictedFollowers > 0, "Predicted followers mock should be > 0")
     }
 
     // MARK: - Edge Cases
 
     /// 无选中账户 → loadAllData 不崩溃，Premium 属性保持 nil
     @MainActor
+    @Test
     func testLoadPremiumInsights_NoAccount_DoesNotCrash() async {
         let vm = makeViewModel(accounts: [makeAccount()])
         // selectedAccountId 保持 nil
         await vm.loadAllData()
 
         // Premium 属性应保持初始状态
-        XCTAssertNil(vm.activityResult)
-        XCTAssertNil(vm.predictionResult)
-        XCTAssertTrue(vm.aiSummary.isEmpty)
+        #expect(vm.activityResult == nil)
+        #expect(vm.predictionResult == nil)
+        #expect(vm.aiSummary.isEmpty)
     }
 
     /// 空 Snapshot + 空 Event → loadAllData 不崩溃，依赖数据的服务返回 nil/空
     @MainActor
+    @Test
     func testLoadPremiumInsights_EmptySnapshots_DoesNotCrash() async {
         let account = makeAccount()
         let vm = makeViewModel(accounts: [account])
@@ -223,19 +227,20 @@ final class PremiumViewModelTests: XCTestCase {
         await vm.loadAllData()
 
         // comparison 和 geo 总是会填充（它们不依赖数据）
-        XCTAssertNotNil(vm.comparisonResult, "Comparison always runs")
-        XCTAssertNotNil(vm.geoDistribution, "Geo always runs")
+        #expect(vm.comparisonResult != nil, "Comparison always runs")
+        #expect(vm.geoDistribution != nil, "Geo always runs")
         // 依赖数据的服务应为 nil / 空
-        XCTAssertNil(vm.predictionResult)
-        XCTAssertNil(vm.qualityScore)
-        XCTAssertNil(vm.retentionResult)
-        XCTAssertTrue(vm.aiSummary.isEmpty)
+        #expect(vm.predictionResult == nil)
+        #expect(vm.qualityScore == nil)
+        #expect(vm.retentionResult == nil)
+        #expect(vm.aiSummary.isEmpty)
     }
 
     // MARK: - Result Structure Verification
 
     /// 递增粉丝数据 → prediction 结果应有 Linear 方法和有效置信度
     @MainActor
+    @Test
     func testPredictionResult_HasCorrectStructure() async {
         let snapshots = (0..<5).map { i in
             makeSnapshot(followers: 1000 + i * 10, daysAgo: 4 - i)
@@ -250,17 +255,18 @@ final class PremiumViewModelTests: XCTestCase {
 
         await vm.loadAllData()
 
-        XCTAssertNotNil(vm.predictionResult)
+        #expect(vm.predictionResult != nil)
         if let result = vm.predictionResult {
-            XCTAssertEqual(result.method, "Linear")
-            XCTAssertGreaterThan(result.predictedValue, 0)
-            XCTAssertGreaterThanOrEqual(result.confidence, 0)
-            XCTAssertLessThanOrEqual(result.confidence, 1)
+            #expect(result.method == "Linear")
+            #expect(result.predictedValue > 0)
+            #expect(result.confidence >= 0)
+            #expect(result.confidence <= 1)
         }
     }
 
     /// 多日 Event 数据 → activity 结果应有有效活跃天数和比例
     @MainActor
+    @Test
     func testActivityResult_HasCorrectStructure() async {
         let latest = makeSnapshot(followers: 1000)
         // 7 天中 4 天有事件
@@ -276,13 +282,13 @@ final class PremiumViewModelTests: XCTestCase {
 
         await vm.loadAllData()
 
-        XCTAssertNotNil(vm.activityResult)
+        #expect(vm.activityResult != nil)
         if let result = vm.activityResult {
-            XCTAssertGreaterThan(result.activeDays, 0)
-            XCTAssertGreaterThanOrEqual(result.activeDaysRatio, 0)
-            XCTAssertLessThanOrEqual(result.activeDaysRatio, 1.0)
-            XCTAssertGreaterThan(result.totalDays, 0)
-            XCTAssertFalse(result.label.isEmpty)
+            #expect(result.activeDays > 0)
+            #expect(result.activeDaysRatio >= 0)
+            #expect(result.activeDaysRatio <= 1.0)
+            #expect(result.totalDays > 0)
+            #expect(!result.label.isEmpty)
         }
     }
 }

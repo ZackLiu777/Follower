@@ -10,7 +10,8 @@ import Combine
 
 /// Dashboard 的 ViewModel：管理账户选择、快照数据、增量计算、帖子与 Premium Mock 数据
 @MainActor
-final class DashboardViewModel: ObservableObject {
+@Observable
+final class DashboardViewModel {
     /// Snapshot 数据仓库
     private let snapshotRepo: SnapshotRepositoryProtocol
     /// 账户数据仓库
@@ -37,68 +38,68 @@ final class DashboardViewModel: ObservableObject {
     // MARK: - Published: 核心状态
 
     /// 最新 Snapshot
-    @Published var latestSnapshot: Snapshot?
+     var latestSnapshot: Snapshot?
     /// 所有已连接账户
-    @Published var accounts: [Account] = []
+     var accounts: [Account] = []
     /// 当前选中账户 ID
-    @Published var selectedAccountId: Int64?
+     var selectedAccountId: Int64?
     /// 加载中标记
-    @Published var isLoading: Bool = false
+     var isLoading: Bool = false
     /// 同步中标记
-    @Published var isSyncing: Bool = false
+     var isSyncing: Bool = false
     /// 错误消息（非 nil 时展示 ErrorBanner）
-    @Published var errorMessage: String?
+     var errorMessage: String?
 
     // MARK: - Published: Hero 指标
 
     /// 粉丝数环比变化（7 天）
-    @Published var followerDelta: Int = 0
+     var followerDelta: Int = 0
     /// 粉丝数环比百分比
-    @Published var followerDeltaPercent: Double = 0
+     var followerDeltaPercent: Double = 0
     /// 粉丝趋势 Mini 折线图数据
-    @Published var sparklineData: [Double] = []
+     var sparklineData: [Double] = []
 
     // MARK: - Published: 次要指标
 
     /// 互动率环比变化
-    @Published var engagementDelta: Double = 0
+     var engagementDelta: Double = 0
     /// Reach 环比变化
-    @Published var reachDelta: Int = 0
+     var reachDelta: Int = 0
     /// 帖子数环比变化
-    @Published var postsDelta: Int = 0
+     var postsDelta: Int = 0
 
     // MARK: - Published: 帖子列表
 
     /// 最近帖子（Mock）
-    @Published var recentPosts: [MockPost] = []
+     var recentPosts: [MockPost] = []
 
     // MARK: - Published: Premium Real Insights
 
     /// 活跃度分析结果（Premium）
-    @Published var activityResult: ActivityResult?
+     var activityResult: ActivityResult?
     /// 留存/流失分析结果（Premium）
-    @Published var retentionResult: RetentionResult?
+     var retentionResult: RetentionResult?
     /// 互动质量评分结果（Premium）
-    @Published var qualityScore: ScoringResult?
+     var qualityScore: ScoringResult?
     /// 粉丝地域分布结果（Premium）
-    @Published var geoDistribution: GeoDistributionResult?
+     var geoDistribution: GeoDistributionResult?
     /// 长期趋势对比结果（Premium）
-    @Published var comparisonResult: ComparisonResult?
+     var comparisonResult: ComparisonResult?
     /// 粉丝数预测结果（Premium）
-    @Published var predictionResult: PredictionResult?
+     var predictionResult: PredictionResult?
     /// AI 生成的摘要文本（Premium）
-    @Published var aiSummary: String = ""
+     var aiSummary: String = ""
 
     // MARK: - Published: Premium Mock 数据（向后兼容，保留 mock 回退）
 
     /// 取关用户列表（Mock）
-    @Published var unfollowList: [MockFollower] = []
+     var unfollowList: [MockFollower] = []
     /// 推荐最佳发帖时间（Mock）
-    @Published var bestPostingTime: String = ""
+     var bestPostingTime: String = ""
     /// 内容策略建议（Mock）
-    @Published var contentTip: String = ""
+     var contentTip: String = ""
     /// 预测下月粉丝数（Mock）
-    @Published var predictedFollowers: Int = 0
+     var predictedFollowers: Int = 0
 
     /// 初始化：注入核心仓库、同步引擎与全部 Premium 分析服务
     init(

@@ -8,8 +8,8 @@ import SwiftUI
 
 /// 主 Dashboard：Hero 粉丝卡片 + 次要指标 + 最近帖子 + Premium Insights 区域
 struct DashboardView: View {
-    @EnvironmentObject private var appState: AppState
-    @ObservedObject var viewModel: DashboardViewModel
+    @State private var appState = AppState(databaseManager: DatabaseManager.shared)
+    @Bindable var viewModel: DashboardViewModel
     @Environment(\.theme) private var theme
 
     /// 根布局：加载 / 空状态 / 错误 / 内容分支

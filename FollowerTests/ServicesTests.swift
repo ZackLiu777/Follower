@@ -4,20 +4,21 @@
 //
 //  Service 层单元测试。
 
-import XCTest
+import Testing
+import Foundation
 @testable import Follower
 
 /// Unit tests for Service layer — covers AggregationService, ExportService, TrialManager, and SyncEngine
-final class ServicesTests: XCTestCase {
-    var db: DatabaseManager!
-    var eventRepo: EventRepository!
-    var snapshotRepo: SnapshotRepository!
-    var metricRepo: MetricRepository!
-    var premiumRepo: PremiumFeatureRepository!
-    var accountRepo: AccountRepository!
+struct ServicesTests {
+    let db: DatabaseManager
+    let eventRepo: EventRepository
+    let snapshotRepo: SnapshotRepository
+    let metricRepo: MetricRepository
+    let premiumRepo: PremiumFeatureRepository
+    let accountRepo: AccountRepository
 
     /// 测试准备 — 配置数据库和仓库实例
-    override func setUp() async throws {
+    init() {
         db = DatabaseManager.shared
         accountRepo = AccountRepository(db: db)
         eventRepo = EventRepository(db: db)
@@ -33,6 +34,8 @@ final class ServicesTests: XCTestCase {
     // MARK: - Aggregation Service
 
     /// 聚合创建快照 → snapshotsUpdated >= 1 且 metricsUpdated > 0
+    @MainActor
+    @Test
     func testAggregationCreatesSnapshots() async throws {
         let accountId = try await createTestAccount("agg_test")
         let now = Date()
@@ -48,21 +51,25 @@ final class ServicesTests: XCTestCase {
         let aggregation = AggregationService(eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo)
         let result = try await aggregation.aggregate(accountId: accountId, from: day1, to: now)
 
-        XCTAssertGreaterThanOrEqual(result.snapshotsUpdated, 1)
-        XCTAssertGreaterThan(result.metricsUpdated, 0)
+        #expect(result.snapshotsUpdated >= 1)
+        #expect(result.metricsUpdated > 0)
     }
 
     /// 空数据聚合 → snapshotsUpdated 和 metricsUpdated 均为 0
+    @MainActor
+    @Test
     func testEmptyAggregationReturnsZero() async throws {
         let aggregation = AggregationService(eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo)
         let result = try await aggregation.aggregate(accountId: 99999, from: Date.distantPast, to: Date())
-        XCTAssertEqual(result.snapshotsUpdated, 0)
-        XCTAssertEqual(result.metricsUpdated, 0)
+        #expect(result.snapshotsUpdated == 0)
+        #expect(result.metricsUpdated == 0)
     }
 
     // MARK: - Export Service
 
     /// JSON 导出 → 生成有效文件并可反序列化为 JSONExportData
+    @MainActor
+    @Test
     func testJSONExportProducesValidFile() async throws {
         let accountId = try await createTestAccount("json_export")
         let day = Calendar.current.startOfDay(for: Date())
@@ -77,10 +84,12 @@ final class ServicesTests: XCTestCase {
 
         let data = try Data(contentsOf: url)
         let decoded = try JSONDecoder().decode(JSONExportData.self, from: data)
-        XCTAssertEqual(decoded.accountId, accountId)
+        #expect(decoded.accountId == accountId)
     }
 
     /// CSV 导出 → 生成有效文件且包含正确的表头
+    @MainActor
+    @Test
     func testCSVExportProducesValidFile() async throws {
         let accountId = try await createTestAccount("csv_export")
         let day = Calendar.current.startOfDay(for: Date())
@@ -91,30 +100,36 @@ final class ServicesTests: XCTestCase {
         let url = try await export.exportAsCSV(accountId: accountId)
 
         let csv = try String(contentsOf: url)
-        XCTAssertTrue(csv.contains("Date,Followers,Following,Media,EngagementRate"))
+        #expect(csv.contains("Date,Followers,Following,Media,EngagementRate"))
     }
 
     // MARK: - Trial Manager
 
     /// 试用默认未激活 → isTrialActive 返回 false
+    @MainActor
+    @Test
     func testTrialDefaultsToInactive() async {
         let tm = TrialManager(premiumFeatureRepo: premiumRepo)
         let active = await tm.isTrialActive()
-        XCTAssertFalse(active)
+        #expect(!active)
     }
 
     /// 启动试用 → Premium 功能被激活且 trendPrediction 可用
+    @MainActor
+    @Test
     func testStartTrialActivatesPremium() async throws {
         let tm = TrialManager(premiumFeatureRepo: premiumRepo)
         await tm.startTrialIfNeeded()
         let active = await tm.isTrialActive()
-        XCTAssertTrue(active)
+        #expect(active)
         // Premium feature 应该开放
         let pfEnabled = try await premiumRepo.isEnabled(key: .trendPrediction)
-        XCTAssertTrue(pfEnabled)
+        #expect(pfEnabled)
     }
 
     /// 试用过期 → Premium 功能自动停用
+    @MainActor
+    @Test
     func testExpiredTrialDeactivatesPremium() async throws {
         let tm = TrialManager(premiumFeatureRepo: premiumRepo)
         await tm.startTrialIfNeeded()
@@ -123,7 +138,7 @@ final class ServicesTests: XCTestCase {
         }
         await tm.checkTrialStatus()
         let active = await tm.isTrialActive()
-        XCTAssertFalse(active)
+        #expect(!active)
     }
 
     // MARK: - Sync Engine (skipped: actor isolation incompatible with test runner)

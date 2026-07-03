@@ -702,6 +702,9 @@
         }
       }
     },
+    "Actions" : {
+
+    },
     "Active Days Ratio" : {
 
     },
@@ -1260,6 +1263,64 @@
         }
       }
     },
+    "dashboard.noPostsHint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No posts yet. Sync to load content."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "まだ投稿がありません。同期してコンテンツを読み込んでください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无帖子，请同步加载内容"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫無貼文，請同步載入內容"
+          }
+        }
+      }
+    },
+    "dashboard.recentContent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent Content"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近のコンテンツ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近内容"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近內容"
+          }
+        }
+      }
+    },
     "dashboard.shares" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1318,6 +1379,35 @@
         }
       }
     },
+    "dashboard.viewAll" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View All"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべて表示"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看全部"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看全部"
+          }
+        }
+      }
+    },
     "dashboard.views" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1345,36 +1435,6 @@
             "value" : "瀏覽"
           }
         }
-      }
-    },
-
-    "dashboard.recentContent" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Recent Content" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最近のコンテンツ" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最近内容" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "最近內容" } }
-      }
-    },
-
-    "dashboard.viewAll" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "View All" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "すべて表示" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "查看全部" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "查看全部" } }
-      }
-    },
-
-    "dashboard.noPostsHint" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No posts yet. Sync to load content." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "まだ投稿がありません。同期してコンテンツを読み込んでください。" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "暂无帖子，请同步加载内容" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "暫無貼文，請同步載入內容" } }
       }
     },
     "Day" : {

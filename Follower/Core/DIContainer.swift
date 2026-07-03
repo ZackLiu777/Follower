@@ -25,7 +25,8 @@ import Combine
 
 // DI 容器 — 单一入口创建并持有所有 Repository / Service / Premium 分析服务
 @MainActor
-final class DIContainer: ObservableObject {
+@Observable
+final class DIContainer {
     // MARK: - Repositories
 
     let accountRepository: AccountRepositoryProtocol

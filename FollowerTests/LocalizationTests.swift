@@ -4,31 +4,33 @@
 //
 //  本地化系统测试：语言切换、翻译查找、Bundle 解析。
 
-import XCTest
+import Testing
 @testable import Follower
 
 /// Unit tests for localization system — covers language switching, translation lookup, and L10n key coverage
-final class LocalizationTests: XCTestCase {
+struct LocalizationTests {
 
     // MARK: - Language Enum
 
     /// 所有语言 → displayName 均非空
+    @Test
     func testAllLanguagesHaveDisplayNames() {
         for lang in AppLanguage.allCases {
-            XCTAssertFalse(lang.displayName.isEmpty)
+            #expect(!lang.displayName.isEmpty)
         }
     }
 
     /// 语言切换持久化 → 读写往返一致
+    @Test
     func testLanguagePersistenceRoundTrip() {
         let store = LanguageStore.shared
         let original = store.current
 
         store.current = .japanese
-        XCTAssertEqual(store.current, .japanese)
+        #expect(store.current == .japanese)
 
         store.current = .chineseSimplified
-        XCTAssertEqual(store.current, .chineseSimplified)
+        #expect(store.current == .chineseSimplified)
 
         // Restore
         store.current = original
@@ -37,8 +39,10 @@ final class LocalizationTests: XCTestCase {
     // MARK: - Translation
 
     /// 翻译查找 → 所有测试 key 均返回非空且不等同自身
+    @Test
     func testTranslationReturnsNonEmptyForAllKeys() {
         let store = LanguageStore.shared
+
         let testKeys = [
             L10n.Tab.dashboard, L10n.Tab.trends, L10n.Tab.settings,
             L10n.Common.ok, L10n.Common.cancel, L10n.Common.loading,
@@ -48,28 +52,31 @@ final class LocalizationTests: XCTestCase {
             L10n.Account.title, L10n.Account.connect,
             L10n.Premium.upgradeTo, L10n.Premium.trialBadge,
         ]
+
         for key in testKeys {
             let translated = store.localizedString(key)
-            XCTAssertNotEqual(translated, key, "Key '\(key)' was not translated (returned itself)")
-            XCTAssertFalse(translated.isEmpty, "Key '\(key)' returned empty string")
+
+            #expect(translated != key, "Key '\(key)' was not translated (returned itself)")
+            #expect(!translated.isEmpty, "Key '\(key)' returned empty string")
         }
     }
 
     /// 回退英文 → 已知 key 可正确翻译
+    @Test
     func testTranslationFallsBackToEnglish() {
         let store = LanguageStore.shared
 
-        // 测试一个已知存在英文翻译的 key
         let enText = store.localizedString(L10n.Common.ok)
-        XCTAssertFalse(enText.isEmpty)
-        XCTAssertNotEqual(enText, L10n.Common.ok)
+
+        #expect(!enText.isEmpty)
+        #expect(enText != L10n.Common.ok)
     }
 
     // MARK: - L10n Key Coverage
 
     /// L10n key 覆盖 → 80+ 个 key 均有正确的 dot 分隔符且无空格
+    @Test
     func testAllL10nKeysAreValid() {
-        // 确保所有 key 都前缀正确，没有拼写错误
         let allKeys: [String] = [
             L10n.Common.ok, L10n.Common.cancel, L10n.Common.done, L10n.Common.delete,
             L10n.Common.loading, L10n.Common.retry, L10n.Common.syncNow,
@@ -102,16 +109,19 @@ final class LocalizationTests: XCTestCase {
             L10n.Premium.benefit1, L10n.Premium.benefit2, L10n.Premium.benefit3,
             L10n.Premium.benefit4, L10n.Premium.benefit5,
         ]
-        XCTAssertGreaterThan(allKeys.count, 80, "Should have 80+ localization keys")
+
+        #expect(allKeys.count > 80, "Should have 80+ localization keys")
+
         for key in allKeys {
-            XCTAssertTrue(key.contains("."), "Key '\(key)' should contain a dot separator")
-            XCTAssertFalse(key.contains(" "), "Key '\(key)' should not contain spaces")
+            #expect(key.contains("."))
+            #expect(!key.contains(" "))
         }
     }
 
     // MARK: - Language Switching
 
     /// 切换语言 → Dashboard 的英/中文翻译不同
+    @Test
     func testSwitchLanguageUpdatesLocalizedStrings() {
         let store = LanguageStore.shared
         let original = store.current
@@ -129,7 +139,7 @@ final class LocalizationTests: XCTestCase {
         store.current = .chineseSimplified
         let zhDashboard = store.localizedString(L10n.Tab.dashboard)
 
-        XCTAssertNotEqual(enDashboard, zhDashboard, "Dashboard should differ between English and Chinese")
+        #expect(enDashboard != zhDashboard, "Dashboard should differ between English and Chinese")
 
         store.current = original
     }

@@ -16,7 +16,8 @@ import Combine
 
 /// 账号管理 ViewModel — 添加 / 撤销 / 删除账号（Alpha 阶段使用模拟登录）
 @MainActor
-final class AccountViewModel: ObservableObject {
+@Observable
+final class AccountViewModel {
     // MARK: - Dependencies
 
     private let accountRepo: AccountRepositoryProtocol
@@ -24,15 +25,15 @@ final class AccountViewModel: ObservableObject {
 
     // MARK: - Published State
 
-    @Published var accounts: [Account] = []
-    @Published var isAddingAccount: Bool = false
-    @Published var selectedPlatform: Platform = .instagram
-    @Published var username: String = ""
-    @Published var displayName: String = ""
+    var accounts: [Account] = []
+    var isAddingAccount: Bool = false
+    var selectedPlatform: Platform = .instagram
+    var username: String = ""
+    var displayName: String = ""
 
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
-    @Published var shouldDismiss: Bool = false
+    var isLoading: Bool = false
+    var errorMessage: String?
+    var shouldDismiss: Bool = false
 
     // MARK: - Init
 

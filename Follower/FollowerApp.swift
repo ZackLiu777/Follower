@@ -10,13 +10,13 @@ import SwiftUI
 /// App 入口 — 初始化 AppState，驱动主题与 Splash
 @main
 struct FollowerApp: App {
-    @StateObject private var appState: AppState
+    @State private var appState = AppState(databaseManager: DatabaseManager.shared)
     @State private var showSplash: Bool = true
     private let skipSplash: Bool
 
     init() {
         let dbManager = DatabaseManager.shared
-        _appState = StateObject(wrappedValue: AppState(databaseManager: dbManager))
+        _appState = State(wrappedValue: AppState(databaseManager: dbManager))
         skipSplash = ProcessInfo.processInfo.arguments.contains("UI_TEST")
     }
 
@@ -30,7 +30,7 @@ struct FollowerApp: App {
                 ).ignoresSafeArea()
 
                 ContentView()
-                    .environmentObject(appState)
+                    .environment(appState)
                     .task { await appState.container.trialManager.startTrialIfNeeded() }
 
                 if showSplash && !skipSplash {

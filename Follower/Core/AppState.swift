@@ -10,18 +10,19 @@ import SwiftUI
 
 // 全局应用状态管理器 — 持有主题、语言、试用状态和 Premium 标志位
 @MainActor
-final class AppState: ObservableObject {
+@Observable
+final class AppState {
     let databaseManager: DatabaseManager
     let container: DIContainer
 
     // MARK: - Published
 
-    @Published var currentTheme: AppTheme = .appleNative
-    @Published var currentLanguage: AppLanguage = LanguageStore.shared.current
-    @Published var isTrialActive: Bool = false
-    @Published var trialStartDate: Date?
+     var currentTheme: AppTheme = .appleNative
+     var currentLanguage: AppLanguage = LanguageStore.shared.current
+     var isTrialActive: Bool = false
+     var trialStartDate: Date?
     /// Lambda: Premium 解锁状态（同步，所有 PremiumGate 直接读取）
-    @Published var premiumEnabledFlags: [String: Bool] = [:]
+     var premiumEnabledFlags: [String: Bool] = [:]
 
     /// 从数据库刷新所有 Premium Feature 的启用状态
     func refreshPremiumFlags() {

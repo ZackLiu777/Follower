@@ -28,7 +28,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		FF0FBB4E2FF77B8400253A86 /* Follower.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Follower.xcodeproj; path = Follower/Follower.xcodeproj; sourceTree = SOURCE_ROOT; };
 		FF6CBD912FD2887400A52FF3 /* Follower.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Follower.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FF6CBDA02FD2887500A52FF3 /* FollowerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FollowerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		FF6CBDAA2FD2887500A52FF3 /* FollowerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FollowerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -78,13 +77,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		FF0FBB4F2FF77B8400253A86 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		FF304E162FD2A0ED004201FB /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
@@ -223,12 +215,6 @@
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FF6CBD922FD2887400A52FF3 /* Products */;
 			projectDirPath = "";
-			projectReferences = (
-				{
-					ProductGroup = FF0FBB4F2FF77B8400253A86 /* Products */;
-					ProjectRef = FF0FBB4E2FF77B8400253A86 /* Follower.xcodeproj */;
-				},
-			);
 			projectRoot = "";
 			targets = (
 				FF6CBD902FD2887300A52FF3 /* Follower */,
@@ -434,6 +420,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -466,6 +453,7 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIStatusBarStyle = "";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -12,7 +12,8 @@ import Testing
 struct FollowerTests {
 
     /// 示例测试 → 占位，待替换为实际测试逻辑
-    @Test func example() async throws {
+    @Test
+    func example() async throws {
         // Write your test here and use APIs like `#expect(...)` to check expected conditions.
     }
 
