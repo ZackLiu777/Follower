@@ -10,7 +10,8 @@ import Combine
 
 /// 设置页 ViewModel — 试用 / 导出 / Premium / 删除数据
 @MainActor
-final class SettingsViewModel: ObservableObject {
+@Observable
+final class SettingsViewModel {
     // MARK: - Dependencies
 
     private let trialManager: TrialManagerProtocol
@@ -20,22 +21,22 @@ final class SettingsViewModel: ObservableObject {
 
     // MARK: - Published State
 
-    @Published var isTrialActive: Bool = false
-    @Published var trialRemainingTime: String = ""
-    @Published var currentTheme: AppTheme = .appleNative
-    @Published var selectedAccountId: Int64?
-    @Published var accounts: [Account] = []
+     var isTrialActive: Bool = false
+     var trialRemainingTime: String = ""
+     var currentTheme: AppTheme = .appleNative
+     var selectedAccountId: Int64?
+     var accounts: [Account] = []
 
-    @Published var exportURL: URL?
-    @Published var isExporting: Bool = false
-    @Published var exportFormat: ExportFormat = .json
+     var exportURL: URL?
+     var isExporting: Bool = false
+     var exportFormat: ExportFormat = .json
 
-    @Published var premiumFeatures: [PremiumFeature] = []
+     var premiumFeatures: [PremiumFeature] = []
 
-    @Published var showDeleteConfirmation: Bool = false
-    @Published var showPrivacyPolicy: Bool = false
+     var showDeleteConfirmation: Bool = false
+     var showPrivacyPolicy: Bool = false
 
-    @Published var errorMessage: String?
+     var errorMessage: String?
 
     // MARK: - Init
 

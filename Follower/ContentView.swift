@@ -8,11 +8,11 @@ import SwiftUI
 
 /// 应用主入口 — 主题和语言切换即时响应
 struct ContentView: View {
-    @EnvironmentObject private var appState: AppState
+    @State private var appState = AppState(databaseManager: DatabaseManager.shared)
 
     var body: some View {
         ContentViewInner(container: appState.container)
-            .environmentObject(appState)
+            .environment(appState)
             // 语言切换 → 强制重建 view tree → 重新调用 loc()
             .id(appState.currentLanguage.rawValue)
     }
@@ -23,15 +23,15 @@ struct ContentView: View {
 /// 内部实现 — 创建 ViewModel 并组装 TabView
 private struct ContentViewInner: View {
     let container: DIContainer
-    @EnvironmentObject private var appState: AppState
+    @State private var appState = AppState(databaseManager: DatabaseManager.shared)
 
-    @StateObject private var dashboardVM: DashboardViewModel
-    @StateObject private var trendsVM: TrendsViewModel
-    @StateObject private var settingsVM: SettingsViewModel
+    @State private var dashboardVM: DashboardViewModel
+    @State private var trendsVM: TrendsViewModel
+    @State private var settingsVM: SettingsViewModel
 
     init(container: DIContainer) {
         self.container = container
-        _dashboardVM = StateObject(wrappedValue: DashboardViewModel(
+        _dashboardVM = State(wrappedValue: DashboardViewModel(
             snapshotRepo: container.snapshotRepository,
             accountRepo: container.accountRepository,
             syncEngine: container.syncEngine,
@@ -44,12 +44,12 @@ private struct ContentViewInner: View {
             comparisonService: container.comparisonService,
             aiService: container.aiAnalysisService
         ))
-        _trendsVM = StateObject(wrappedValue: TrendsViewModel(
+        _trendsVM = State(wrappedValue: TrendsViewModel(
             snapshotRepo: container.snapshotRepository,
             metricRepo: container.metricRepository,
             accountRepo: container.accountRepository
         ))
-        _settingsVM = StateObject(wrappedValue: SettingsViewModel(
+        _settingsVM = State(wrappedValue: SettingsViewModel(
             trialManager: container.trialManager,
             exportService: container.exportService,
             accountRepo: container.accountRepository,
@@ -76,5 +76,5 @@ private struct ContentViewInner: View {
 
 #Preview {
     ContentView()
-        .environmentObject(AppState(databaseManager: DatabaseManager.shared))
+        .environment(AppState(databaseManager: DatabaseManager.shared))
 }

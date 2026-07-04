@@ -11,7 +11,8 @@ import Combine
 
 /// 趋势页 ViewModel — 管理多时间窗指标数据加载、缓存与窗口切换
 @MainActor
-final class TrendsViewModel: ObservableObject {
+@Observable
+final class TrendsViewModel {
 
     // ── Repositories ──
     private let snapshotRepo: SnapshotRepositoryProtocol
@@ -25,19 +26,19 @@ final class TrendsViewModel: ObservableObject {
     ]
 
     // ── 多窗口指标缓存 ──
-    @Published var dailyMetrics: [MetricType: [Metric]] = [:]
-    @Published var weeklyMetrics: [MetricType: [Metric]] = [:]
-    @Published var monthlyMetrics: [MetricType: [Metric]] = [:]
-    @Published var yearlyMetrics: [MetricType: [Metric]] = [:]
+     var dailyMetrics: [MetricType: [Metric]] = [:]
+     var weeklyMetrics: [MetricType: [Metric]] = [:]
+     var monthlyMetrics: [MetricType: [Metric]] = [:]
+     var yearlyMetrics: [MetricType: [Metric]] = [:]
 
     /// 日视图的 24 小时逐时数据（由最新 Snapshot 实时生成）
-    @Published var hourlyData: [MetricType: [TrendDataPoint]] = [:]
+     var hourlyData: [MetricType: [TrendDataPoint]] = [:]
 
     // ── UI 状态 ──
-    @Published var selectedWindow: TimeWindow = .day
-    @Published var selectedAccountId: Int64?
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
+     var selectedWindow: TimeWindow = .day
+     var selectedAccountId: Int64?
+     var isLoading: Bool = false
+     var errorMessage: String?
 
     /// 依赖注入 Repository，建立数据访问通道
     init(snapshotRepo: SnapshotRepositoryProtocol, metricRepo: MetricRepositoryProtocol, accountRepo: AccountRepositoryProtocol) {

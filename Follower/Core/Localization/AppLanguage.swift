@@ -27,6 +27,7 @@ enum AppLanguage: String, CaseIterable {
 // MARK: - LanguageStore
 
 /// 语言持久化管理器 — 切换语言时同步更新 UserDefaults 和 Bundle
+@Observable
 final class LanguageStore: @unchecked Sendable {
     /// 共享单例
     static let shared = LanguageStore()

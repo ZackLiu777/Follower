@@ -9,8 +9,8 @@ import SwiftUI
 
 /// 设置页面 — 试用状态、账号管理、外观、导出、存储、隐私、Premium
 struct SettingsView: View {
-    @EnvironmentObject private var appState: AppState
-    @ObservedObject var viewModel: SettingsViewModel
+    @State private var appState = AppState(databaseManager: DatabaseManager.shared)
+    @Bindable var viewModel: SettingsViewModel
     @Environment(\.theme) private var theme
     @State private var showAccountSheet: Bool = false
 
@@ -200,7 +200,7 @@ struct SettingsView: View {
     SettingsView(viewModel: SettingsViewModel(
         trialManager: PreviewMocks.trialManager, exportService: PreviewMocks.exportService,
         accountRepo: PreviewMocks.accountRepo, premiumFeatureRepo: PreviewMocks.premiumRepo
-    )).environmentObject(AppState(databaseManager: DatabaseManager.shared))
+    )).environment(AppState(databaseManager: DatabaseManager.shared))
 }
 
 #if DEBUG

@@ -9,7 +9,7 @@ import SwiftUI
 /// 账号管理页面 — 连接 / 撤销 / 删除 Instagram 账号
 struct AccountView: View {
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject var viewModel: AccountViewModel
+    @Bindable var viewModel: AccountViewModel
 
     var body: some View {
         NavigationStack {
