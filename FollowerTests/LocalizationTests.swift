@@ -23,7 +23,7 @@ struct LocalizationTests {
     /// 语言切换持久化 → 读写往返一致
     @Test
     func testLanguagePersistenceRoundTrip() {
-        let store = LanguageStore.shared
+        let store = LanguageStore()
         let original = store.current
 
         store.current = .japanese
