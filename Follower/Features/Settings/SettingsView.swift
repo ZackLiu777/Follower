@@ -9,7 +9,7 @@ import SwiftUI
 
 /// 设置页面 — 试用状态、账号管理、外观、导出、存储、隐私、Premium
 struct SettingsView: View {
-    @State private var appState = AppState(databaseManager: DatabaseManager.shared)
+    @Environment(AppState.self) private var appState
     @Bindable var viewModel: SettingsViewModel
     @Environment(\.theme) private var theme
     @State private var showAccountSheet: Bool = false

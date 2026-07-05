@@ -6,14 +6,12 @@
 
 import SwiftUI
 
-/// 应用主入口 — 主题和语言切换即时响应
+/// 应用主入口 — 主题和语言切换即时响应（AppState 从父级 FollowerApp 注入）
 struct ContentView: View {
-    @State private var appState = AppState(databaseManager: DatabaseManager.shared)
+    @Environment(AppState.self) private var appState
 
     var body: some View {
-        ContentViewInner(container: appState.container)
-            .environment(appState)
-            // 语言切换 → 强制重建 view tree → 重新调用 loc()
+        ContentViewInner(container: appState.container, appState: appState)
             .id(appState.currentLanguage.rawValue)
     }
 }
@@ -23,13 +21,14 @@ struct ContentView: View {
 /// 内部实现 — 创建 ViewModel 并组装 TabView
 private struct ContentViewInner: View {
     let container: DIContainer
-    @State private var appState = AppState(databaseManager: DatabaseManager.shared)
+    let appState: AppState
 
     @State private var dashboardVM: DashboardViewModel
     @State private var trendsVM: TrendsViewModel
     @State private var settingsVM: SettingsViewModel
 
-    init(container: DIContainer) {
+    init(container: DIContainer, appState: AppState) {
+        self.appState = appState
         self.container = container
         _dashboardVM = State(wrappedValue: DashboardViewModel(
             snapshotRepo: container.snapshotRepository,

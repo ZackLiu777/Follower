@@ -9,9 +9,17 @@
 import SwiftUI
 
 struct ActionsView: View {
+    @Environment(\.theme) private var theme
     @Bindable var viewModel: ActionsViewModel
     
     var body: some View {
+        
+        
+        
         Text("Actions")
     }
 }
+
+//#Preview {
+//    ActionsView(viewModel: <#ActionsViewModel#>)
+//}
