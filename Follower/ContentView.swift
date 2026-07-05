@@ -25,6 +25,7 @@ private struct ContentViewInner: View {
 
     @State private var dashboardVM: DashboardViewModel
     @State private var trendsVM: TrendsViewModel
+    @State private var decisionsVM: DecisionsViewModel
     @State private var settingsVM: SettingsViewModel
 
     init(container: DIContainer, appState: AppState) {
@@ -48,6 +49,11 @@ private struct ContentViewInner: View {
             metricRepo: container.metricRepository,
             accountRepo: container.accountRepository
         ))
+        _decisionsVM = State(wrappedValue: DecisionsViewModel(
+            snapshotRepo: container.snapshotRepository,
+            metricRepo: container.metricRepository,
+            accountRepo: container.accountRepository
+        ))
         _settingsVM = State(wrappedValue: SettingsViewModel(
             trialManager: container.trialManager,
             exportService: container.exportService,
@@ -64,6 +70,9 @@ private struct ContentViewInner: View {
             TrendsView(viewModel: trendsVM)
                 .tabItem { Label(loc(L10n.Tab.trends), systemImage: "chart.xyaxis.line") }
                 .accessibilityIdentifier("tab_trends")
+            DecisionsView(viewModel: decisionsVM)
+                .tabItem { Label(loc(L10n.Decisions.tabDecisions), systemImage: "sparkle.magnifyingglass") }
+                .accessibilityIdentifier("tab_decisions")
             SettingsView(viewModel: settingsVM)
                 .tabItem { Label(loc(L10n.Tab.my), systemImage: "person.fill") }
                 .accessibilityIdentifier("tab_settings")

@@ -135,6 +135,86 @@ enum L10n {
         static let noAccountSelected = "account.noAccountSelected"
     }
     
+    // MARK: Decisions
+    enum Decisions {
+        /// 页面标题 / 导航栏标题
+        static let title = "decisions.title"
+        /// 无决策时的空状态提示
+        static let noDecisions = "decisions.noDecisions"
+        /// Tab 栏标签
+        static let tabDecisions = "decisions.tab"
+
+        // MARK: Card titles
+        /// 主行动卡片标题 — 今日增长加速
+        static let boostGrowth = "decisions.boostGrowth"
+        /// 提醒卡片标题 — 内容疲劳
+        static let contentFatigue = "decisions.contentFatigue"
+        /// 恢复卡片标题 — 互动恢复
+        static let engagementRecovery = "decisions.engagementRecovery"
+        /// 洞察卡片标题 — 最佳发帖时间
+        static let bestPostingTime = "decisions.bestPostingTime"
+
+        // MARK: Card actions
+        /// 推荐行动 — 发布特定内容类型
+        static let actionPostType = "decisions.actionPostType"
+        /// 推荐行动 — 与高价值粉丝互动
+        static let actionEngageFollowers = "decisions.actionEngageFollowers"
+        /// 推荐行动 — 回复热门评论
+        static let actionReplyComments = "decisions.actionReplyComments"
+        /// 推荐行动 — 减少特定类型的帖子
+        static let actionReducePosts = "decisions.actionReducePosts"
+        /// 推荐行动 — 私信活跃支持者
+        static let actionDMSupporters = "decisions.actionDMSupporters"
+        /// 推荐行动 — 重新互动热门评论者
+        static let actionReengage = "decisions.actionReengage"
+        /// 推荐行动 — 安排在特定时间发帖
+        static let actionSchedule = "decisions.actionSchedule"
+
+        // MARK: Card reasons
+        /// 原因 — Reel 表现优于其他格式
+        static let reasonReelOutperform = "decisions.reasonReelOutperform"
+        /// 原因 — 内容表现下降，发布频率过高
+        static let reasonPerformanceDeclining = "decisions.reasonPerformanceDeclining"
+        /// 原因 — 粉丝不活跃
+        static let reasonInactiveFollowers = "decisions.reasonInactiveFollowers"
+        /// 原因 — 受众在特定时间最活跃
+        static let reasonAudienceActive = "decisions.reasonAudienceActive"
+
+        // MARK: Card impacts
+        /// 效果 — 增长加速
+        static let impactBoost = "decisions.impactBoost"
+        /// 效果 — 互动恢复
+        static let impactRecovery = "decisions.impactRecovery"
+        /// 效果 — 互动率提升
+        static let impactEngagement = "decisions.impactEngagement"
+
+        // MARK: Detail view
+        /// 详情页 — 推荐行动
+        static let recommendedActions = "decisions.recommendedActions"
+        /// 详情页 — 原因
+        static let why = "decisions.why"
+        /// 详情页 — 预期效果
+        static let expectedImpact = "decisions.expectedImpact"
+        /// 详情页 — 详情
+        static let details = "decisions.details"
+        /// 标签 — 下降中
+        static let declining = "decisions.declining"
+        /// 标签 — 增长中
+        static let growing = "decisions.growing"
+
+        // MARK: UI labels
+        /// 布局方案 — 堆叠
+        static let stack = "decisions.stack"
+        /// 布局方案 — 时间线
+        static let timeline = "decisions.timeline"
+        /// 布局方案 — 网格
+        static let grid = "decisions.grid"
+        /// 布局方案 — 轮播
+        static let carousel = "decisions.carousel"
+        /// 布局方案 — 列表
+        static let list = "decisions.list"
+    }
+
     // MARK: Premium Insights
     enum Premium {
         // MARK: Section header
