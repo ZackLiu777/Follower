@@ -49,7 +49,7 @@ private struct StackCardView: View {
                 headerRow
                 actionsList
                 reasonText
-                if let impact = card.impact {
+                if let impact = card.template.displayImpact {
                     impactBadge(impact)
                 }
             }
@@ -76,7 +76,7 @@ private struct StackCardView: View {
                 .font(.title3)
                 .foregroundColor(colorFor(card.type, theme: theme))
 
-            Text(card.title)
+            Text(card.template.displayTitle)
                 .font(.headline)
                 .fontWeight(.bold)
                 .foregroundColor(theme.textPrimary)
@@ -87,11 +87,11 @@ private struct StackCardView: View {
     /// 行动列表（圆点前缀）
     private var actionsList: some View {
         VStack(alignment: .leading, spacing: 4) {
-            ForEach(card.actions.indices, id: \.self) { index in
+            ForEach(card.template.displayActions.indices, id: \.self) { index in
                 HStack(alignment: .top, spacing: 8) {
                     Text("•")
                         .foregroundColor(theme.textTertiary)
-                    Text(card.actions[index])
+                    Text(card.template.displayActions[index])
                         .font(.subheadline)
                         .foregroundColor(theme.textSecondary)
                         .lineLimit(2)
@@ -102,7 +102,7 @@ private struct StackCardView: View {
 
     /// 原因说明文字
     private var reasonText: some View {
-        Text(card.reason)
+        Text(card.template.displayReason)
             .font(.caption)
             .foregroundColor(theme.textTertiary)
             .lineLimit(2)

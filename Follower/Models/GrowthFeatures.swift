@@ -77,10 +77,10 @@ struct FatigueIndex: Sendable {
     let posts7d: Int
     /// 互动趋势（正=改善，负=恶化）
     let engagementTrend: Double
-    /// 是否处于疲劳状态（7 天内发帖 > 5 次即为疲劳）
-    var isFatigued: Bool { posts7d > 5 }
-    /// 疲劳惩罚系数（疲劳时 0.3，否则 0.0）
-    var penalty: Double { isFatigued ? 0.3 : 0.0 }
+    /// 是否疲劳（由 FeatureExtractor 根据动态阈值判定，无硬编码常量）
+    let isFatigued: Bool
+    /// 疲劳惩罚系数（0.0 ~ 0.5，由 FeatureExtractor 动态计算）
+    let penalty: Double
 }
 
 // MARK: - GrowthFeatures
@@ -128,9 +128,9 @@ extension GrowthFeatures {
                 bestDay: 4
             ),
             fatigueIndices: [
-                .carousel: FatigueIndex(contentType: .carousel, posts7d: 7, engagementTrend: -0.28),
-                .reel: FatigueIndex(contentType: .reel, posts7d: 3, engagementTrend: 0.12),
-                .photo: FatigueIndex(contentType: .photo, posts7d: 5, engagementTrend: 0.02)
+                .carousel: FatigueIndex(contentType: .carousel, posts7d: 7, engagementTrend: -0.28, isFatigued: true, penalty: 0.3),
+                .reel: FatigueIndex(contentType: .reel, posts7d: 3, engagementTrend: 0.12, isFatigued: false, penalty: 0.0),
+                .photo: FatigueIndex(contentType: .photo, posts7d: 5, engagementTrend: 0.02, isFatigued: false, penalty: 0.0)
             ]
         )
     }()

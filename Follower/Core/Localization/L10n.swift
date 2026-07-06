@@ -143,6 +143,14 @@ enum L10n {
         static let noDecisions = "decisions.noDecisions"
         /// Tab 栏标签
         static let tabDecisions = "decisions.tab"
+        /// 无账号空状态标题
+        static let noAccountTitle = "decisions.noAccountTitle"
+        /// 无账号空状态说明
+        static let noAccountMessage = "decisions.noAccountMessage"
+        /// 有账号无数据标题
+        static let noDataTitle = "decisions.noDataTitle"
+        /// 有账号无数据说明
+        static let noDataMessage = "decisions.noDataMessage"
 
         // MARK: Card titles
         /// 主行动卡片标题 — 今日增长加速
@@ -213,6 +221,44 @@ enum L10n {
         static let carousel = "decisions.carousel"
         /// 布局方案 — 列表
         static let list = "decisions.list"
+
+        // MARK: Primary titles (context-aware)
+        static let primaryBoostTitle = "decisions.primaryBoostTitle"
+        static let primaryReverseTitle = "decisions.primaryReverseTitle"
+        static let primarySustainTitle = "decisions.primarySustainTitle"
+
+        // MARK: Alert titles (severity-aware)
+        static let alertMildTitle = "decisions.alertMildTitle"
+        static let alertSevereTitle = "decisions.alertSevereTitle"
+
+        // MARK: Recovery titles (severity-aware)
+        static let recoveryModerateTitle = "decisions.recoveryModerateTitle"
+        static let recoveryCriticalTitle = "decisions.recoveryCriticalTitle"
+
+        // MARK: Actions (context-specific)
+        static let actionDoubleDown = "decisions.actionDoubleDown"
+        static let actionEngageTopFans = "decisions.actionEngageTopFans"
+        static let actionTryFormat = "decisions.actionTryFormat"
+        static let actionReplyAll = "decisions.actionReplyAll"
+        static let actionCrossPromote = "decisions.actionCrossPromote"
+        static let actionOptimizeTiming = "decisions.actionOptimizeTiming"
+        static let actionTestVariation = "decisions.actionTestVariation"
+        static let actionStopType = "decisions.actionStopType"
+        static let actionDiversifyFrom = "decisions.actionDiversifyFrom"
+        static let actionDMFollowers = "decisions.actionDMFollowers"
+        static let actionRunGiveaway = "decisions.actionRunGiveaway"
+        static let actionAskEngagement = "decisions.actionAskEngagement"
+
+        // MARK: Reasons (context-specific)
+        static let reasonMomentum = "decisions.reasonMomentum"
+        static let reasonDeclining = "decisions.reasonDeclining"
+        static let reasonFatigueSevere = "decisions.reasonFatigueSevere"
+        static let reasonCriticalInactive = "decisions.reasonCriticalInactive"
+
+        // MARK: Impacts (context-specific)
+        static let impactReverse = "decisions.impactReverse"
+        static let impactOptimize = "decisions.impactOptimize"
+        static let impactCritical = "decisions.impactCritical"
     }
 
     // MARK: Premium Insights

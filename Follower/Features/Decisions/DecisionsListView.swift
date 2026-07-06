@@ -53,19 +53,19 @@ struct DecisionsListView: View {
 
             // 文本区域
             VStack(alignment: .leading, spacing: 3) {
-                Text(card.title)
+                Text(card.template.displayTitle)
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundColor(theme.textPrimary)
                     .lineLimit(1)
 
                 HStack(spacing: 4) {
-                    Text(card.actions.first ?? card.reason)
+                    Text(card.template.displayActions.first ?? card.template.displayReason)
                         .font(.caption)
                         .foregroundColor(theme.textSecondary)
                         .lineLimit(1)
 
-                    if let impact = card.impact {
+                    if let impact = card.template.displayImpact {
                         Text("·")
                             .foregroundColor(theme.textTertiary)
                         Text(impact)
@@ -115,7 +115,7 @@ private struct ListCardDetailView: View {
                                 .foregroundColor(colorFor(card.type, theme: theme))
                         }
 
-                        Text(card.title)
+                        Text(card.template.displayTitle)
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(theme.textPrimary)
@@ -131,14 +131,14 @@ private struct ListCardDetailView: View {
                             .foregroundColor(theme.textSecondary)
                             .padding(.bottom, 4)
 
-                        ForEach(card.actions.indices, id: \.self) { index in
+                        ForEach(card.template.displayActions.indices, id: \.self) { index in
                             HStack(alignment: .top, spacing: 10) {
                                 Text("\(index + 1).")
                                     .font(.body)
                                     .foregroundColor(colorFor(card.type, theme: theme))
                                     .fontWeight(.medium)
 
-                                Text(card.actions[index])
+                                Text(card.template.displayActions[index])
                                     .font(.body)
                                     .foregroundColor(theme.textPrimary)
                             }
@@ -157,7 +157,7 @@ private struct ListCardDetailView: View {
                             .fontWeight(.semibold)
                             .foregroundColor(theme.textSecondary)
 
-                        Text(card.reason)
+                        Text(card.template.displayReason)
                             .font(.body)
                             .foregroundColor(theme.textPrimary)
                             .padding(14)
@@ -167,7 +167,7 @@ private struct ListCardDetailView: View {
                     }
 
                     // 效果
-                    if let impact = card.impact {
+                    if let impact = card.template.displayImpact {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(loc(L10n.Decisions.expectedImpact))
                                 .font(.subheadline)

@@ -8,13 +8,6 @@
 import SwiftUI
 
 /// Growth Decision Engine 主视图
-///
-/// 负责：
-/// - 在 5 套 UI 方案（A-E）之间调度切换
-/// - 管理加载状态和刷新操作
-/// - 提供分段选择器供方案对比（Demo 阶段）
-///
-/// 最终版本将移除此分段选择器，固定使用一套 UI 方案
 struct DecisionsView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.theme) private var theme
@@ -23,34 +16,29 @@ struct DecisionsView: View {
     /// Demo 阶段：0=Stack, 1=Timeline, 2=Grid, 3=Carousel, 4=List
     @State private var selectedScheme: Int = 0
 
-    // MARK: - Body
-
     var body: some View {
         NavigationStack {
             ZStack {
-                // 主题渐变背景
                 LinearGradient(
                     colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
                     startPoint: .top, endPoint: .bottom
                 ).ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    // 方案切换器（仅 Demo 阶段使用）
-                    schemePicker
-
-                    if viewModel.isLoading {
-                        Spacer()
-                        ProgressView()
-                            .frame(maxWidth: .infinity)
-                        Spacer()
-                    } else if viewModel.cards.isEmpty {
-                        Spacer()
-                        Text(loc(L10n.Decisions.noDecisions))
-                            .foregroundColor(theme.textSecondary)
-                        Spacer()
-                    } else {
-                        schemeView
-                    }
+                if !viewModel.hasAccount {
+                    EmptyStateView(icon: "person.crop.circle.badge.exclamationmark",
+                        title: loc(L10n.Decisions.noAccountTitle),
+                        message: loc(L10n.Decisions.noAccountMessage),
+                        actionLabel: nil, action: nil)
+                } else if viewModel.hasData {
+                    VStack(spacing: 0) { schemePicker; schemeView }
+                } else if viewModel.isLoading {
+                    ProgressView(loc(L10n.Common.loading)).frame(maxWidth: .infinity, minHeight: 300)
+                } else {
+                    EmptyStateView(icon: "arrow.triangle.2.circlepath",
+                        title: loc(L10n.Decisions.noDataTitle),
+                        message: loc(L10n.Decisions.noDataMessage),
+                        actionLabel: loc(L10n.Common.syncNow),
+                        action: { Task { await viewModel.refreshDecisions() } })
                 }
             }
             .navigationTitle(loc(L10n.Decisions.title))
@@ -61,7 +49,6 @@ struct DecisionsView: View {
 
     // MARK: - Scheme Picker (Demo Only)
 
-    /// Demo 阶段方案切换器，最终版本移除
     private var schemePicker: some View {
         Picker("Scheme", selection: $selectedScheme) {
             Text(loc(L10n.Decisions.stack)).tag(0)
@@ -71,14 +58,11 @@ struct DecisionsView: View {
             Text(loc(L10n.Decisions.list)).tag(4)
         }
         .pickerStyle(.segmented)
-        .padding(.horizontal, 24)
-        .padding(.top, 8)
-        .padding(.bottom, 8)
+        .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 8)
     }
 
     // MARK: - Scheme Dispatch
 
-    /// 根据选中方案索引，返回对应的子视图
     @ViewBuilder
     private var schemeView: some View {
         switch selectedScheme {
@@ -93,12 +77,9 @@ struct DecisionsView: View {
 
     // MARK: - Toolbar
 
-    /// 右上角刷新按钮
     private var refreshToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
-            Button {
-                Task { await viewModel.refreshDecisions() }
-            } label: {
+            Button { Task { await viewModel.refreshDecisions() } } label: {
                 Image(systemName: "arrow.triangle.2.circlepath")
                     .foregroundColor(theme.accentPrimary)
             }
@@ -108,13 +89,12 @@ struct DecisionsView: View {
 
 // MARK: - Preview
 
-#Preview("DecisionsView — Stack (Default)") {
+#Preview("DecisionsView — Stack") {
     let appState = AppState(databaseManager: DatabaseManager.shared)
     let viewModel = DecisionsViewModel(
         snapshotRepo: appState.container.snapshotRepository,
         metricRepo: appState.container.metricRepository,
         accountRepo: appState.container.accountRepository
     )
-    return DecisionsView(viewModel: viewModel)
-        .environment(appState)
+    return DecisionsView(viewModel: viewModel).environment(appState)
 }

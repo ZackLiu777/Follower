@@ -106,7 +106,7 @@ private struct TimelineCardRow: View {
                         .font(.title3)
                         .foregroundColor(colorFor(card.type, theme: theme))
 
-                    Text(card.title)
+                    Text(card.template.displayTitle)
                         .font(.headline)
                         .fontWeight(.bold)
                         .foregroundColor(theme.textPrimary)
@@ -115,11 +115,11 @@ private struct TimelineCardRow: View {
 
                 // 行动列表
                 VStack(alignment: .leading, spacing: 4) {
-                    ForEach(card.actions.indices, id: \.self) { index in
+                    ForEach(card.template.displayActions.indices, id: \.self) { index in
                         HStack(alignment: .top, spacing: 8) {
                             Text("•")
                                 .foregroundColor(theme.textTertiary)
-                            Text(card.actions[index])
+                            Text(card.template.displayActions[index])
                                 .font(.subheadline)
                                 .foregroundColor(theme.textSecondary)
                                 .lineLimit(2)
@@ -128,13 +128,13 @@ private struct TimelineCardRow: View {
                 }
 
                 // 原因
-                Text(card.reason)
+                Text(card.template.displayReason)
                     .font(.caption)
                     .foregroundColor(theme.textTertiary)
                     .lineLimit(2)
 
                 // 效果徽章
-                if let impact = card.impact {
+                if let impact = card.template.displayImpact {
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.up.right")
                             .font(.caption2)

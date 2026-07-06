@@ -4,6 +4,7 @@
 //
 //  卡片生成器 — 将 GrowthScores 和 GrowthFeatures 转化为 ActionCard 数组。
 //  纯函数，Sendable，无状态。基于规则引擎生成四种类型的行动卡片。
+//  卡片模板参数存储在 ActionCardTemplate 中，本地化字符串由 View 层实时渲染。
 
 import Foundation
 
@@ -30,114 +31,56 @@ struct CardGenerator: Sendable {
     static func generate(scores: GrowthScores, features: GrowthFeatures) -> [ActionCard] {
         var cards: [ActionCard] = []
 
-        // Rule 1: 最高分内容类型 → Primary Action Card
+        // Rule 1: 最高分内容类型 → Primary Action Card（上下文由增长方向决定）
         if let top = scores.contentScores.first, top.1 > 0.5,
            let stats = features.contentPerformance[top.0] {
-            cards.append(primaryCard(for: top.0, score: top.1, stats: stats))
+            let ctx: CardContext = stats.growthRate > 0.05 ? .growing
+                : stats.growthRate < -0.03 ? .declining : .stable
+            cards.append(primaryCard(for: top.0, stats: stats, context: ctx))
         }
 
-        // Rule 2: 疲劳检测 → Alert Card（每种疲劳类型生成一张）
+        // Rule 2: 疲劳检测 → Alert Card（penalty 决定严重程度）
         for type in scores.fatiguedTypes {
-            cards.append(fatigueCard(for: type))
+            let penalty = features.fatigueIndices[type]?.penalty ?? 0.2
+            cards.append(fatigueCard(for: type, penalty: penalty))
         }
 
-        // Rule 3: 粉丝不活跃 → Recovery Card
+        // Rule 3: 粉丝不活跃 → Recovery Card（严重程度由 inactive% 决定）
         if scores.recoveryNeeded > 0.5 {
             cards.append(recoveryCard(health: features.followerHealth))
         }
 
         // Rule 4: 通用洞察 → Insight Card
-        if let insight = insightCard(scores: scores, features: features) {
+        if let insight = insightCard(features: features) {
             cards.append(insight)
         }
 
-        // 按 priority 升序排列（越小越靠前）
         return cards.sorted { $0.priority < $1.priority }
     }
 
     // MARK: - Card Builders
 
-    /// 生成 Primary Action Card — 推荐最高 ROI 内容操作
-    /// - Parameters:
-    ///   - type: 最优内容类型
-    ///   - score: 该类型的评分
-    ///   - stats: 该类型的表现统计
-    /// - Returns: Primary 类型 ActionCard
-    private static func primaryCard(for type: ContentType, score: Double, stats: ContentStats) -> ActionCard {
-        let typeName = "\(type)".capitalized
-        return ActionCard(
-            id: UUID().uuidString,
-            type: .primary,
-            icon: "flame.fill",
-            title: loc(L10n.Decisions.boostGrowth),
-            actions: [
-                String(format: loc(L10n.Decisions.actionPostType), typeName, "highest"),
-                loc(L10n.Decisions.actionEngageFollowers),
-                loc(L10n.Decisions.actionReplyComments)
-            ],
-            reason: String(format: loc(L10n.Decisions.reasonReelOutperform), typeName, stats.avgEngagement * 100 / 1.3),
-            impact: loc(L10n.Decisions.impactBoost),
-            priority: 0
-        )
+    private static func primaryCard(for type: ContentType, stats: ContentStats, context: CardContext) -> ActionCard {
+        let x = round((stats.avgEngagement * 100 / 1.3) * 10) / 10
+        return ActionCard(id: UUID().uuidString, type: .primary, icon: "flame.fill",
+            template: .primary(contentType: type, outperformanceX: x, context: context), priority: 0)
     }
 
-    /// 生成 Alert Card — 内容疲劳警告
-    /// - Parameter type: 疲劳的内容类型
-    /// - Returns: Alert 类型 ActionCard
-    private static func fatigueCard(for type: ContentType) -> ActionCard {
-        let typeName = "\(type)".capitalized
-        return ActionCard(
-            id: UUID().uuidString,
-            type: .alert,
-            icon: "exclamationmark.triangle.fill",
-            title: loc(L10n.Decisions.contentFatigue),
-            actions: [String(format: loc(L10n.Decisions.actionReducePosts), typeName.lowercased())],
-            reason: String(format: loc(L10n.Decisions.reasonPerformanceDeclining), typeName),
-            impact: nil,
-            priority: 1
-        )
+    private static func fatigueCard(for type: ContentType, penalty: Double) -> ActionCard {
+        ActionCard(id: UUID().uuidString, type: .alert, icon: "exclamationmark.triangle.fill",
+            template: .alert(fatiguedType: type, penalty: penalty), priority: 1)
     }
 
-    /// 生成 Recovery Card — 粉丝重新激活建议
-    /// - Parameter health: 粉丝健康度快照
-    /// - Returns: Recovery 类型 ActionCard
     private static func recoveryCard(health: FollowerHealth) -> ActionCard {
         let pct = Int((1.0 - health.activeRatio) * 100)
-        return ActionCard(
-            id: UUID().uuidString,
-            type: .recovery,
-            icon: "arrow.up.heart.fill",
-            title: loc(L10n.Decisions.engagementRecovery),
-            actions: [
-                loc(L10n.Decisions.actionDMSupporters),
-                loc(L10n.Decisions.actionReengage)
-            ],
-            reason: String(format: loc(L10n.Decisions.reasonInactiveFollowers), pct),
-            impact: loc(L10n.Decisions.impactRecovery),
-            priority: 2
-        )
+        let ctx: CardContext = pct > 70 ? .severe : .declining
+        return ActionCard(id: UUID().uuidString, type: .recovery, icon: "arrow.up.heart.fill",
+            template: .recovery(inactivePct: pct, context: ctx), priority: 2)
     }
 
-    /// 生成 Insight Card — 最佳发帖时间洞察
-    /// - Parameters:
-    ///   - scores: 评分结果（预留，后续可能用于条件判断）
-    ///   - features: 特征数据，用于提取时间画像
-    /// - Returns: Insight 类型 ActionCard，始终返回非 nil
-    private static func insightCard(scores: GrowthScores, features: GrowthFeatures) -> ActionCard? {
-        let bestHour = String(features.timingProfile.bestHours.split(separator: "–").first ?? "7 PM")
-        // 将 bestDay 数字转换为星期名称
-        let dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-        let dayIndex = features.timingProfile.bestDay - 1  // bestDay: 1=Sun
-        let dayName = (0..<7).contains(dayIndex) ? dayNames[dayIndex] : "Wed"
-        return ActionCard(
-            id: UUID().uuidString,
-            type: .insight,
-            icon: "lightbulb.fill",
-            title: loc(L10n.Decisions.bestPostingTime),
-            actions: [String(format: loc(L10n.Decisions.actionSchedule), dayName, bestHour)],
-            reason: String(format: loc(L10n.Decisions.reasonAudienceActive), dayName, features.timingProfile.bestHours),
-            impact: loc(L10n.Decisions.impactEngagement),
-            priority: 3
-        )
+    private static func insightCard(features: GrowthFeatures) -> ActionCard? {
+        let bestHour = String(features.timingProfile.bestHours.split(separator: "–").first ?? "19:00")
+        return ActionCard(id: UUID().uuidString, type: .insight, icon: "lightbulb.fill",
+            template: .insight(bestDay: features.timingProfile.bestDay, bestHour: bestHour), priority: 3)
     }
 }

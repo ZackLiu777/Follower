@@ -75,7 +75,7 @@ private struct CarouselCardView: View {
             }
 
             // 标题
-            Text(card.title)
+            Text(card.template.displayTitle)
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(theme.textPrimary)
@@ -83,7 +83,7 @@ private struct CarouselCardView: View {
 
             // 行动列表（带序号）
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(card.actions.indices, id: \.self) { index in
+                ForEach(card.template.displayActions.indices, id: \.self) { index in
                     HStack(alignment: .top, spacing: 12) {
                         Text("\(index + 1)")
                             .font(.caption)
@@ -95,7 +95,7 @@ private struct CarouselCardView: View {
                                     .fill(colorFor(card.type, theme: theme).opacity(0.12))
                             )
 
-                        Text(card.actions[index])
+                        Text(card.template.displayActions[index])
                             .font(.body)
                             .foregroundColor(theme.textSecondary)
                             .lineLimit(2)
@@ -105,14 +105,14 @@ private struct CarouselCardView: View {
             .padding(.horizontal, 16)
 
             // 原因
-            Text(card.reason)
+            Text(card.template.displayReason)
                 .font(.caption)
                 .foregroundColor(theme.textTertiary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 16)
 
             // 效果徽章
-            if let impact = card.impact {
+            if let impact = card.template.displayImpact {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.up.right")
                         .font(.subheadline)

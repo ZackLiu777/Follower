@@ -57,20 +57,18 @@ private struct GridCardView: View {
             }
 
             // 标题
-            Text(card.title)
+            Text(card.template.displayTitle)
                 .font(.subheadline)
                 .fontWeight(.bold)
                 .foregroundColor(theme.textPrimary)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
 
-            // 首要行动（截断）
-            if let firstAction = card.actions.first {
-                Text(firstAction)
-                    .font(.caption)
-                    .foregroundColor(theme.textSecondary)
-                    .lineLimit(1)
-            }
+            // 首要行动或原因（截断）
+            Text(card.template.displayActions.first ?? card.template.displayReason)
+                .font(.caption)
+                .foregroundColor(theme.textSecondary)
+                .lineLimit(1)
 
             Spacer(minLength: 4)
 
@@ -90,7 +88,7 @@ private struct GridCardView: View {
     /// 底部指标行：展示 impact 或原因摘要
     @ViewBuilder
     private var metricView: some View {
-        if let impact = card.impact {
+        if let impact = card.template.displayImpact {
             HStack(spacing: 4) {
                 Image(systemName: "chart.line.uptrend.xyaxis")
                     .font(.caption2)

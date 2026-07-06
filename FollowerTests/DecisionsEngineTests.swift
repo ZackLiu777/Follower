@@ -199,8 +199,8 @@ struct ScoringEngineTests {
         // carousel: posts7d = 7 (> 5) → fatigued
         // reel: posts7d = 3 (<= 5) → not fatigued
         let fatigueIndices: [(ContentType, FatigueIndex)] = [
-            (.carousel, FatigueIndex(contentType: .carousel, posts7d: 7, engagementTrend: -0.28)),
-            (.reel, FatigueIndex(contentType: .reel, posts7d: 3, engagementTrend: 0.12)),
+            (.carousel, FatigueIndex(contentType: .carousel, posts7d: 7, engagementTrend: -0.28, isFatigued: true, penalty: 0.3)),
+            (.reel, FatigueIndex(contentType: .reel, posts7d: 3, engagementTrend: 0.12, isFatigued: false, penalty: 0.0)),
         ]
 
         let features = makeFeatures(
