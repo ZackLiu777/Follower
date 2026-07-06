@@ -43,6 +43,7 @@ jobs:
             -only-testing:FollowerTests/LocalizationTests \
             -only-testing:FollowerTests/LambdaTests \
             -only-testing:FollowerTests/PremiumServicesTests \
+            -only-testing:FollowerTests/DecisionsEngineTests \
             -only-testing:FollowerTests/FollowerTests \
             -derivedDataPath /tmp/FollowerDD CODE_SIGNING_ALLOWED=NO
 
@@ -99,6 +100,7 @@ jobs:
             -only-testing:FollowerUITests/DashboardUITests \
             -only-testing:FollowerUITests/SettingsUITests \
             -only-testing:FollowerUITests/TrendsUITests \
+            -only-testing:FollowerUITests/DecisionsUITests \
             -only-testing:FollowerUITests/AccountUITests \
             -only-testing:FollowerUITests/ThemeAndLanguageUITests \
             -only-testing:FollowerUITests/PremiumUITests \

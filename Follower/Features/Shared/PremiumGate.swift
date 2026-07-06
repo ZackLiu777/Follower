@@ -14,7 +14,7 @@ import SwiftUI
 
 struct PremiumGateModifier: ViewModifier {
     let featureKey: PremiumFeatureKey
-    @State private var appState = AppState(databaseManager: DatabaseManager.shared)
+    @Environment(AppState.self) private var appState
     @State private var showUpgradePrompt: Bool = false
 
     /// 同步读取 Premium 解锁状态 — 解锁后立即反映，无异步延迟
@@ -108,7 +108,7 @@ extension View {
 struct UpgradePromptView: View {
     let featureKey: PremiumFeatureKey
     @Environment(\.dismiss) private var dismiss
-    @State private var appState = AppState(databaseManager: DatabaseManager.shared)
+    @Environment(AppState.self) private var appState
 
     /// 升级页布局：皇冠图标 → 功能名称 → 权益列表 → 升级按钮（或试用提示）
     var body: some View {

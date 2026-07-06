@@ -6,14 +6,12 @@
 
 import SwiftUI
 
-/// 应用主入口 — 主题和语言切换即时响应
+/// 应用主入口 — 主题和语言切换即时响应（AppState 从父级 FollowerApp 注入）
 struct ContentView: View {
-    @State private var appState = AppState(databaseManager: DatabaseManager.shared)
+    @Environment(AppState.self) private var appState
 
     var body: some View {
-        ContentViewInner(container: appState.container)
-            .environment(appState)
-            // 语言切换 → 强制重建 view tree → 重新调用 loc()
+        ContentViewInner(container: appState.container, appState: appState)
             .id(appState.currentLanguage.rawValue)
     }
 }
@@ -23,13 +21,15 @@ struct ContentView: View {
 /// 内部实现 — 创建 ViewModel 并组装 TabView
 private struct ContentViewInner: View {
     let container: DIContainer
-    @State private var appState = AppState(databaseManager: DatabaseManager.shared)
+    let appState: AppState
 
     @State private var dashboardVM: DashboardViewModel
     @State private var trendsVM: TrendsViewModel
+    @State private var decisionsVM: DecisionsViewModel
     @State private var settingsVM: SettingsViewModel
 
-    init(container: DIContainer) {
+    init(container: DIContainer, appState: AppState) {
+        self.appState = appState
         self.container = container
         _dashboardVM = State(wrappedValue: DashboardViewModel(
             snapshotRepo: container.snapshotRepository,
@@ -45,6 +45,11 @@ private struct ContentViewInner: View {
             aiService: container.aiAnalysisService
         ))
         _trendsVM = State(wrappedValue: TrendsViewModel(
+            snapshotRepo: container.snapshotRepository,
+            metricRepo: container.metricRepository,
+            accountRepo: container.accountRepository
+        ))
+        _decisionsVM = State(wrappedValue: DecisionsViewModel(
             snapshotRepo: container.snapshotRepository,
             metricRepo: container.metricRepository,
             accountRepo: container.accountRepository
@@ -65,6 +70,9 @@ private struct ContentViewInner: View {
             TrendsView(viewModel: trendsVM)
                 .tabItem { Label(loc(L10n.Tab.trends), systemImage: "chart.xyaxis.line") }
                 .accessibilityIdentifier("tab_trends")
+            DecisionsView(viewModel: decisionsVM)
+                .tabItem { Label(loc(L10n.Decisions.tabDecisions), systemImage: "sparkle.magnifyingglass") }
+                .accessibilityIdentifier("tab_decisions")
             SettingsView(viewModel: settingsVM)
                 .tabItem { Label(loc(L10n.Tab.my), systemImage: "person.fill") }
                 .accessibilityIdentifier("tab_settings")

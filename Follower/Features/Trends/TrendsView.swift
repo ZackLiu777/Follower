@@ -29,7 +29,7 @@ import SwiftUI
 struct TrendsView: View {
 
     // ── 环境依赖 ──
-    @State private var appState = AppState(databaseManager: DatabaseManager.shared)           // 全局状态：主题 / 语言 / 试用
+    @Environment(AppState.self) private var appState           // 全局状态：主题 / 语言 / 试用
     @Bindable var viewModel: TrendsViewModel              // 数据加载 + 窗口切换
     @Environment(\.theme) private var theme                     // 当前主题色板（渐变 / 图表配色）
 
