@@ -161,6 +161,9 @@ enum L10n {
         static let engagementRecovery = "decisions.engagementRecovery"
         /// 洞察卡片标题 — 最佳发帖时间
         static let bestPostingTime = "decisions.bestPostingTime"
+        static let insightContent = "decisions.insightContent"
+        static let insightEngagement = "decisions.insightEngagement"
+        static let insightGrowth = "decisions.insightGrowth"
 
         // MARK: Card actions
         /// 推荐行动 — 发布特定内容类型

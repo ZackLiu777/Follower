@@ -12,7 +12,6 @@ struct ContentView: View {
 
     var body: some View {
         ContentViewInner(container: appState.container, appState: appState)
-            .id(appState.currentLanguage.rawValue)
     }
 }
 

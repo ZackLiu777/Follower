@@ -24,12 +24,13 @@ struct DecisionsView: View {
                     startPoint: .top, endPoint: .bottom
                 ).ignoresSafeArea()
 
+                let _ = print("[DecisionsView] body render — cards: \(viewModel.cards.count), hasAccount: \(viewModel.hasAccount), hasData: \(viewModel.hasData)")
                 if !viewModel.hasAccount {
                     EmptyStateView(icon: "person.crop.circle.badge.exclamationmark",
                         title: loc(L10n.Decisions.noAccountTitle),
                         message: loc(L10n.Decisions.noAccountMessage),
                         actionLabel: nil, action: nil)
-                } else if viewModel.hasData {
+                } else if !viewModel.cards.isEmpty {
                     VStack(spacing: 0) { schemePicker; schemeView }
                 } else if viewModel.isLoading {
                     ProgressView(loc(L10n.Common.loading)).frame(maxWidth: .infinity, minHeight: 300)
@@ -65,14 +66,18 @@ struct DecisionsView: View {
 
     @ViewBuilder
     private var schemeView: some View {
-        switch selectedScheme {
-        case 0: DecisionsStackView(cards: viewModel.cards)
-        case 1: DecisionsTimelineView(cards: viewModel.cards)
-        case 2: DecisionsGridView(cards: viewModel.cards)
-        case 3: DecisionsCarouselView(cards: viewModel.cards)
-        case 4: DecisionsListView(cards: viewModel.cards)
-        default: DecisionsStackView(cards: viewModel.cards)
+        Group {
+            switch selectedScheme {
+            case 0: DecisionsStackView(cards: viewModel.cards)
+            case 1: DecisionsTimelineView(cards: viewModel.cards)
+            case 2: DecisionsGridView(cards: viewModel.cards)
+            case 3: DecisionsCarouselView(cards: viewModel.cards)
+            case 4: DecisionsListView(cards: viewModel.cards)
+            default: DecisionsStackView(cards: viewModel.cards)
+            }
         }
+        .onAppear { print("[schemeView] appear — cards: \(viewModel.cards.count)") }
+        .onDisappear { print("[schemeView] disappear") }
     }
 
     // MARK: - Toolbar

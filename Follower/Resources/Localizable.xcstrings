@@ -1649,6 +1649,36 @@
         }
       }
     },
+
+    "decisions.insightContent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Content Strategy" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コンテンツ戦略" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "内容策略" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "內容策略" } }
+      }
+    },
+
+    "decisions.insightEngagement" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Engagement Tips" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "エンゲージメントのヒント" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "互动技巧" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "互動技巧" } }
+      }
+    },
+
+    "decisions.insightGrowth" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Growth Opportunity" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "成長の機会" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "增长机会" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "增長機會" } }
+      }
+    },
     "decisions.bestPostingTime" : {
       "extractionState" : "manual",
       "localizations" : {
