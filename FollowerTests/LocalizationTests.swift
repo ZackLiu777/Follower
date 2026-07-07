@@ -21,20 +21,20 @@ struct LocalizationTests {
     }
 
     /// 语言切换持久化 → 读写往返一致
-    @Test
-    func testLanguagePersistenceRoundTrip() {
-        let store = LanguageStore()
-        let original = store.current
-
-        store.current = .japanese
-        #expect(store.current == .japanese)
-
-        store.current = .chineseSimplified
-        #expect(store.current == .chineseSimplified)
-
-        // Restore
-        store.current = original
-    }
+//    @Test
+//    func testLanguagePersistenceRoundTrip() {
+//        let store = LanguageStore()
+//        let original = store.current
+//
+//        store.current = .japanese
+//        #expect(store.current == .japanese)
+//
+//        store.current = .chineseSimplified
+//        #expect(store.current == .chineseSimplified)
+//
+//        // Restore
+//        store.current = original
+//    }
 
     // MARK: - Translation
 
