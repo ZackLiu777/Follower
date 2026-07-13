@@ -12,7 +12,6 @@ struct ContentView: View {
 
     var body: some View {
         ContentViewInner(container: appState.container, appState: appState)
-            .id(appState.currentLanguage.rawValue)
     }
 }
 
@@ -27,6 +26,7 @@ private struct ContentViewInner: View {
     @State private var trendsVM: TrendsViewModel
     @State private var decisionsVM: DecisionsViewModel
     @State private var settingsVM: SettingsViewModel
+    @State private var selectedTab: Int = 0
 
     init(container: DIContainer, appState: AppState) {
         self.appState = appState
@@ -63,19 +63,31 @@ private struct ContentViewInner: View {
     }
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             DashboardView(viewModel: dashboardVM)
-                .tabItem { Label(loc(L10n.Tab.dashboard), systemImage: "square.grid.2x2.fill") }
-                .accessibilityIdentifier("tab_dashboard")
+                .tabItem {
+                    Label(loc(L10n.Tab.dashboard),
+                        systemImage: selectedTab == 0 ? "square.grid.2x2.fill" : "square.grid.2x2")
+                }
+                .tag(0).accessibilityIdentifier("tab_dashboard")
             TrendsView(viewModel: trendsVM)
-                .tabItem { Label(loc(L10n.Tab.trends), systemImage: "chart.xyaxis.line") }
-                .accessibilityIdentifier("tab_trends")
+                .tabItem {
+                    Label(loc(L10n.Tab.trends),
+                        systemImage: selectedTab == 1 ? "chart.line.uptrend.xyaxis" : "chart.line.uptrend.xyaxis")
+                }
+                .tag(1).accessibilityIdentifier("tab_trends")
             DecisionsView(viewModel: decisionsVM)
-                .tabItem { Label(loc(L10n.Decisions.tabDecisions), systemImage: "sparkle.magnifyingglass") }
-                .accessibilityIdentifier("tab_decisions")
+                .tabItem {
+                    Label(loc(L10n.Decisions.tabDecisions),
+                        systemImage: selectedTab == 2 ? "sparkle.magnifyingglass" : "magnifyingglass")
+                }
+                .tag(2).accessibilityIdentifier("tab_decisions")
             SettingsView(viewModel: settingsVM)
-                .tabItem { Label(loc(L10n.Tab.my), systemImage: "person.fill") }
-                .accessibilityIdentifier("tab_settings")
+                .tabItem {
+                    Label(loc(L10n.Tab.settings),
+                        systemImage: selectedTab == 3 ? "gearshape.fill" : "gearshape")
+                }
+                .tag(3).accessibilityIdentifier("tab_settings")
         }
         .tint(appState.currentTheme.theme.accentPrimary)
         .withTheme(appState.currentTheme.theme)

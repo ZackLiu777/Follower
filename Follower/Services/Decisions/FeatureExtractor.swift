@@ -106,7 +106,7 @@ struct FeatureExtractor: Sendable {
         let totalRecent = performance.values.map(\.recentPosts).reduce(0, +)
         let avgRecent = Double(totalRecent) / Double(max(1, performance.count))
         // 疲劳阈值 = 各类型平均发帖量的 1.5 倍
-        let threshold = max(3.0, avgRecent * 1.5)
+        let threshold = max(2.0, avgRecent * 1.2)
         var result: [ContentType: FatigueIndex] = [:]
         for (type, stats) in performance {
             let fatigued = Double(stats.recentPosts) > threshold

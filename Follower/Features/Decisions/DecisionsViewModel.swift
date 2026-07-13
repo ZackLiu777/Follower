@@ -63,9 +63,11 @@ final class DecisionsViewModel {
     }
 
     /// 完整流水线：拉取数据 → 提取特征 → 评分 → 生成卡片
+    @MainActor
     func refreshDecisions() async {
         guard let accountId = selectedAccountId else {
             hasData = false; cards = []
+            print("[DecisionsVM] refreshDecisions — no account, cards: 0")
             return
         }
         isLoading = true; defer { isLoading = false }
@@ -88,6 +90,7 @@ final class DecisionsViewModel {
 
             let scores = ScoringEngine.score(features)
             cards = CardGenerator.generate(scores: scores, features: features)
+            print("[DecisionsVM] refreshDecisions — generated \(cards.count) cards")
 
         } catch {
             errorMessage = error.localizedDescription

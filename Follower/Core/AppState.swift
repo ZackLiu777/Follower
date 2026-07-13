@@ -8,6 +8,16 @@ import Foundation
 import Combine
 import SwiftUI
 
+// MARK: - Sync State
+
+/// App 级同步状态机 — 所有 Tab 共享，确保 UI 状态一致
+enum AppSyncState: Sendable {
+    case noAccount      // 无账号 → 引导连接
+    case readyToSync    // 有账号无数据 → 引导同步
+    case syncing        // 同步中 → loading
+    case dataReady      // 数据就绪 → 展示内容
+}
+
 // 全局应用状态管理器 — 持有主题、语言、试用状态和 Premium 标志位
 @MainActor
 @Observable
@@ -23,6 +33,11 @@ final class AppState {
      var trialStartDate: Date?
     /// Lambda: Premium 解锁状态（同步，所有 PremiumGate 直接读取）
      var premiumEnabledFlags: [String: Bool] = [:]
+
+    // MARK: - Sync State
+
+    /// 全局同步状态 — Dashboard / Trends / Decisions 三个 Tab 共享
+    var syncState: AppSyncState = .noAccount
 
     /// 从数据库刷新所有 Premium Feature 的启用状态
     func refreshPremiumFlags() {

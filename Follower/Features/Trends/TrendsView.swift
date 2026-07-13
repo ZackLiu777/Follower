@@ -37,21 +37,22 @@ struct TrendsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                /// 渐变背景层 — 独立于滚动内容，不随 ScrollView 移动
                 backgroundView
-                ScrollView {
-                    /// 错误横幅 — 数据加载失败时从顶部滑入
-                    if let error = viewModel.errorMessage {
-                        ErrorBanner(
-                            message: error,
-                            onDismiss: { viewModel.errorMessage = nil },
-                            onRetry: nil
-                        )
-                        .padding(.top, 8)
-                    }
-                    VStack(spacing: 12) {
-                        /// 时间窗分段选择器（日/周/月/年）
-                        timeWindowPicker
+                switch appState.syncState {
+                case .noAccount:
+                    EmptyStateView(icon: "person.crop.circle.badge.exclamationmark",
+                        title: loc(L10n.Dashboard.noAccountTitle),
+                        message: loc(L10n.Dashboard.noAccountMessage),
+                        actionLabel: nil, action: nil)
+                case .dataReady:
+                    ScrollView {
+                        if let error = viewModel.errorMessage {
+                            ErrorBanner(message: error,
+                                onDismiss: { viewModel.errorMessage = nil }, onRetry: nil)
+                                .padding(.top, 8)
+                        }
+                        VStack(spacing: 12) {
+                            timeWindowPicker
                         /// 六个统计图表卡片 — 每张可点击进入详情页
                         ForEach(TrendsViewModel.visibleMetricTypes, id: \.self) { metricType in
                             let points = viewModel.chartData(for: metricType)
@@ -82,12 +83,24 @@ struct TrendsView: View {
                     }
                     .padding(.vertical, 8)
                 }
-                .scrollContentBackground(.hidden)   // 隐藏系统默认滚动背景，让渐变透出
+                .scrollContentBackground(.hidden)
+                case .syncing:
+                    ProgressView(loc(L10n.Common.loading)).frame(maxWidth: .infinity, minHeight: 300)
+                case .readyToSync:
+                    EmptyStateView(icon: "arrow.triangle.2.circlepath",
+                        title: loc(L10n.Dashboard.noDataTitle),
+                        message: loc(L10n.Dashboard.noDataMessage),
+                        actionLabel: loc(L10n.Common.syncNow),
+                        action: { /* sync from Dashboard */ })
+                }
             }
             .navigationTitle(loc(L10n.Trends.title))
         }
-        .task {
-            await viewModel.loadInitialAccount()    // 页面出现时加载账号 → 加载趋势数据
+        .task { await viewModel.loadInitialAccount() }
+        .onChange(of: appState.syncState) { _, new in
+            if new == .dataReady, let id = viewModel.selectedAccountId {
+                Task { await viewModel.loadTrends(accountId: id) }
+            }
         }
     }
 

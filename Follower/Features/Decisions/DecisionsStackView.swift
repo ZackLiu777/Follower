@@ -27,6 +27,8 @@ struct DecisionsStackView: View {
             .padding(.vertical, 12)
         }
         .scrollContentBackground(.hidden)
+        .onAppear { print("[DecisionsStackView] appear — cards: \(cards.count)") }
+        .onDisappear { print("[DecisionsStackView] disappear") }
     }
 }
 

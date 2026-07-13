@@ -24,16 +24,17 @@ struct DecisionsView: View {
                     startPoint: .top, endPoint: .bottom
                 ).ignoresSafeArea()
 
-                if !viewModel.hasAccount {
+                switch appState.syncState {
+                case .noAccount:
                     EmptyStateView(icon: "person.crop.circle.badge.exclamationmark",
                         title: loc(L10n.Decisions.noAccountTitle),
                         message: loc(L10n.Decisions.noAccountMessage),
                         actionLabel: nil, action: nil)
-                } else if viewModel.hasData {
+                case .dataReady:
                     VStack(spacing: 0) { schemePicker; schemeView }
-                } else if viewModel.isLoading {
+                case .syncing:
                     ProgressView(loc(L10n.Common.loading)).frame(maxWidth: .infinity, minHeight: 300)
-                } else {
+                case .readyToSync:
                     EmptyStateView(icon: "arrow.triangle.2.circlepath",
                         title: loc(L10n.Decisions.noDataTitle),
                         message: loc(L10n.Decisions.noDataMessage),
@@ -45,6 +46,9 @@ struct DecisionsView: View {
             .toolbar { refreshToolbarItem }
         }
         .task { await viewModel.loadInitialAccount() }
+        .onChange(of: appState.syncState) { _, new in
+            if new == .dataReady { Task { await viewModel.refreshDecisions() } }
+        }
     }
 
     // MARK: - Scheme Picker (Demo Only)
@@ -65,14 +69,18 @@ struct DecisionsView: View {
 
     @ViewBuilder
     private var schemeView: some View {
-        switch selectedScheme {
-        case 0: DecisionsStackView(cards: viewModel.cards)
-        case 1: DecisionsTimelineView(cards: viewModel.cards)
-        case 2: DecisionsGridView(cards: viewModel.cards)
-        case 3: DecisionsCarouselView(cards: viewModel.cards)
-        case 4: DecisionsListView(cards: viewModel.cards)
-        default: DecisionsStackView(cards: viewModel.cards)
+        Group {
+            switch selectedScheme {
+            case 0: DecisionsStackView(cards: viewModel.cards)
+            case 1: DecisionsTimelineView(cards: viewModel.cards)
+            case 2: DecisionsGridView(cards: viewModel.cards)
+            case 3: DecisionsCarouselView(cards: viewModel.cards)
+            case 4: DecisionsListView(cards: viewModel.cards)
+            default: DecisionsStackView(cards: viewModel.cards)
+            }
         }
+        .onAppear { print("[schemeView] appear — cards: \(viewModel.cards.count)") }
+        .onDisappear { print("[schemeView] disappear") }
     }
 
     // MARK: - Toolbar

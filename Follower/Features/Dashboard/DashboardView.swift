@@ -14,9 +14,11 @@ struct DashboardView: View {
 
     /// 根布局：加载 / 空状态 / 错误 / 内容分支
     var body: some View {
+        // 同步 App 级状态机
+        let _ = updateSyncState()
+
         NavigationStack {
             ZStack {
-                // 主题渐变背景
                 LinearGradient(colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
                 ScrollView {
                     if let error = viewModel.errorMessage {
@@ -42,6 +44,19 @@ struct DashboardView: View {
     }
 
     /// 工具栏：同步按钮 / 同步中进度指示器
+    /// 驱动全局同步状态机
+    private func updateSyncState() {
+        if viewModel.accounts.isEmpty {
+            appState.syncState = .noAccount
+        } else if viewModel.latestSnapshot != nil {
+            appState.syncState = .dataReady
+        } else if viewModel.isLoading || viewModel.isSyncing {
+            appState.syncState = .syncing
+        } else {
+            appState.syncState = .readyToSync
+        }
+    }
+
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
             if viewModel.isSyncing { ProgressView() }

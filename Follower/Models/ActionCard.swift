@@ -31,7 +31,7 @@ enum ActionCardTemplate: Sendable {
     case primary(contentType: ContentType, outperformanceX: Double, context: CardContext)
     case alert(fatiguedType: ContentType, penalty: Double)
     case recovery(inactivePct: Int, context: CardContext)
-    case insight(bestDay: Int, bestHour: String)
+    case insight(bestDay: Int, bestHour: String, variation: Int = 0)  // 0=时间, 1=内容, 2=互动, 3=增长
 }
 
 // MARK: - ActionCard
@@ -65,8 +65,13 @@ extension ActionCardTemplate {
             return ctx == .severe
                 ? loc(L10n.Decisions.recoveryCriticalTitle)
                 : loc(L10n.Decisions.recoveryModerateTitle)
-        case .insight:
-            return loc(L10n.Decisions.bestPostingTime)
+        case .insight(_, _, let v):
+            switch v {
+            case 1:  return loc(L10n.Decisions.insightContent)
+            case 2:  return loc(L10n.Decisions.insightEngagement)
+            case 3:  return loc(L10n.Decisions.insightGrowth)
+            default: return loc(L10n.Decisions.bestPostingTime)
+            }
         }
     }
 
@@ -112,7 +117,7 @@ extension ActionCardTemplate {
                    loc(L10n.Decisions.actionAskEngagement)]
                 : [loc(L10n.Decisions.actionDMSupporters),
                    loc(L10n.Decisions.actionReengage)]
-        case .insight(let day, let hour):
+        case .insight(let day, let hour, _):
             let dayName = dayNames[clamp(day - 1, 0, 6)]
             return [String(format: loc(L10n.Decisions.actionSchedule), dayName, hour)]
         }
@@ -139,7 +144,7 @@ extension ActionCardTemplate {
             return ctx == .severe
                 ? String(format: loc(L10n.Decisions.reasonCriticalInactive), pct)
                 : String(format: loc(L10n.Decisions.reasonInactiveFollowers), pct)
-        case .insight(let day, let hour):
+        case .insight(let day, let hour, _):
             let dayName = dayNames[clamp(day - 1, 0, 6)]
             return String(format: loc(L10n.Decisions.reasonAudienceActive), dayName, hour)
         }
