@@ -24,17 +24,17 @@ struct DecisionsView: View {
                     startPoint: .top, endPoint: .bottom
                 ).ignoresSafeArea()
 
-                let _ = print("[DecisionsView] body render — cards: \(viewModel.cards.count), hasAccount: \(viewModel.hasAccount), hasData: \(viewModel.hasData)")
-                if !viewModel.hasAccount {
+                switch appState.syncState {
+                case .noAccount:
                     EmptyStateView(icon: "person.crop.circle.badge.exclamationmark",
                         title: loc(L10n.Decisions.noAccountTitle),
                         message: loc(L10n.Decisions.noAccountMessage),
                         actionLabel: nil, action: nil)
-                } else if !viewModel.cards.isEmpty {
+                case .dataReady:
                     VStack(spacing: 0) { schemePicker; schemeView }
-                } else if viewModel.isLoading {
+                case .syncing:
                     ProgressView(loc(L10n.Common.loading)).frame(maxWidth: .infinity, minHeight: 300)
-                } else {
+                case .readyToSync:
                     EmptyStateView(icon: "arrow.triangle.2.circlepath",
                         title: loc(L10n.Decisions.noDataTitle),
                         message: loc(L10n.Decisions.noDataMessage),
@@ -46,6 +46,9 @@ struct DecisionsView: View {
             .toolbar { refreshToolbarItem }
         }
         .task { await viewModel.loadInitialAccount() }
+        .onChange(of: appState.syncState) { _, new in
+            if new == .dataReady { Task { await viewModel.refreshDecisions() } }
+        }
     }
 
     // MARK: - Scheme Picker (Demo Only)
