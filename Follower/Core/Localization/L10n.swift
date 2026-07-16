@@ -59,6 +59,19 @@ enum L10n {
         static let recentContent = "dashboard.recentContent"
         static let viewAll = "dashboard.viewAll"
         static let noPostsHint = "dashboard.noPostsHint"
+        
+        // ── v3 新增 ──
+        static let accountType = "dashboard.accountType"
+        static let followersTotal = "dashboard.followersTotal"
+        static let reach = "dashboard.reach"
+        static let posts = "dashboard.posts"
+        static let growthInsights = "dashboard.growthInsights"
+        static let growthPositiveHeadline = "dashboard.growthPositiveHeadline"
+        static let growthNegativeHeadline = "dashboard.growthNegativeHeadline"
+        static let growthNeutralHeadline = "dashboard.growthNeutralHeadline"
+        static let growthDefaultDetail = "dashboard.growthDefaultDetail"
+        static let followerForecast30d = "dashboard.followerForecast30d"
+        static let contentSuggestions = "dashboard.contentSuggestions"
     }
     
     // MARK: Trends

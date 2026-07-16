@@ -42,6 +42,10 @@ struct Theme: Sendable {
     let divider: Color
     let navigationBg: Color
     let emptyStateIcon: Color
+    /// 扁平页面背景（取代旧渐变）
+    var background: Color { backgroundPrimary }
+    /// 内容区域表面色（Posts / Premium 列表背景）
+    var surface: Color { backgroundSecondary }
     /// 主题展示名称
     let displayName: String
     /// 是否启用 Liquid Glass 毛玻璃效果

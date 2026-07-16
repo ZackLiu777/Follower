@@ -2,8 +2,8 @@
 //  DecisionsView.swift
 //  Follower
 //
-//  Growth Decision Engine 主视图 — 调度 5 套 UI 方案。
-//  提供分段选择器在方案间切换（仅限 Demo），最终版本固定使用一套方案。
+//  Growth Decision Engine 主视图 — 时间线方案。
+//
 
 import SwiftUI
 
@@ -12,9 +12,6 @@ struct DecisionsView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.theme) private var theme
     let viewModel: DecisionsViewModel
-
-    /// Demo 阶段：0=Stack, 1=Timeline, 2=Grid, 3=Carousel, 4=List
-    @State private var selectedScheme: Int = 0
 
     var body: some View {
         NavigationStack {
@@ -31,7 +28,7 @@ struct DecisionsView: View {
                         message: loc(L10n.Decisions.noAccountMessage),
                         actionLabel: nil, action: nil)
                 case .dataReady:
-                    VStack(spacing: 0) { schemePicker; schemeView }
+                    DecisionsTimelineView(cards: viewModel.cards)
                 case .syncing:
                     ProgressView(loc(L10n.Common.loading)).frame(maxWidth: .infinity, minHeight: 300)
                 case .readyToSync:
@@ -51,38 +48,6 @@ struct DecisionsView: View {
         }
     }
 
-    // MARK: - Scheme Picker (Demo Only)
-
-    private var schemePicker: some View {
-        Picker("Scheme", selection: $selectedScheme) {
-            Text(loc(L10n.Decisions.stack)).tag(0)
-            Text(loc(L10n.Decisions.timeline)).tag(1)
-            Text(loc(L10n.Decisions.grid)).tag(2)
-            Text(loc(L10n.Decisions.carousel)).tag(3)
-            Text(loc(L10n.Decisions.list)).tag(4)
-        }
-        .pickerStyle(.segmented)
-        .padding(.horizontal, 24).padding(.top, 8).padding(.bottom, 8)
-    }
-
-    // MARK: - Scheme Dispatch
-
-    @ViewBuilder
-    private var schemeView: some View {
-        Group {
-            switch selectedScheme {
-            case 0: DecisionsStackView(cards: viewModel.cards)
-            case 1: DecisionsTimelineView(cards: viewModel.cards)
-            case 2: DecisionsGridView(cards: viewModel.cards)
-            case 3: DecisionsCarouselView(cards: viewModel.cards)
-            case 4: DecisionsListView(cards: viewModel.cards)
-            default: DecisionsStackView(cards: viewModel.cards)
-            }
-        }
-        .onAppear { print("[schemeView] appear — cards: \(viewModel.cards.count)") }
-        .onDisappear { print("[schemeView] disappear") }
-    }
-
     // MARK: - Toolbar
 
     private var refreshToolbarItem: some ToolbarContent {
@@ -97,7 +62,7 @@ struct DecisionsView: View {
 
 // MARK: - Preview
 
-#Preview("DecisionsView — Stack") {
+#Preview("DecisionsView — Timeline") {
     let appState = AppState(databaseManager: DatabaseManager.shared)
     let viewModel = DecisionsViewModel(
         snapshotRepo: appState.container.snapshotRepository,
@@ -106,3 +71,4 @@ struct DecisionsView: View {
     )
     return DecisionsView(viewModel: viewModel).environment(appState)
 }
+

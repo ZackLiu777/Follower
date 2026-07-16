@@ -4,7 +4,10 @@
     "" : {
 
     },
-    "·" : {
+    "—" : {
+
+    },
+    "(%@)" : {
 
     },
     "(%@%%)" : {
@@ -82,9 +85,6 @@
 
     },
     "%lld:00" : {
-
-    },
-    "%lld." : {
 
     },
     "•" : {
@@ -950,6 +950,17 @@
     "Daily Engagement" : {
 
     },
+    "dashboard.accountType" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instagram 账户"
+          }
+        }
+      }
+    },
     "dashboard.comments" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1008,6 +1019,17 @@
         }
       }
     },
+    "dashboard.contentSuggestions" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "内容建议"
+          }
+        }
+      }
+    },
     "dashboard.engagementRate" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1033,6 +1055,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "互動率"
+          }
+        }
+      }
+    },
+    "dashboard.followerForecast30d" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粉丝预测 (30天)"
           }
         }
       }
@@ -1066,6 +1099,17 @@
         }
       }
     },
+    "dashboard.followersTotal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粉丝总数"
+          }
+        }
+      }
+    },
     "dashboard.following" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1091,6 +1135,61 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "追蹤中"
+          }
+        }
+      }
+    },
+    "dashboard.growthDefaultDetail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看你的粉丝增长趋势和内容表现"
+          }
+        }
+      }
+    },
+    "dashboard.growthInsights" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "增长洞察"
+          }
+        }
+      }
+    },
+    "dashboard.growthNegativeHeadline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粉丝增长有所放缓"
+          }
+        }
+      }
+    },
+    "dashboard.growthNeutralHeadline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粉丝数保持稳定"
+          }
+        }
+      }
+    },
+    "dashboard.growthPositiveHeadline" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的粉丝在稳步增长！"
           }
         }
       }
@@ -1298,6 +1397,28 @@
         }
       }
     },
+    "dashboard.posts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "帖子数"
+          }
+        }
+      }
+    },
+    "dashboard.reach" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "覆盖人数"
+          }
+        }
+      }
+    },
     "dashboard.recentContent" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1446,6 +1567,122 @@
     "Day" : {
 
     },
+    "decisions.actionAskEngagement" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask a question in your next post"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次の投稿で質問をする"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在下一篇帖子中提问"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在下一篇貼文中提問"
+          }
+        }
+      }
+    },
+    "decisions.actionCrossPromote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cross-promote on Stories"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ストーリーズで相互宣伝"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在快拍中交叉推广"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在限時動態中交叉推廣"
+          }
+        }
+      }
+    },
+    "decisions.actionDiversifyFrom" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diversify away from %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@から多様化"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从%@转向多样化"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "從%@轉向多樣化"
+          }
+        }
+      }
+    },
+    "decisions.actionDMFollowers" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personally DM %d followers"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d人のフォロワーにDM"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "私信 %d 位粉丝"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "私訊 %d 位粉絲"
+          }
+        }
+      }
+    },
     "decisions.actionDMSupporters" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1475,6 +1712,35 @@
         }
       }
     },
+    "decisions.actionDoubleDown" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Double down on %@ (%.1fx ROI)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@に集中（%.1f倍ROI）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加码 %@（%.1f倍 ROI）"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加碼 %@（%.1f倍 ROI）"
+          }
+        }
+      }
+    },
     "decisions.actionEngageFollowers" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1500,6 +1766,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "與高價值粉絲互動"
+          }
+        }
+      }
+    },
+    "decisions.actionEngageTopFans" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Engage your top 10 fans now"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "トップ10ファンと交流"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "立即互动前10名粉丝"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "立即互動前10名粉絲"
+          }
+        }
+      }
+    },
+    "decisions.actionOptimizeTiming" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optimize %@ posting time"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@の投稿時間を最適化"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "优化 %@ 发布时间"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "優化 %@ 發佈時間"
           }
         }
       }
@@ -1591,6 +1915,35 @@
         }
       }
     },
+    "decisions.actionReplyAll" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reply to ALL pending comments"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未返信コメントに全て返信"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "回复所有待处理评论"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "回覆所有待處理評論"
+          }
+        }
+      }
+    },
     "decisions.actionReplyComments" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1616,6 +1969,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "回覆熱門評論"
+          }
+        }
+      }
+    },
+    "decisions.actionRunGiveaway" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Run a small giveaway"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小さなプレゼント企画を実施"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发起小型抽奖活动"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "發起小型抽獎活動"
           }
         }
       }
@@ -1649,34 +2031,149 @@
         }
       }
     },
-
-    "decisions.insightContent" : {
+    "decisions.actionStopType" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Content Strategy" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コンテンツ戦略" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "内容策略" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "內容策略" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause ALL %@ posts (7 days)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@投稿を全て停止（7日間）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂停所有%@帖子（7天）"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫停所有%@貼文（7天）"
+          }
+        }
       }
     },
-
-    "decisions.insightEngagement" : {
+    "decisions.actionTestVariation" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Engagement Tips" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "エンゲージメントのヒント" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "互动技巧" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "互動技巧" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test a content variation"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コンテンツバリエーションをテスト"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "测试内容变体"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "測試內容變體"
+          }
+        }
       }
     },
-
-    "decisions.insightGrowth" : {
+    "decisions.actionTryFormat" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Growth Opportunity" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "成長の機会" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "增长机会" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "增長機會" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try switching to %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@に切り替えてみる"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尝试切换到 %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "嘗試切換到 %@"
+          }
+        }
+      }
+    },
+    "decisions.alertMildTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "POSTING BALANCE"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "投稿バランス"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发帖平衡"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "發文平衡"
+          }
+        }
+      }
+    },
+    "decisions.alertSevereTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URGENT: CONTENT FATIGUE"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "緊急：コンテンツ疲労"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "紧急：内容疲劳"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "緊急：內容疲勞"
+          }
+        }
       }
     },
     "decisions.bestPostingTime" : {
@@ -1998,6 +2495,35 @@
         }
       }
     },
+    "decisions.impactCritical" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prevent ~200 follower loss"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "~200フォロワー損失を防止"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "防止 ~200 粉丝流失"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "防止 ~200 粉絲流失"
+          }
+        }
+      }
+    },
     "decisions.impactEngagement" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2023,6 +2549,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "+15%% 互動率"
+          }
+        }
+      }
+    },
+    "decisions.impactOptimize" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+10 ~ +30%% engagement lift"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+10 ~ +30%% エンゲージメント向上"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+10 ~ +30%% 互动提升"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+10 ~ +30%% 互動提升"
           }
         }
       }
@@ -2056,6 +2611,122 @@
         }
       }
     },
+    "decisions.impactReverse" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+50 ~ +120 followers regained"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+50 ~ +120 フォロワー回復"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢复 +50 ~ +120 粉丝"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢復 +50 ~ +120 粉絲"
+          }
+        }
+      }
+    },
+    "decisions.insightContent" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Content Strategy"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コンテンツ戦略"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "内容策略"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "內容策略"
+          }
+        }
+      }
+    },
+    "decisions.insightEngagement" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Engagement Tips"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エンゲージメントのヒント"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "互动技巧"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "互動技巧"
+          }
+        }
+      }
+    },
+    "decisions.insightGrowth" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Growth Opportunity"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "成長の機会"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "增长机会"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "增長機會"
+          }
+        }
+      }
+    },
     "decisions.list" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2085,44 +2756,120 @@
         }
       }
     },
-
     "decisions.noAccountMessage" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connect your Instagram account and sync data to receive personalized growth recommendations." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "Instagramアカウントを接続してデータを同期すると、パーソナライズされた成長レコメンデーションが表示されます。" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连接你的Instagram账号并同步数据，获取个性化增长建议。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "連接你的Instagram帳號並同步數據，獲取個性化增長建議。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect your Instagram account and sync data to receive personalized growth recommendations."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instagramアカウントを接続してデータを同期すると、パーソナライズされた成長レコメンデーションが表示されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接你的Instagram账号并同步数据，获取个性化增长建议。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "連接你的Instagram帳號並同步數據，獲取個性化增長建議。"
+          }
+        }
       }
     },
-
     "decisions.noAccountTitle" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No Account Connected" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アカウント未接続" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未连接账号" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "未連接帳號" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Account Connected"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウント未接続"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未连接账号"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未連接帳號"
+          }
+        }
       }
     },
-
     "decisions.noDataMessage" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sync your data to generate personalized growth actions based on your Instagram analytics." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "データを同期して、Instagram分析に基づいたパーソナライズされた成長アクションを生成します。" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "同步数据以基于Instagram分析生成个性化增长行动。" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "同步數據以基於Instagram分析生成個性化增長行動。" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync your data to generate personalized growth actions based on your Instagram analytics."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "データを同期して、Instagram分析に基づいたパーソナライズされた成長アクションを生成します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步数据以基于Instagram分析生成个性化增长行动。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步數據以基於Instagram分析生成個性化增長行動。"
+          }
+        }
       }
     },
-
     "decisions.noDataTitle" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sync to Get Recommendations" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "同期してレコメンデーションを取得" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "同步获取决策建议" } },
-        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "同步獲取決策建議" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync to Get Recommendations"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期してレコメンデーションを取得"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步获取决策建议"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步獲取決策建議"
+          }
+        }
       }
     },
     "decisions.noDecisions" : {
@@ -2150,6 +2897,93 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "暫無決策，下拉刷新"
+          }
+        }
+      }
+    },
+    "decisions.primaryBoostTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ACCELERATE GROWTH"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "成長を加速"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加速增长"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加速增長"
+          }
+        }
+      }
+    },
+    "decisions.primaryReverseTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "REVERSE THE TREND"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "トレンドを反転"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "逆转趋势"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "逆轉趨勢"
+          }
+        }
+      }
+    },
+    "decisions.primarySustainTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OPTIMIZE & SUSTAIN"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最適化と維持"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "优化与保持"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "優化與保持"
           }
         }
       }
@@ -2183,6 +3017,93 @@
         }
       }
     },
+    "decisions.reasonCriticalInactive" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d%% of your followers are inactive — urgent re-engagement needed."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フォロワーの%d%%が非アクティブ — 緊急の再エンゲージが必要。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d%%粉丝处于不活跃状态 — 需要紧急互动。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d%%粉絲處於不活躍狀態 — 需要緊急互動。"
+          }
+        }
+      }
+    },
+    "decisions.reasonDeclining" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ engagement has dropped (%.1fx baseline). A format switch can help."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@のエンゲージメントが低下（%.1f倍）。フォーマット変更が効果的。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@互动已下降（%.1f倍基线）。切换格式可能有帮助。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@互動已下降（%.1f倍基線）。切換格式可能有幫助。"
+          }
+        }
+      }
+    },
+    "decisions.reasonFatigueSevere" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ posting frequency is critically high. Algorithm penalties likely."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@の投稿頻度が危険水準。アルゴリズムペナルティの可能性。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@发帖频率过高。可能触发算法惩罚。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@發文頻率過高。可能觸發算法懲罰。"
+          }
+        }
+      }
+    },
     "decisions.reasonInactiveFollowers" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2208,6 +3129,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%d%%粉絲不活躍 — 需要重新互動"
+          }
+        }
+      }
+    },
+    "decisions.reasonMomentum" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ engagement is accelerating (%.1fx baseline). Ride the wave."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@のエンゲージメントが加速中（%.1f倍）。波に乗ろう。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@互动正在加速（%.1f倍基线）。顺势而为。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@互動正在加速（%.1f倍基線）。順勢而為。"
           }
         }
       }
@@ -2295,6 +3245,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "推薦行動"
+          }
+        }
+      }
+    },
+    "decisions.recoveryCriticalTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🚨 REVIVE YOUR AUDIENCE"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🚨 オーディエンスを復活"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🚨 紧急激活受众"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🚨 緊急激活受眾"
+          }
+        }
+      }
+    },
+    "decisions.recoveryModerateTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RE-ENGAGE FOLLOWERS"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フォロワー再活性化"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新互动粉丝"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新互動粉絲"
           }
         }
       }
@@ -2444,760 +3452,6 @@
         }
       }
     },
-    "decisions.actionAskEngagement" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ask a question in your next post"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "次の投稿で質問をする"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在下一篇帖子中提问"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在下一篇貼文中提問"
-          }
-        }
-      }
-    },
-    "decisions.actionCrossPromote" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cross-promote on Stories"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ストーリーズで相互宣伝"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在快拍中交叉推广"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在限時動態中交叉推廣"
-          }
-        }
-      }
-    },
-    "decisions.actionDiversifyFrom" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Diversify away from %@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@から多様化"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "从%@转向多样化"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "從%@轉向多樣化"
-          }
-        }
-      }
-    },
-    "decisions.actionDMFollowers" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Personally DM %d followers"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d人のフォロワーにDM"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "私信 %d 位粉丝"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "私訊 %d 位粉絲"
-          }
-        }
-      }
-    },
-    "decisions.actionDoubleDown" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Double down on %@ (%.1fx ROI)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@に集中（%.1f倍ROI）"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "加码 %@（%.1f倍 ROI）"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "加碼 %@（%.1f倍 ROI）"
-          }
-        }
-      }
-    },
-    "decisions.actionEngageTopFans" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Engage your top 10 fans now"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "トップ10ファンと交流"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "立即互动前10名粉丝"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "立即互動前10名粉絲"
-          }
-        }
-      }
-    },
-    "decisions.actionOptimizeTiming" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Optimize %@ posting time"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@の投稿時間を最適化"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "优化 %@ 发布时间"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "優化 %@ 發佈時間"
-          }
-        }
-      }
-    },
-    "decisions.actionReplyAll" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reply to ALL pending comments"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未返信コメントに全て返信"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "回复所有待处理评论"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "回覆所有待處理評論"
-          }
-        }
-      }
-    },
-    "decisions.actionRunGiveaway" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Run a small giveaway"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "小さなプレゼント企画を実施"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "发起小型抽奖活动"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "發起小型抽獎活動"
-          }
-        }
-      }
-    },
-    "decisions.actionStopType" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pause ALL %@ posts (7 days)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@投稿を全て停止（7日間）"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "暂停所有%@帖子（7天）"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "暫停所有%@貼文（7天）"
-          }
-        }
-      }
-    },
-    "decisions.actionTestVariation" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Test a content variation"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コンテンツバリエーションをテスト"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "测试内容变体"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "測試內容變體"
-          }
-        }
-      }
-    },
-    "decisions.actionTryFormat" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Try switching to %@"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@に切り替えてみる"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "尝试切换到 %@"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "嘗試切換到 %@"
-          }
-        }
-      }
-    },
-    "decisions.alertMildTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "POSTING BALANCE"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "投稿バランス"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "发帖平衡"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "發文平衡"
-          }
-        }
-      }
-    },
-    "decisions.alertSevereTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "URGENT: CONTENT FATIGUE"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "緊急：コンテンツ疲労"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "紧急：内容疲劳"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "緊急：內容疲勞"
-          }
-        }
-      }
-    },
-    "decisions.impactCritical" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prevent ~200 follower loss"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "~200フォロワー損失を防止"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "防止 ~200 粉丝流失"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "防止 ~200 粉絲流失"
-          }
-        }
-      }
-    },
-    "decisions.impactOptimize" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "+10 ~ +30%% engagement lift"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "+10 ~ +30%% エンゲージメント向上"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "+10 ~ +30%% 互动提升"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "+10 ~ +30%% 互動提升"
-          }
-        }
-      }
-    },
-    "decisions.impactReverse" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "+50 ~ +120 followers regained"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "+50 ~ +120 フォロワー回復"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "恢复 +50 ~ +120 粉丝"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "恢復 +50 ~ +120 粉絲"
-          }
-        }
-      }
-    },
-    "decisions.primaryBoostTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ACCELERATE GROWTH"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "成長を加速"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "加速增长"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "加速增長"
-          }
-        }
-      }
-    },
-    "decisions.primaryReverseTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "REVERSE THE TREND"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "トレンドを反転"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "逆转趋势"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "逆轉趨勢"
-          }
-        }
-      }
-    },
-    "decisions.primarySustainTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "OPTIMIZE & SUSTAIN"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "最適化と維持"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "优化与保持"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "優化與保持"
-          }
-        }
-      }
-    },
-    "decisions.reasonCriticalInactive" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d%% of your followers are inactive — urgent re-engagement needed."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "フォロワーの%d%%が非アクティブ — 緊急の再エンゲージが必要。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d%%粉丝处于不活跃状态 — 需要紧急互动。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d%%粉絲處於不活躍狀態 — 需要緊急互動。"
-          }
-        }
-      }
-    },
-    "decisions.reasonDeclining" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ engagement has dropped (%.1fx baseline). A format switch can help."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@のエンゲージメントが低下（%.1f倍）。フォーマット変更が効果的。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@互动已下降（%.1f倍基线）。切换格式可能有帮助。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@互動已下降（%.1f倍基線）。切換格式可能有幫助。"
-          }
-        }
-      }
-    },
-    "decisions.reasonFatigueSevere" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ posting frequency is critically high. Algorithm penalties likely."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@の投稿頻度が危険水準。アルゴリズムペナルティの可能性。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@发帖频率过高。可能触发算法惩罚。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@發文頻率過高。可能觸發算法懲罰。"
-          }
-        }
-      }
-    },
-    "decisions.reasonMomentum" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ engagement is accelerating (%.1fx baseline). Ride the wave."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@のエンゲージメントが加速中（%.1f倍）。波に乗ろう。"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@互动正在加速（%.1f倍基线）。顺势而为。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@互動正在加速（%.1f倍基線）。順勢而為。"
-          }
-        }
-      }
-    },
-    "decisions.recoveryCriticalTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "🚨 REVIVE YOUR AUDIENCE"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "🚨 オーディエンスを復活"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "🚨 紧急激活受众"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "🚨 緊急激活受眾"
-          }
-        }
-      }
-    },
-    "decisions.recoveryModerateTitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "RE-ENGAGE FOLLOWERS"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "フォロワー再活性化"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重新互动粉丝"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重新互動粉絲"
-          }
-        }
-      }
-    },
     "Distribution by Region" : {
 
     },
@@ -3243,6 +3497,9 @@
 
     },
     "Geo distribution data will appear here once available." : {
+
+    },
+    "Growth Decisions" : {
 
     },
     "Hashtag Strategy" : {
@@ -3299,6 +3556,9 @@
 
     },
     "No Data Available" : {
+
+    },
+    "No decisions yet" : {
 
     },
     "No posts yet. Sync to load content." : {
@@ -6525,9 +6785,6 @@
     "Retention data will appear here once enough snapshots are recorded." : {
 
     },
-    "Scheme" : {
-
-    },
     "settings.appearance" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7485,6 +7742,9 @@
         }
       }
     },
+    "Smart actions for follower growth" : {
+
+    },
     "tab.dashboard" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7600,6 +7860,9 @@
           }
         }
       }
+    },
+    "Take action" : {
+
     },
     "Top Region" : {
 
@@ -8135,6 +8398,9 @@
         }
       }
     },
+    "vs 上周" : {
+
+    },
     "Weight Breakdown" : {
 
     },
@@ -8145,6 +8411,9 @@
 
     },
     "Your best posting time" : {
+
+    },
+    "近7天" : {
 
     }
   },
