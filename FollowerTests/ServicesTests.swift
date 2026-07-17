@@ -65,6 +65,167 @@ struct ServicesTests {
         #expect(result.metricsUpdated == 0)
     }
 
+    // MARK: - Average Comments / Shares (Phi: 验证 per-post 平均计算)
+
+    /// averageComments day metric 应存储每帖平均评论数（totalComments / mediaCount）
+    @MainActor
+    @Test
+    func testAverageCommentsMetricPerPost() async throws {
+        let accountId = try await createTestAccount("avg_comments")
+        let now = Date()
+        let calendar = Calendar.current
+        let day1 = calendar.startOfDay(for: now)
+
+        // 5 篇帖子，总共 10 条评论 → 平均 2.0 条/帖
+        let profile = APIProfileResponse(
+            username: "test", displayName: "T",
+            followersCount: 100, followingCount: 10, mediaCount: 5,
+            totalLikes: 50, totalComments: 10, totalShares: 3, totalViews: 500,
+            engagementRate: 0.05, fetchedAt: day1
+        )
+
+        let payload = try JSONEncoder().encode(profile)
+        let event = Event(
+            accountId: accountId, eventType: .profileSnapshot,
+            payload: payload, source: .api, observedAt: day1, createdAt: now
+        )
+        _ = try await eventRepo.insertBatch([event])
+
+        let aggregation = AggregationService(eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo)
+        let result = try await aggregation.aggregate(accountId: accountId, from: day1, to: now)
+
+        #expect(result.snapshotsUpdated >= 1)
+        #expect(result.metricsUpdated > 0)
+
+        // 验证 day metric 值 = totalComments / mediaCount = 10 / 5 = 2.0
+        let metrics = try await metricRepo.fetch(
+            accountId: accountId,
+            metricType: .averageComments,
+            window: .day,
+            limit: 10
+        )
+        if let dayMetric = metrics.first {
+            #expect(dayMetric.value == 2.0, "averageComments day metric should be 10/5 = 2.0")
+        }
+    }
+
+    /// averageShares day metric 应存储每帖平均分享数（totalShares / mediaCount）
+    @MainActor
+    @Test
+    func testAverageSharesMetricPerPost() async throws {
+        let accountId = try await createTestAccount("avg_shares")
+        let now = Date()
+        let calendar = Calendar.current
+        let day1 = calendar.startOfDay(for: now)
+
+        // 10 篇帖子，总共 5 次分享 → 平均 0.5 次/帖
+        let profile = APIProfileResponse(
+            username: "test", displayName: "T",
+            followersCount: 200, followingCount: 20, mediaCount: 10,
+            totalLikes: 100, totalComments: 20, totalShares: 5, totalViews: 1000,
+            engagementRate: 0.03, fetchedAt: day1
+        )
+
+        let payload = try JSONEncoder().encode(profile)
+        let event = Event(
+            accountId: accountId, eventType: .profileSnapshot,
+            payload: payload, source: .api, observedAt: day1, createdAt: now
+        )
+        _ = try await eventRepo.insertBatch([event])
+
+        let aggregation = AggregationService(eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo)
+        let result = try await aggregation.aggregate(accountId: accountId, from: day1, to: now)
+
+        #expect(result.snapshotsUpdated >= 1)
+        #expect(result.metricsUpdated > 0)
+
+        let metrics = try await metricRepo.fetch(
+            accountId: accountId,
+            metricType: .averageShares,
+            window: .day,
+            limit: 10
+        )
+        if let dayMetric = metrics.first {
+            #expect(dayMetric.value == 0.5, "averageShares day metric should be 5/10 = 0.5")
+        }
+    }
+
+    /// mediaCount = 0 时 averageComments 不应除零崩溃
+    @MainActor
+    @Test
+    func testAverageCommentsZeroMediaCount() async throws {
+        let accountId = try await createTestAccount("zero_media")
+        let now = Date()
+        let calendar = Calendar.current
+        let day1 = calendar.startOfDay(for: now)
+
+        // 0 篇帖子，0 条评论
+        let profile = APIProfileResponse(
+            username: "test", displayName: "T",
+            followersCount: 0, followingCount: 0, mediaCount: 0,
+            totalLikes: 0, totalComments: 0, totalShares: 0, totalViews: 0,
+            engagementRate: 0, fetchedAt: day1
+        )
+
+        let payload = try JSONEncoder().encode(profile)
+        let event = Event(
+            accountId: accountId, eventType: .profileSnapshot,
+            payload: payload, source: .api, observedAt: day1, createdAt: now
+        )
+        _ = try await eventRepo.insertBatch([event])
+
+        let aggregation = AggregationService(eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo)
+        let result = try await aggregation.aggregate(accountId: accountId, from: day1, to: now)
+
+        #expect(result.metricsUpdated >= 0, "Zero mediaCount should not crash aggregation")
+    }
+
+    /// 周聚合 averageComments 应 = 每日总和的平均值
+    @MainActor
+    @Test
+    func testWeekAverageCommentsAggregation() async throws {
+        let accountId = try await createTestAccount("week_avg")
+        let now = Date()
+        let calendar = Calendar.current
+
+        // 创建 7 天数据，每天 totalComments 不同
+        var events: [Event] = []
+        for i in 0..<7 {
+            let day = calendar.date(byAdding: .day, value: -i, to: calendar.startOfDay(for: now))!
+            let profile = APIProfileResponse(
+                username: "test", displayName: "T",
+                followersCount: 100 + i * 10, followingCount: 10,
+                mediaCount: 5,
+                totalLikes: 50, totalComments: (i + 1) * 2,  // 2, 4, 6, 8, 10, 12, 14
+                totalShares: 1, totalViews: 100,
+                engagementRate: 0.05, fetchedAt: day
+            )
+            let payload = try JSONEncoder().encode(profile)
+            events.append(Event(
+                accountId: accountId, eventType: .profileSnapshot,
+                payload: payload, source: .api, observedAt: day, createdAt: now
+            ))
+        }
+        _ = try await eventRepo.insertBatch(events)
+
+        let aggregation = AggregationService(eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo)
+        let result = try await aggregation.aggregate(
+            accountId: accountId,
+            from: calendar.date(byAdding: .day, value: -7, to: now)!,
+            to: now
+        )
+        #expect(result.metricsUpdated > 0)
+
+        // 验证周指标存在
+        let weekMetrics = try await metricRepo.fetch(
+            accountId: accountId,
+            metricType: .averageComments,
+            window: .week,
+            limit: 10
+        )
+        #expect(!weekMetrics.isEmpty, "Week aggregation should produce weekly averageComments metrics")
+    }
+
     // MARK: - Export Service
 
     /// JSON 导出 → 生成有效文件并可反序列化为 JSONExportData

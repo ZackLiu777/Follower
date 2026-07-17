@@ -76,10 +76,6 @@ struct TrendsView: View {
                             .buttonStyle(.plain)
                             .padding(.horizontal, 12)
                         }
-                        /// 增长摘要 — 仅当任一指标有数据时展示
-                        if hasAnyData {
-                            aggregateGrowthSummary
-                        }
                     }
                     .padding(.vertical, 8)
                 }
@@ -95,12 +91,24 @@ struct TrendsView: View {
                 }
             }
             .navigationTitle(loc(L10n.Trends.title))
+            .navigationBarTitleDisplayMode(.inline)
         }
-        .task { await viewModel.loadInitialAccount() }
+        .task {
+            // 首次加载：从 AppState 读取全局选中账户
+            await viewModel.loadInitialAccount()
+            if let id = appState.selectedAccountId ?? viewModel.selectedAccountId {
+                await viewModel.loadTrends(accountId: id)
+            }
+        }
         .onChange(of: appState.syncState) { _, new in
-            if new == .dataReady, let id = viewModel.selectedAccountId {
+            if new == .dataReady, let id = appState.selectedAccountId ?? viewModel.selectedAccountId {
                 Task { await viewModel.loadTrends(accountId: id) }
             }
+        }
+        // Dashboard 切换账户 → 全局 AppState.selectedAccountId 变化 → 本页重新加载
+        .onChange(of: appState.selectedAccountId) { _, newId in
+            guard let id = newId else { return }
+            Task { await viewModel.loadTrends(accountId: id) }
         }
     }
 
@@ -127,50 +135,4 @@ struct TrendsView: View {
         .padding(.horizontal, 24)
     }
 
-    // MARK: - Growth Summary
-    /// 判断是否有任意指标包含可计算的趋势数据（至少 2 个点）
-    private var hasAnyData: Bool {
-        TrendsViewModel.visibleMetricTypes.contains {
-            !viewModel.chartData(for: $0).isEmpty
-        }
-    }
-
-    /// 2 列网格 — 展示每个指标的绝对变化量（首值 → 末值）
-    /// 仅渲染有 ≥2 个数据点的指标，单点或无数据不显示
-    private var aggregateGrowthSummary: some View {
-        LazyVGrid(
-            columns: [GridItem(.flexible()), GridItem(.flexible())],
-            spacing: 8
-        ) {
-            ForEach(TrendsViewModel.visibleMetricTypes, id: \.self) { metricType in
-                let points = viewModel.chartData(for: metricType)
-                if let first = points.first, let last = points.last, points.count > 1 {
-                    let change = last.value - first.value
-                    summaryItem(
-                        label: metricType.localizedName,
-                        value: String(format: "%+.0f", change),
-                        isPositive: change >= 0
-                    )
-                }
-            }
-        }
-        .padding(.horizontal)
-    }
-
-    /// 单个增长摘要项 — 数值 + 标签
-    /// 正增长 = 绿色，负增长 = 红色，卡片使用 regularMaterial 毛玻璃背景
-    private func summaryItem(label: String, value: String, isPositive: Bool) -> some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.headline)
-                .foregroundColor(isPositive ? theme.positiveGreen : theme.negativeRed)
-            Text(label)
-                .font(.caption)
-                .foregroundColor(theme.textSecondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
 }

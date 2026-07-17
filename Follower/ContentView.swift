@@ -33,6 +33,7 @@ private struct ContentViewInner: View {
         self.container = container
         _dashboardVM = State(wrappedValue: DashboardViewModel(
             snapshotRepo: container.snapshotRepository,
+            metricRepo: container.metricRepository,
             accountRepo: container.accountRepository,
             syncEngine: container.syncEngine,
             eventRepo: container.eventRepository,
@@ -42,7 +43,10 @@ private struct ContentViewInner: View {
             scoringService: container.scoringService,
             geoService: container.geoDistributionService,
             comparisonService: container.comparisonService,
-            aiService: container.aiAnalysisService
+            aiService: container.aiAnalysisService,
+            authenticityService: container.authenticityService,
+            campaignComparisonService: container.campaignComparisonService,
+            engagementHeatmapService: container.engagementHeatmapService
         ))
         _trendsVM = State(wrappedValue: TrendsViewModel(
             snapshotRepo: container.snapshotRepository,
@@ -91,6 +95,7 @@ private struct ContentViewInner: View {
         }
         .tint(appState.currentTheme.theme.accentPrimary)
         .withTheme(appState.currentTheme.theme)
+        .toolbarBackground(.hidden, for: .tabBar)  // 隐藏 TabBar 背景，让渐变透出
     }
 }
 

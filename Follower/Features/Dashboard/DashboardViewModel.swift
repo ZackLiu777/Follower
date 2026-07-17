@@ -14,6 +14,8 @@ import Combine
 final class DashboardViewModel {
     /// Snapshot 数据仓库
     private let snapshotRepo: SnapshotRepositoryProtocol
+    /// Metric 数据仓库（供 TrendChart 使用，与 Trends 页共享同一数据源）
+    private let metricRepo: MetricRepositoryProtocol
     /// 账户数据仓库
     private let accountRepo: AccountRepositoryProtocol
     /// 同步引擎
@@ -34,6 +36,12 @@ final class DashboardViewModel {
     private let comparisonService: ComparisonServiceProtocol
     /// 本地 AI 分析服务（Premium）
     private let aiService: AIAnalysisServiceProtocol
+    /// 真实性评估服务（Premium - Phi）
+    private let authenticityService: AuthenticityServiceProtocol
+    /// 投放效果对比服务（Premium - Phi）
+    private let campaignComparisonService: CampaignComparisonServiceProtocol
+    /// 互动热力图服务（Premium - Phi）
+    private let engagementHeatmapService: EngagementHeatmapServiceProtocol
 
     // MARK: - Published: 核心状态
 
@@ -58,6 +66,8 @@ final class DashboardViewModel {
      var followerDeltaPercent: Double = 0
     /// 粉丝趋势 Mini 折线图数据
      var sparklineData: [Double] = []
+    /// 粉丝周线趋势数据（供 TrendChart 使用）
+     var followerWeeklyData: [TrendDataPoint] = []
 
     // MARK: - Published: 次要指标
 
@@ -90,6 +100,15 @@ final class DashboardViewModel {
     /// AI 生成的摘要文本（Premium）
      var aiSummary: String = ""
 
+    // MARK: - Published: Phi 三大人群画像 Premium 数据
+
+    /// 真实性评估结果（Premium）
+     var authenticityResult: AuthenticityResult?
+    /// 投放效果对比结果（Premium）
+     var campaignResult: CampaignResult?
+    /// 互动热力图结果（Premium）
+     var heatmapResult: EngagementHeatmapResult?
+
     // MARK: - Published: Premium Mock 数据（向后兼容，保留 mock 回退）
 
     /// 取关用户列表（Mock）
@@ -104,6 +123,7 @@ final class DashboardViewModel {
     /// 初始化：注入核心仓库、同步引擎与全部 Premium 分析服务
     init(
         snapshotRepo: SnapshotRepositoryProtocol,
+        metricRepo: MetricRepositoryProtocol,
         accountRepo: AccountRepositoryProtocol,
         syncEngine: SyncEngineProtocol,
         eventRepo: EventRepositoryProtocol,
@@ -113,9 +133,13 @@ final class DashboardViewModel {
         scoringService: ScoringServiceProtocol,
         geoService: GeoDistributionServiceProtocol,
         comparisonService: ComparisonServiceProtocol,
-        aiService: AIAnalysisServiceProtocol
+        aiService: AIAnalysisServiceProtocol,
+        authenticityService: AuthenticityServiceProtocol,
+        campaignComparisonService: CampaignComparisonServiceProtocol,
+        engagementHeatmapService: EngagementHeatmapServiceProtocol
     ) {
         self.snapshotRepo = snapshotRepo
+        self.metricRepo = metricRepo
         self.accountRepo = accountRepo
         self.syncEngine = syncEngine
         self.eventRepo = eventRepo
@@ -126,6 +150,9 @@ final class DashboardViewModel {
         self.geoService = geoService
         self.comparisonService = comparisonService
         self.aiService = aiService
+        self.authenticityService = authenticityService
+        self.campaignComparisonService = campaignComparisonService
+        self.engagementHeatmapService = engagementHeatmapService
     }
 
     /// 加载账户列表并自动选中第一个，随后加载全部数据
@@ -172,6 +199,8 @@ final class DashboardViewModel {
               let current = latestSnapshot else { return }
 
         sparklineData = snapshots.map { Double($0.followersCount) }
+        // 粉丝周线数据 — 使用与 Trends 页相同的数据源（daily metrics），确保图表一致
+        await loadFollowerWeeklyChartData(accountId: accountId)
 
         if let first = snapshots.first {
             followerDelta = current.followersCount - first.followersCount
@@ -180,6 +209,18 @@ final class DashboardViewModel {
             reachDelta = current.totalViews - first.totalViews
             postsDelta = current.mediaCount - first.mediaCount
         }
+    }
+
+    /// 从 daily metrics 计算粉丝周线图表数据 — 使用 TrendChart.weeklyDataPoints 确保与 Trends 页完全一致
+    private func loadFollowerWeeklyChartData(accountId: Int64) async {
+        let raw = (try? await metricRepo.fetch(
+            accountId: accountId,
+            metricType: .followerGrowth,
+            window: .day,
+            limit: 90
+        )) ?? []
+
+        followerWeeklyData = TrendChart.weeklyDataPoints(from: raw)
     }
 
     /// 加载 Mock 帖子列表
@@ -235,6 +276,30 @@ final class DashboardViewModel {
         if !snapshots.isEmpty {
             let insights = await aiService.analyze(snapshots: snapshots)
             aiSummary = insights.first(where: { $0.type == .summary })?.detail ?? ""
+        }
+
+        // ── Phi: 三大人群画像 Premium 服务 ──
+
+        // 真实性评估 — 综合互动质量 + 增长曲线 + 异常检测
+        if !snapshots.isEmpty {
+            authenticityResult = await authenticityService.assess(snapshots: snapshots)
+        }
+
+        // 投放效果对比 — 前半段 vs 后半段（模拟 pre/post campaign）
+        if snapshots.count >= 6 {
+            let mid = snapshots.count / 2
+            let preSnapshots = Array(snapshots[0..<mid])
+            let postSnapshots = Array(snapshots[mid..<snapshots.count])
+            campaignResult = await campaignComparisonService.compare(
+                preSnapshots: preSnapshots,
+                postSnapshots: postSnapshots
+            )
+        }
+
+        // 互动热力图 — 基于 Event 时间分布
+        if let events = try? await eventRepo.fetch(accountId: accountId, from: cutOff, to: Date()),
+           !events.isEmpty {
+            heatmapResult = await engagementHeatmapService.generate(from: events)
         }
 
         // Mock 回退 — 保持向后兼容，现有 UI 继续工作

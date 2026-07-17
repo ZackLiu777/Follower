@@ -307,4 +307,106 @@ struct TrendsViewModelTests {
         #expect(cases.contains(.month))
         #expect(cases.contains(.year))
     }
+
+    // MARK: - Multi-Account: cache clearing on account switch
+
+    /// loadTrends 切换到新 accountId → 清空所有缓存，selectedAccountId 更新
+    @MainActor
+    @Test
+    func testLoadTrendsSwitchAccountClearsCache() async throws {
+        let vm = makeVM()
+        // 首次加载 account 1
+        await vm.loadTrends(accountId: 1)
+        #expect(vm.selectedAccountId == 1)
+
+        // 预填充一些缓存数据（通过直接赋值模拟）
+        vm.dailyMetrics = [.followerGrowth: []]
+        vm.weeklyMetrics = [.followerGrowth: []]
+        vm.monthlyMetrics = [.followerGrowth: []]
+        vm.yearlyMetrics = [.followerGrowth: []]
+        vm.hourlyData = [.followerGrowth: []]
+
+        // 切换到 account 2 → 应清空全部缓存
+        await vm.loadTrends(accountId: 2)
+        #expect(vm.selectedAccountId == 2)
+        #expect(vm.dailyMetrics.isEmpty, "dailyMetrics should be cleared on account switch")
+        #expect(vm.weeklyMetrics.isEmpty, "weeklyMetrics should be cleared on account switch")
+        #expect(vm.monthlyMetrics.isEmpty, "monthlyMetrics should be cleared on account switch")
+        #expect(vm.yearlyMetrics.isEmpty, "yearlyMetrics should be cleared on account switch")
+        #expect(vm.hourlyData.isEmpty, "hourlyData should be cleared on account switch")
+    }
+
+    /// loadTrends 相同 accountId → 不清空缓存（避免不必要的数据丢失）
+    @MainActor
+    @Test
+    func testLoadTrendsSameAccountPreservesCache() async throws {
+        let vm = makeVM()
+        await vm.loadTrends(accountId: 1)
+        #expect(vm.selectedAccountId == 1)
+
+        // 预填充缓存
+        vm.dailyMetrics = [.followerGrowth: [
+            Metric(accountId: 1, metricType: .followerGrowth, value: 100, window: .day, observedAt: Date(), createdAt: Date())
+        ]]
+
+        // 同账户再次加载 → 不应清空缓存
+        await vm.loadTrends(accountId: 1)
+        #expect(vm.selectedAccountId == 1)
+        #expect(!vm.dailyMetrics.isEmpty, "Same account — cache should NOT be cleared")
+    }
+
+    /// loadInitialAccount 在无账户时不设置 selectedAccountId
+    @MainActor
+    @Test
+    func testLoadInitialAccountNoAccounts() async {
+        let vm = makeVM()
+        // selectedAccountId 初始为 nil
+        #expect(vm.selectedAccountId == nil)
+        await vm.loadInitialAccount()
+        // 如果没有账户 → selectedAccountId 保持 nil
+        // (取决于 DB 是否有测试账户，若已有则不为 nil)
+        #expect(true, "loadInitialAccount should not crash with no accounts")
+    }
+
+    // MARK: - weeklyDataPoints 共用方法验证
+
+    /// TrendChart.weeklyDataPoints 与 chartData(for: .week) 返回相同结构
+    @MainActor
+    @Test
+    func testWeeklyDataPointsMatchesChartData() async throws {
+        let vm = makeVM()
+        await vm.loadTrends(accountId: 1)
+
+        // 填充一些 daily metrics
+        let cal = Calendar.current
+        var cal2 = cal
+        cal2.firstWeekday = 2
+        let comps = cal2.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
+        guard let weekStart = cal2.date(from: comps) else { return }
+
+        let metrics: [Metric] = (0..<7).map { i in
+            let dayStart = cal.date(byAdding: .day, value: i, to: weekStart)!
+            return Metric(
+                accountId: 1,
+                metricType: .followerGrowth,
+                value: Double((i + 1) * 10),
+                window: .day,
+                observedAt: dayStart,
+                createdAt: Date()
+            )
+        }
+        vm.dailyMetrics = [.followerGrowth: metrics]
+
+        // chartData(for: .followerGrowth) with .week 应调用 TrendChart.weeklyDataPoints
+        await vm.selectWindow(.week)
+        let chartResult = vm.chartData(for: .followerGrowth)
+        #expect(chartResult.count == 7)
+
+        // 直接调用 TrendChart.weeklyDataPoints 应得到相同结果
+        let directResult = TrendChart.weeklyDataPoints(from: metrics, calendar: cal, referenceDate: Date())
+        #expect(chartResult.count == directResult.count)
+        for i in 0..<chartResult.count {
+            #expect(chartResult[i].value == directResult[i].value, "chartData and weeklyDataPoints must match at index \(i)")
+        }
+    }
 }

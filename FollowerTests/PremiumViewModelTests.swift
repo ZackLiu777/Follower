@@ -63,6 +63,21 @@ final class MockEventRepository: EventRepositoryProtocol {
     func latestObservedAt(accountId: Int64) async throws -> Date? { events.last?.observedAt }
 }
 
+/// Mock MockMetricRepository — 可预设 Metric 列表，用于隔离数据库依赖
+final class MockMetricRepository: MetricRepositoryProtocol {
+    var metrics: [Metric] = []
+
+    func fetch(accountId: Int64, metricType: MetricType, window: TimeWindow, limit: Int) async throws -> [Metric] {
+        metrics.filter { $0.metricType == metricType && $0.window == window }
+    }
+    func fetch(accountId: Int64, window: TimeWindow, from: Date, to: Date) async throws -> [Metric] {
+        metrics.filter { $0.window == window && $0.observedAt >= from && $0.observedAt <= to }
+    }
+    func upsert(_ metric: Metric) async throws -> Metric { metric }
+    func upsertBatch(_ metrics: [Metric]) async throws -> [Metric] { metrics }
+    func deleteOldMetrics(accountId: Int64, olderThan: Date) async throws -> Int { 0 }
+}
+
 // MARK: - DashboardViewModel Premium Tests
 
 /// Unit tests for DashboardViewModel Premium 数据加载 — covers 全量 Premium 属性填充、空数据降级、结果结构验证
@@ -90,6 +105,7 @@ struct PremiumViewModelTests {
 
         return DashboardViewModel(
             snapshotRepo: snapshotRepo,
+            metricRepo: MockMetricRepository(),
             accountRepo: accountRepo,
             syncEngine: MockSyncEngine(),
             eventRepo: eventRepo,
@@ -99,7 +115,10 @@ struct PremiumViewModelTests {
             scoringService: ScoringService(),
             geoService: GeoDistributionService(),
             comparisonService: ComparisonService(),
-            aiService: AIAnalysisService()
+            aiService: AIAnalysisService(),
+            authenticityService: AuthenticityService(),
+            campaignComparisonService: CampaignComparisonService(),
+            engagementHeatmapService: EngagementHeatmapService()
         )
     }
 
@@ -290,5 +309,37 @@ struct PremiumViewModelTests {
             #expect(result.totalDays > 0)
             #expect(!result.label.isEmpty)
         }
+    }
+
+    // MARK: - Phi: 新增 PremiumFeatureKey 用例
+
+    /// PremiumFeatureKey.allCases 应包含 Phi 阶段新增的 7 个三大人群画像键
+    @Test
+    func testPremiumFeatureKeyIncludesPhiCases() {
+        let allKeys = PremiumFeatureKey.allCases
+        #expect(allKeys.contains(.competitorComparison), "Should include competitorComparison")
+        #expect(allKeys.contains(.authenticityAssessment), "Should include authenticityAssessment")
+        #expect(allKeys.contains(.mediaKitExport), "Should include mediaKitExport")
+        #expect(allKeys.contains(.campaignTracking), "Should include campaignTracking")
+        #expect(allKeys.contains(.engagementHeatmap), "Should include engagementHeatmap")
+        #expect(allKeys.contains(.contentScheduling), "Should include contentScheduling")
+        #expect(allKeys.contains(.commentManagement), "Should include commentManagement")
+    }
+
+    /// 所有 PremiumFeatureKey 应有非空 displayName
+    @Test
+    func testAllPremiumFeatureKeysHaveDisplayName() {
+        for key in PremiumFeatureKey.allCases {
+            #expect(!key.displayName.isEmpty, "\(key.rawValue) should have a display name")
+        }
+    }
+
+    /// Phi 新键的 displayName 不应 fallback 到 rawValue
+    @Test
+    func testPhiPremiumKeysDisplayNames() {
+        #expect(PremiumFeatureKey.competitorComparison.displayName != PremiumFeatureKey.competitorComparison.rawValue,
+                 "competitorComparison displayName should come from L10n")
+        #expect(PremiumFeatureKey.authenticityAssessment.displayName != PremiumFeatureKey.authenticityAssessment.rawValue)
+        #expect(PremiumFeatureKey.mediaKitExport.displayName != PremiumFeatureKey.mediaKitExport.rawValue)
     }
 }

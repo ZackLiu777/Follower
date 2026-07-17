@@ -39,6 +39,11 @@ final class AppState {
     /// 全局同步状态 — Dashboard / Trends / Decisions 三个 Tab 共享
     var syncState: AppSyncState = .noAccount
 
+    // MARK: - Account Selection
+
+    /// 全局当前选中账户 ID — Dashboard 切换后，Trends / Decisions 等 Tab 自动响应
+    var selectedAccountId: Int64?
+
     /// 从数据库刷新所有 Premium Feature 的启用状态
     func refreshPremiumFlags() {
         let repo = container.premiumFeatureRepository

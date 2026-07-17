@@ -2,49 +2,193 @@
 //  DashboardView.swift
 //  Follower
 //
-//  Lambda: Hero粉丝 + 次要指标 + 帖子列表 + Premium Insights。
+//  v4 — 仪表盘重构:
+//      浅灰背景 + 白色卡片 + 蓝色强调
+//      Profile Header → TrendChart 粉丝周线（与 Trends 页共用组件+数据源） →
+//      Key Metrics Card → Recent Posts Card → Premium Grid Card
+//
 
 import SwiftUI
 
-/// 主 Dashboard：Hero 粉丝卡片 + 次要指标 + 最近帖子 + Premium Insights 区域
+// ═══════════════════════════════════════════════════════
+//  MARK: - DashboardCard Modifier
+//  白色圆角卡片 + 细微阴影（匹配参考图）
+// ═══════════════════════════════════════════════════════
+
+private struct DashboardCard: ViewModifier {
+    @Environment(\.theme) private var theme
+    @Environment(\.useLiquidGlass) private var useLiquidGlass
+
+    func body(content: Content) -> some View {
+        if useLiquidGlass {
+            // Liquid Glass 模式: Material 毛玻璃 + theme.cardSurface 半透明色叠层
+            content
+                .background(
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 16).fill(.regularMaterial)
+                        RoundedRectangle(cornerRadius: 16).fill(theme.cardSurface)
+                    }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .shadow(color: .black.opacity(theme.isDark ? 0.10 : 0.05), radius: 8, y: 2)
+        } else {
+            // 非 Liquid Glass (如 Mono Stone): 直接用 cardSurface
+            content
+                .background(theme.cardSurface)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .shadow(color: .black.opacity(0.04), radius: 6, y: 2)
+        }
+    }
+}
+
+extension View {
+    fileprivate func dashboardCard() -> some View { modifier(DashboardCard()) }
+}
+
+// ═══════════════════════════════════════════════════════
+//  MARK: - DashboardView (Root)
+// ═══════════════════════════════════════════════════════
+
 struct DashboardView: View {
     @Environment(AppState.self) private var appState
     @Bindable var viewModel: DashboardViewModel
     @Environment(\.theme) private var theme
 
-    /// 根布局：加载 / 空状态 / 错误 / 内容分支
     var body: some View {
-        // 同步 App 级状态机
         let _ = updateSyncState()
 
         NavigationStack {
-            ZStack {
-                LinearGradient(colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
-                ScrollView {
-                    if let error = viewModel.errorMessage {
-                        ErrorBanner(message: error, onDismiss: { viewModel.errorMessage = nil }, onRetry: { Task { await viewModel.loadAccounts() } })
+            Group {
+                if viewModel.accounts.isEmpty {
+                    emptyOrErrorView
+                } else if let error = viewModel.errorMessage {
+                    errorView(error: error)
+                } else if viewModel.latestSnapshot != nil {
+                    ZStack {
+                        LinearGradient(
+                            colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                            startPoint: .top, endPoint: .bottom
+                        ).ignoresSafeArea()
+                        ScrollView {
+                            VStack(spacing: 12) {
+                                AccountBar(
+                                    accounts: viewModel.accounts,
+                                    selectedAccountId: viewModel.selectedAccountId,
+                                    onSelect: { id in viewModel.selectAccount(id) }
+                                )
+                                // 粉丝周线统计图表 — 与 Trends 页共用同一 TrendChart 组件 + 同一数据源
+                                NavigationLink {
+                                    TrendDetailView(
+                                        metricType: .followerGrowth,
+                                        dataPoints: viewModel.followerWeeklyData,
+                                        timeWindow: .week,
+                                        barGradientStart: theme.chartBarGradientStart,
+                                        barGradientEnd: theme.chartBarGradientEnd
+                                    )
+                                } label: {
+                                    TrendChart(
+                                        dataPoints: viewModel.followerWeeklyData,
+                                        barGradientStart: theme.chartBarGradientStart,
+                                        barGradientEnd: theme.chartBarGradientEnd,
+                                        title: loc(L10n.Trends.followers),
+                                        timeWindow: .week,
+                                        compact: true
+                                    )
+                                    .dashboardCard()
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.horizontal, 4)
+                                KeyMetricsSection(
+                                    engagementRate: viewModel.latestSnapshot?.engagementRate ?? 0,
+                                    reach: viewModel.latestSnapshot?.totalViews ?? 0,
+                                    posts: viewModel.latestSnapshot?.mediaCount ?? 0,
+                                    engagementDelta: viewModel.engagementDelta,
+                                    reachDelta: viewModel.reachDelta,
+                                    postsDelta: viewModel.postsDelta
+                                )
+                                RecentPostsSection(posts: viewModel.recentPosts)
+                                PremiumInsightsSection(
+                                    viewModel: viewModel
+                                )
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+                            .padding(.bottom, 24)
+                        }
+                        .scrollContentBackground(.hidden)
                     }
-                    if viewModel.accounts.isEmpty {
-                        EmptyStateView(icon: "person.crop.circle.badge.exclamationmark", title: loc(L10n.Dashboard.noAccountTitle), message: loc(L10n.Dashboard.noAccountMessage), actionLabel: loc(L10n.Dashboard.connectAccount), action: {})
-                    } else if viewModel.latestSnapshot != nil {
-                        contentView
-                    } else if viewModel.isLoading {
-                        ProgressView(loc(L10n.Common.loading)).frame(maxWidth: .infinity, minHeight: 300)
-                    } else {
-                        EmptyStateView(icon: "arrow.triangle.2.circlepath", title: loc(L10n.Dashboard.noDataTitle), message: loc(L10n.Dashboard.noDataMessage), actionLabel: loc(L10n.Common.syncNow), action: { Task { await viewModel.sync() } })
+                } else if viewModel.isLoading {
+                    ZStack {
+                        LinearGradient(
+                            colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                            startPoint: .top, endPoint: .bottom
+                        ).ignoresSafeArea()
+                        ProgressView(loc(L10n.Common.loading))
+                            .frame(maxWidth: .infinity, minHeight: 300)
+                    }
+                } else {
+                    ZStack {
+                        LinearGradient(
+                            colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                            startPoint: .top, endPoint: .bottom
+                        ).ignoresSafeArea()
+                        EmptyStateView(
+                            icon: "arrow.triangle.2.circlepath",
+                            title: loc(L10n.Dashboard.noDataTitle),
+                            message: loc(L10n.Dashboard.noDataMessage),
+                            actionLabel: loc(L10n.Common.syncNow),
+                            action: { Task { await viewModel.sync() } }
+                        )
                     }
                 }
-                .scrollContentBackground(.hidden)
             }
-            .navigationTitle(loc(L10n.Dashboard.title))
-            .toolbar { toolbar }
+            .navigationBarTitleDisplayMode(.inline)
             .refreshable { await viewModel.loadAccounts() }
         }
         .task { await viewModel.loadAccounts() }
+        .onChange(of: viewModel.selectedAccountId) { _, newId in
+            appState.selectedAccountId = newId
+        }
     }
 
-    /// 工具栏：同步按钮 / 同步中进度指示器
-    /// 驱动全局同步状态机
+    // MARK: - Helpers
+
+    private var emptyOrErrorView: some View {
+        ZStack {
+            LinearGradient(
+                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                startPoint: .top, endPoint: .bottom
+            ).ignoresSafeArea()
+            EmptyStateView(
+                icon: "person.crop.circle.badge.exclamationmark",
+                title: loc(L10n.Dashboard.noAccountTitle),
+                message: loc(L10n.Dashboard.noAccountMessage),
+                actionLabel: loc(L10n.Dashboard.connectAccount),
+                action: {}
+            )
+        }
+    }
+
+    private func errorView(error: String) -> some View {
+        ZStack {
+            LinearGradient(
+                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                startPoint: .top, endPoint: .bottom
+            ).ignoresSafeArea()
+            ScrollView {
+                VStack(spacing: 12) {
+                    ErrorBanner(
+                        message: error,
+                        onDismiss: { viewModel.errorMessage = nil },
+                        onRetry: { Task { await viewModel.loadAccounts() } }
+                    )
+                }
+                .padding(.horizontal, 16)
+            }
+            .scrollContentBackground(.hidden)
+        }
+    }
+
     private func updateSyncState() {
         if viewModel.accounts.isEmpty {
             appState.syncState = .noAccount
@@ -57,226 +201,483 @@ struct DashboardView: View {
         }
     }
 
-    private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarTrailing) {
-            if viewModel.isSyncing { ProgressView() }
-            else { Button { Task { await viewModel.sync() } } label: { Image(systemName: "arrow.triangle.2.circlepath") }.disabled(viewModel.selectedAccountId == nil) }
-        }
-    }
+}
 
-    // MARK: - Content
+// ═══════════════════════════════════════════════════════
+//  MARK: - 2. KeyMetricsSection
+//  参考图: 白色卡片 — 3 列指标（互动率 / 覆盖人数 / 帖子数）
+//  每列: 图标 + 标签 + 大数字 + delta
+// ═══════════════════════════════════════════════════════
 
-    /// 主内容区：账户选择器 + Hero + 次要指标 + 帖子 + Premium
-    private var contentView: some View {
-        VStack(spacing: 16) {
-            accountPicker
+private struct KeyMetricsSection: View {
+    let engagementRate: Double
+    let reach: Int
+    let posts: Int
+    let engagementDelta: Double
+    let reachDelta: Int
+    let postsDelta: Int
 
-            // Hero: Followers (tappable → detail)
-            NavigationLink {
-                FollowerDetailView(
-                    currentFollowers: viewModel.latestSnapshot?.followersCount ?? 0,
-                    delta: viewModel.followerDelta, deltaPercent: viewModel.followerDeltaPercent,
-                    sparklineData: viewModel.sparklineData,
-                    accountName: viewModel.accounts.first(where: { $0.id == viewModel.selectedAccountId })?.username ?? ""
-                )
-            } label: {
-                HeroMetricCard(
-                    title: loc(L10n.Dashboard.followers), value: viewModel.latestSnapshot!.followersCount.formatted(.number),
-                    delta: viewModel.followerDelta, deltaPercent: viewModel.followerDeltaPercent,
-                    period: "vs last 7 days", sparklineData: viewModel.sparklineData
-                )
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal)
+    @Environment(\.theme) private var theme
 
-            // Secondary
-            SecondaryMetricRow(
-                engagementRate: viewModel.latestSnapshot?.engagementRate ?? 0,
-                reach: viewModel.latestSnapshot?.totalViews ?? 0,
-                posts: viewModel.latestSnapshot?.mediaCount ?? 0,
-                engagementDelta: viewModel.engagementDelta,
-                reachDelta: viewModel.reachDelta,
-                postsDelta: viewModel.postsDelta
+    var body: some View {
+        HStack(spacing: 0) {
+            metricColumn(
+                icon: "heart.fill",
+                label: loc(L10n.Dashboard.engagementRate),
+                value: String(format: "%.1f%%", engagementRate),
+                deltaText: deltaText(engagementDelta, unit: "%", isPercent: true),
+                isPositive: engagementDelta >= 0
             )
-            .padding(.horizontal)
 
-            // Post list
-            postSection
+            Divider().padding(.vertical, 8)
 
-            // Premium
-            premiumSection
+            metricColumn(
+                icon: "eye.fill",
+                label: loc(L10n.Dashboard.reach),
+                value: formatCompact(reach),
+                deltaText: deltaText(Double(reachDelta), unit: "", isPercent: false),
+                isPositive: reachDelta >= 0
+            )
+
+            Divider().padding(.vertical, 8)
+
+            metricColumn(
+                icon: "doc.text.fill",
+                label: loc(L10n.Dashboard.posts),
+                value: "\(posts)",
+                deltaText: deltaText(Double(postsDelta), unit: "", isPercent: false),
+                isPositive: postsDelta >= 0
+            )
         }
-        .padding(.vertical)
+        .padding(16)
+        .dashboardCard()
     }
 
-    /// 横向滚动账户选择器（胶囊按钮）
-    private var accountPicker: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(viewModel.accounts, id: \.id) { account in
-                    Button { if let id = account.id { viewModel.selectAccount(id) } } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "camera.fill").font(.caption)
-                            Text(account.username).font(.subheadline).fontWeight(.medium)
-                        }
-                        .padding(.horizontal, 12).padding(.vertical, 8)
-                        .background(viewModel.selectedAccountId == account.id ? AnyShapeStyle(.tint) : AnyShapeStyle(.regularMaterial))
-                        .foregroundColor(viewModel.selectedAccountId == account.id ? .white : .primary)
-                        .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal)
+    private func metricColumn(icon: String, label: String, value: String, deltaText: String, isPositive: Bool) -> some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 12))
+                .foregroundColor(theme.accentPrimary)
+
+            Text(label)
+                .font(.system(size: 12))
+                .foregroundColor(theme.textSecondary)
+
+            Text(value)
+                .font(.system(size: 24, weight: .bold))
+                .foregroundColor(theme.textPrimary)
+
+            Text(deltaText)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(isPositive ? theme.accentPrimary : theme.negativeRed)
         }
+        .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Posts
+    private func deltaText(_ val: Double, unit: String, isPercent: Bool) -> String {
+        let prefix = val >= 0 ? "↑ " : "↓ "
+        if isPercent {
+            return "\(prefix)\(String(format: "%+.1f", val))\(unit)"
+        }
+        return "\(prefix)\(formatCompact(Int(val)))"
+    }
 
-    /// 最近帖子列表区域
-    private var postSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
+    private func formatCompact(_ n: Int) -> String {
+        if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
+        if n >= 1_000 { return String(format: "%.1fK", Double(n) / 1_000) }
+        return "\(n)"
+    }
+}
+
+// ═══════════════════════════════════════════════════════
+//  MARK: - 3. RecentPostsSection
+//  参考图: 白色卡片 — "最近帖子" + "查看全部" + 帖子行列表
+//  每行: 缩略图(60x60) + 标题 + 日期 + 互动数据
+// ═══════════════════════════════════════════════════════
+
+private struct RecentPostsSection: View {
+    let posts: [MockPost]
+
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // ── 标题行 ──
             HStack {
-                Text(loc(L10n.Dashboard.recentContent)).font(.headline)
+                Text(loc(L10n.Dashboard.recentContent))
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(theme.textPrimary)
                 Spacer()
-                if !viewModel.recentPosts.isEmpty {
-                    NavigationLink(loc(L10n.Dashboard.viewAll)) { PostListView(posts: MockPostGenerator().generate(count: 20)) }
-                        .font(.subheadline)
+                if !posts.isEmpty {
+                    NavigationLink(loc(L10n.Dashboard.viewAll)) {
+                        PostListView(posts: MockPostGenerator().generate(count: 20))
+                    }
+                    .font(.system(size: 13, weight: .medium))
                 }
             }
-            .padding(.horizontal)
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 8)
 
-            if viewModel.recentPosts.isEmpty {
-                Text(loc(L10n.Dashboard.noPostsHint)).font(.caption).foregroundColor(.secondary).padding(.horizontal)
+            if posts.isEmpty {
+                Text(loc(L10n.Dashboard.noPostsHint))
+                    .font(.system(size: 13))
+                    .foregroundColor(theme.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: 60)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
             } else {
+                // ── 帖子行 ──
                 VStack(spacing: 0) {
-                    ForEach(viewModel.recentPosts) { post in
-                        NavigationLink { PostDetailView(post: post) } label: {
+                    ForEach(posts) { post in
+                        NavigationLink {
+                            PostDetailView(post: post)
+                        } label: {
                             PostRowView(post: post)
-                                .padding(.horizontal)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
                         }
                         .buttonStyle(.plain)
-                        if post.id != viewModel.recentPosts.last?.id {
-                            Divider().padding(.leading, 72)
+
+                        if post.id != posts.last?.id {
+                            Divider()
+                                .padding(.leading, 76) // 对齐缩略图右侧
                         }
                     }
                 }
-                .background(.regularMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .padding(.horizontal)
             }
+        }
+        .dashboardCard()
+    }
+}
+
+// ═══════════════════════════════════════════════════════
+//  MARK: - 4. PremiumInsightsSection
+//  2×2 网格分页滚动 + 底部小点指示器
+//  全部 9 项 Premium 入口，每页 4 格，共 3 页
+// ═══════════════════════════════════════════════════════
+
+private struct PremiumInsightsSection: View {
+    @Environment(AppState.self) private var appState
+    @Environment(\.theme) private var theme
+    @Environment(\.useLiquidGlass) private var useLiquidGlass
+
+    let viewModel: DashboardViewModel
+
+    @State private var currentPage: Int = 0
+
+    private var isUnlocked: Bool {
+        appState.premiumEnabledFlags[PremiumFeatureKey.trendPrediction.rawValue] == true
+    }
+
+    /// 每页 4 格
+    private let itemsPerPage = 4
+    /// 总页数
+    private var totalPages: Int {
+        let all = allPremiumItems
+        return (all.count + itemsPerPage - 1) / itemsPerPage
+    }
+
+    // MARK: - 数据源: 全部 9 项
+
+    private var allPremiumItems: [PremiumTileItem] {
+        if isUnlocked {
+            return [
+                .init(icon: "chart.line.uptrend.xyaxis.circle", label: loc(L10n.Premium.followerPrediction),
+                      value: viewModel.predictionResult.map {
+                          "~\(Int($0.predictedValue).formatted(.number)) \(loc(L10n.Premium.in30Days))"
+                      } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "bolt.fill", label: loc(L10n.Premium.activityAnalysis),
+                      value: viewModel.activityResult.map {
+                          "\($0.label) · \($0.activeDays)/\($0.totalDays) \(loc(L10n.Premium.daysActive))"
+                      } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "star.fill", label: loc(L10n.Premium.engagementQuality),
+                      value: viewModel.qualityScore.map {
+                          "Score: \(String(format: "%.1f", $0.score)) — \($0.label)"
+                      } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "person.2.fill", label: loc(L10n.Premium.retentionChurn),
+                      value: viewModel.retentionResult.map {
+                          "Growth: \(String(format: "%+.1f%%", $0.netGrowthRate)) · Risk: \($0.churnRiskLevel)"
+                      } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "globe.asia.australia.fill", label: loc(L10n.Premium.geoDistribution),
+                      value: viewModel.geoDistribution.map {
+                          "\($0.regions.prefix(2).map(\.name).joined(separator: ", "))"
+                      } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "arrow.left.arrow.right", label: loc(L10n.Premium.longTermComparison),
+                      value: viewModel.comparisonResult.map {
+                          "\($0.direction.rawValue) · \(String(format: "%+.2f", $0.absoluteChange))"
+                      } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "person.2.slash", label: loc(L10n.Premium.whoUnfollowedYou),
+                      value: "\(viewModel.unfollowList.count) \(loc(L10n.Premium.peopleThisWeek))", locked: false),
+                .init(icon: "clock.fill", label: loc(L10n.Premium.bestTimeToPost),
+                      value: viewModel.activityResult?.mostActiveDay != nil
+                          ? "\(loc(L10n.Premium.mostActiveDay)) \(viewModel.activityResult!.mostActiveDay!)"
+                          : viewModel.bestPostingTime, locked: false),
+                .init(icon: "lightbulb.fill", label: loc(L10n.Premium.contentStrategy),
+                      value: viewModel.aiSummary.isEmpty ? viewModel.contentTip : viewModel.aiSummary, locked: false),
+                // Phi: 三大人群画像 Premium 功能
+                .init(icon: "chart.bar.fill", label: loc(L10n.Premium.competitorComparison),
+                      value: viewModel.comparisonResult.map { "\($0.direction.rawValue) · \(String(format: "%+.0f", $0.absoluteChange))" } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "checkmark.shield.fill", label: loc(L10n.Premium.authenticityAssessment),
+                      value: viewModel.authenticityResult.map { "Score: \(Int($0.score))/100 · \($0.growthPattern)" } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "doc.richtext.fill", label: loc(L10n.Premium.mediaKitExport),
+                      value: "3 templates · PDF export", locked: false),
+                .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking),
+                      value: viewModel.campaignResult.map { String(format: "%+.1f%% growth", $0.followerGrowthRate) } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap),
+                      value: viewModel.heatmapResult.map { "Peak: \($0.peakDescription)" } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "calendar.badge.plus", label: loc(L10n.Premium.contentScheduling),
+                      value: viewModel.activityResult.map { "\($0.activeDays)/\($0.totalDays) \(loc(L10n.Premium.daysActive))" } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "bubble.left.and.bubble.right.fill", label: loc(L10n.Premium.commentManagement),
+                      value: "4 pending · 2 overdue", locked: false),
+            ]
+        } else {
+            return [
+                .init(icon: "chart.line.uptrend.xy", label: loc(L10n.Premium.followerPrediction), value: "", locked: true),
+                .init(icon: "bolt.fill", label: loc(L10n.Premium.activityAnalysis), value: "", locked: true),
+                .init(icon: "star.fill", label: loc(L10n.Premium.engagementQuality), value: "", locked: true),
+                .init(icon: "person.2.fill", label: loc(L10n.Premium.retentionChurn), value: "", locked: true),
+                .init(icon: "globe.asia.australia.fill", label: loc(L10n.Premium.geoDistribution), value: "", locked: true),
+                .init(icon: "arrow.left.arrow.right", label: loc(L10n.Premium.longTermComparison), value: "", locked: true),
+                .init(icon: "person.2.slash", label: loc(L10n.Premium.whoUnfollowedYou), value: "", locked: true),
+                .init(icon: "clock.fill", label: loc(L10n.Premium.bestTimeToPost), value: "", locked: true),
+                .init(icon: "lightbulb.fill", label: loc(L10n.Premium.contentStrategy), value: "", locked: true),
+                // Phi: 三大人群画像 Premium 功能
+                .init(icon: "chart.bar.fill", label: loc(L10n.Premium.competitorComparison), value: "", locked: true),
+                .init(icon: "checkmark.shield.fill", label: loc(L10n.Premium.authenticityAssessment), value: "", locked: true),
+                .init(icon: "doc.richtext.fill", label: loc(L10n.Premium.mediaKitExport), value: "", locked: true),
+                .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking), value: "", locked: true),
+                .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap), value: "", locked: true),
+                .init(icon: "calendar.badge.plus", label: loc(L10n.Premium.contentScheduling), value: "", locked: true),
+                .init(icon: "bubble.left.and.bubble.right.fill", label: loc(L10n.Premium.commentManagement), value: "", locked: true),
+            ]
         }
     }
 
-    // MARK: - Premium
+    // MARK: - Body
 
-    /// Premium Insights 区域 — 解锁后展示全部 9 张分析卡片，锁定状态仅显示锁+升级入口
-    private var premiumSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "crown.fill").foregroundColor(.orange).font(.caption)
-                Text(loc(L10n.Premium.premiumInsights)).font(.headline)
+    var body: some View {
+        VStack(spacing: 10) {
+            // ── 标题行 ──
+            HStack(spacing: 4) {
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 13))
+                Text(loc(L10n.Premium.premiumInsights))
+                    .font(.system(size: 14, weight: .semibold))
                 Spacer()
             }
-            .padding(.horizontal)
+            .foregroundColor(theme.accentPrimary)
+            .padding(.horizontal, 16)
 
-            if appState.premiumEnabledFlags[PremiumFeatureKey.trendPrediction.rawValue] == true {
-                VStack(spacing: 6) {
-                    // 1. Follower Prediction — 粉丝预测
-                    premiumNavRow(icon: "chart.line.uptrend.xy", title: loc(L10n.Premium.followerPrediction),
-                        value: viewModel.predictionResult.map { "~\(Int($0.predictedValue)) \(loc(L10n.Premium.in30Days))" } ?? loc(L10n.Premium.analyzing),
-                        destination: PredictionDetailView(predicted: viewModel.predictedFollowers))
-
-                    // 2. Activity Analysis — 活跃度分析
-                    premiumNavRow(icon: "bolt.fill", title: loc(L10n.Premium.activityAnalysis),
-                        value: viewModel.activityResult.map { "\($0.label) · \($0.activeDays)/\($0.totalDays) \(loc(L10n.Premium.daysActive))" } ?? loc(L10n.Premium.analyzing),
-                        destination: ActivityDetailView(result: viewModel.activityResult))
-
-                    // 3. Engagement Quality — 互动质量评分
-                    premiumNavRow(icon: "star.fill", title: loc(L10n.Premium.engagementQuality),
-                        value: viewModel.qualityScore.map { "Score: \(String(format: "%.1f", $0.score)) — \($0.label)" } ?? loc(L10n.Premium.analyzing),
-                        destination: QualityDetailView(result: viewModel.qualityScore))
-
-                    // 4. Retention & Churn — 留存与流失
-                    premiumNavRow(icon: "person.2.fill", title: loc(L10n.Premium.retentionChurn),
-                        value: viewModel.retentionResult.map { "Growth: \(String(format: "%+.1f%%", $0.netGrowthRate)) · Risk: \($0.churnRiskLevel)" } ?? loc(L10n.Premium.analyzing),
-                        destination: RetentionDetailView(result: viewModel.retentionResult))
-
-                    // 5. Geo Distribution — 粉丝地域分布
-                    premiumNavRow(icon: "globe.asia.australia.fill", title: loc(L10n.Premium.geoDistribution),
-                        value: viewModel.geoDistribution.map { "\($0.regions.prefix(2).map(\.name).joined(separator: ", "))" } ?? loc(L10n.Premium.analyzing),
-                        destination: GeoDetailView(result: viewModel.geoDistribution))
-
-                    // 6. Long-term Comparison — 长期趋势对比
-                    premiumNavRow(icon: "arrow.left.arrow.right", title: loc(L10n.Premium.longTermComparison),
-                        value: viewModel.comparisonResult.map { "\($0.direction.rawValue) · \(String(format: "%+.2f", $0.absoluteChange))" } ?? loc(L10n.Premium.analyzing),
-                        destination: ComparisonDetailView(result: viewModel.comparisonResult))
-
-                    // 7. Unfollow List — 取关列表
-                    premiumNavRow(icon: "person.2.slash", title: loc(L10n.Premium.whoUnfollowedYou),
-                        value: "\(viewModel.unfollowList.count) \(loc(L10n.Premium.peopleThisWeek))",
-                        destination: UnfollowListView(followers: viewModel.unfollowList))
-
-                    // 8. Best Time to Post — 最佳发帖时间
-                    premiumNavRow(icon: "clock", title: loc(L10n.Premium.bestTimeToPost),
-                        value: viewModel.activityResult?.mostActiveDay != nil ? "\(loc(L10n.Premium.mostActiveDay)) \(viewModel.activityResult!.mostActiveDay!)" : viewModel.bestPostingTime,
-                        destination: BestTimeView())
-
-                    // 9. Content Strategy — 内容策略
-                    premiumNavRow(icon: "lightbulb", title: loc(L10n.Premium.contentStrategy),
-                        value: viewModel.aiSummary.isEmpty ? viewModel.contentTip : viewModel.aiSummary,
-                        destination: ContentStrategyView(tip: viewModel.contentTip))
+            // ── 分页 2×2 网格 ──
+            TabView(selection: $currentPage) {
+                ForEach(0..<totalPages, id: \.self) { pageIndex in
+                    let items = Array(allPremiumItems[itemsPerPage * pageIndex..<min(itemsPerPage * (pageIndex + 1), allPremiumItems.count)])
+                    gridPage(items: items, pageIndex: pageIndex)
+                        .tag(pageIndex)
                 }
-                .padding(.horizontal)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(height: gridHeight)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+
+            // ── 页面指示器小点 ──
+            if totalPages > 1 {
+                HStack(spacing: 6) {
+                    ForEach(0..<totalPages, id: \.self) { index in
+                        Circle()
+                            .fill(index == currentPage
+                                  ? theme.accentPrimary
+                                  : theme.textTertiary.opacity(0.35))
+                            .frame(width: index == currentPage ? 7 : 5,
+                                   height: index == currentPage ? 7 : 5)
+                            .animation(.easeInOut(duration: 0.2), value: currentPage)
+                    }
+                }
+                .padding(.top, 2)
+            }
+        }
+        .premiumGate(feature: .trendPrediction)
+    }
+
+    // MARK: - 2×2 Grid Page
+
+    private func gridPage(items: [PremiumTileItem], pageIndex: Int) -> some View {
+        let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
+
+        return VStack(spacing: 10) {
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(Array(items.enumerated()), id: \.offset) { localIndex, item in
+                    tileCard(item: item, globalIndex: itemsPerPage * pageIndex + localIndex)
+                }
+
+                // 最后一页不足 4 格时，用占位补齐保持 2×2
+                if items.count < itemsPerPage {
+                    ForEach(items.count..<itemsPerPage, id: \.self) { _ in
+                        Color.clear
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .background(cardBackground)
+    }
+
+    // MARK: - 单个 Tile 卡片
+
+    private func tileCard(item: PremiumTileItem, globalIndex: Int) -> some View {
+        Group {
+            if item.locked {
+                lockedTile(icon: item.icon, label: item.label)
             } else {
-                // 锁定状态 — 9 行全部加锁
-                VStack(spacing: 6) {
-                    lockedRow(icon: "chart.line.uptrend.xy", title: loc(L10n.Premium.followerPrediction))
-                    lockedRow(icon: "bolt.fill", title: loc(L10n.Premium.activityAnalysis))
-                    lockedRow(icon: "star.fill", title: loc(L10n.Premium.engagementQuality))
-                    lockedRow(icon: "person.2.fill", title: loc(L10n.Premium.retentionChurn))
-                    lockedRow(icon: "globe.asia.australia.fill", title: loc(L10n.Premium.geoDistribution))
-                    lockedRow(icon: "arrow.left.arrow.right", title: loc(L10n.Premium.longTermComparison))
-                    lockedRow(icon: "person.2.slash", title: loc(L10n.Premium.whoUnfollowedYou))
-                    lockedRow(icon: "clock", title: loc(L10n.Premium.bestTimeToPost))
-                    lockedRow(icon: "lightbulb", title: loc(L10n.Premium.contentStrategy))
-                }
-                .padding(.horizontal)
-                .premiumGate(feature: .trendPrediction)
+                unlockedTile(icon: item.icon, label: item.label, value: item.value, globalIndex: globalIndex)
             }
         }
-        .padding(.vertical, 8)
     }
 
-    /// Premium 已解锁 — 可点击导航到对应详情页的行视图
-    private func premiumNavRow<D: View>(icon: String, title: String, value: String, destination: D) -> some View {
+    /// 解锁态 Tile
+    @ViewBuilder
+    private func unlockedTile(icon: String, label: String, value: String, globalIndex: Int) -> some View {
+        let destination = destinationFor(index: globalIndex)
         NavigationLink(destination: destination) {
-            HStack {
-                Image(systemName: icon).frame(width: 24).foregroundColor(theme.accentPrimary)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(.subheadline).fontWeight(.medium).foregroundColor(theme.textPrimary)
-                    Text(value).font(.caption).foregroundColor(theme.textSecondary).lineLimit(1)
-                }
-                Spacer()
-                Image(systemName: "chevron.right").font(.caption).foregroundColor(theme.textSecondary)
+            VStack(alignment: .leading, spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(theme.accentPrimary)
+                    .frame(width: 32, height: 32)
+                    .background(theme.accentPrimary.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                Text(label)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(theme.textPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+
+                Text(value.isEmpty ? "—" : value)
+                    .font(.system(size: 11))
+                    .foregroundColor(theme.textSecondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer(minLength: 0)
             }
             .padding(10)
-            .background(theme.accentPrimary.opacity(0.06))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .frame(maxWidth: .infinity, minHeight: 110)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
     }
 
-    /// Premium 锁定行 — 仅显示标题与锁图标，点击触发升级弹窗
-    private func lockedRow(icon: String, title: String) -> some View {
-        HStack {
-            Image(systemName: icon).frame(width: 24).foregroundColor(theme.accentPrimary)
-            Text(title).font(.subheadline).fontWeight(.medium).foregroundColor(theme.textSecondary)
-            Spacer()
-            Image(systemName: "lock.fill").font(.caption).foregroundColor(theme.textSecondary)
+    /// 锁定态 Tile
+    private func lockedTile(icon: String, label: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(theme.textTertiary)
+                    .frame(width: 32, height: 32)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                Spacer()
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(theme.textTertiary)
+            }
+
+            Text(label)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(theme.textTertiary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+
+            Text("—")
+                .font(.system(size: 11))
+                .foregroundColor(theme.textTertiary.opacity(0.5))
+
+            Spacer(minLength: 0)
         }
         .padding(10)
-        .background(Color.orange.opacity(0.05))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .frame(maxWidth: .infinity, minHeight: 110)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
+
+    /// 根据全局 index 返回对应跳转页面
+    @ViewBuilder
+    private func destinationFor(index: Int) -> some View {
+        switch index {
+        case 0: PredictionDetailView(predicted: viewModel.predictedFollowers)
+        case 1: ActivityDetailView(result: viewModel.activityResult)
+        case 2: QualityDetailView(result: viewModel.qualityScore)
+        case 3: RetentionDetailView(result: viewModel.retentionResult)
+        case 4: GeoDetailView(result: viewModel.geoDistribution)
+        case 5: ComparisonDetailView(result: viewModel.comparisonResult)
+        case 6: UnfollowListView(followers: viewModel.unfollowList)
+        case 7: BestTimeView(heatmapResult: viewModel.heatmapResult)
+        case 8: ContentStrategyView(aiSummary: viewModel.aiSummary.isEmpty ? viewModel.contentTip : viewModel.aiSummary)
+        // Phi: 三大人群画像新 Premium 功能
+        case 9: CompetitorDetailView(comparisonResult: viewModel.comparisonResult)
+        case 10: AuthenticityDetailView(result: viewModel.authenticityResult)
+        case 11: MediaKitDetailView()
+        case 12: CampaignDetailView(result: viewModel.campaignResult)
+        case 13: HeatmapDetailView(result: viewModel.heatmapResult)
+        case 14: ContentSchedulingDetailView(activityResult: viewModel.activityResult)
+        case 15: CommentManagementDetailView()
+        default: EmptyView()
+        }
+    }
+
+    /// 2×2 网格高度: padding(12) * 2 + tile(110) * 2 + spacing(10)
+    private var gridHeight: CGFloat { 264 }
+
+    /// 卡片背景: Liquid Glass / 不透明
+    @ViewBuilder
+    private var cardBackground: some View {
+        if useLiquidGlass {
+            ZStack {
+                RoundedRectangle(cornerRadius: 16).fill(.regularMaterial)
+                RoundedRectangle(cornerRadius: 16).fill(theme.cardSurface)
+            }
+        } else {
+            theme.cardSurface
+        }
+    }
+}
+
+/// Premium Tile 数据模型
+private struct PremiumTileItem {
+    let icon: String
+    let label: String
+    let value: String
+    let locked: Bool
+}
+
+// ═══════════════════════════════════════════════════════
+//  MARK: - Preview
+// ═══════════════════════════════════════════════════════
+
+#Preview {
+    let appState = AppState(databaseManager: DatabaseManager.shared)
+    let container = appState.container
+    let viewModel = DashboardViewModel(
+        snapshotRepo: container.snapshotRepository,
+        metricRepo: container.metricRepository,
+        accountRepo: container.accountRepository,
+        syncEngine: container.syncEngine,
+        eventRepo: container.eventRepository,
+        predictionService: container.predictionService,
+        activityService: container.activityAnalysisService,
+        retentionService: container.retentionAnalysisService,
+        scoringService: container.scoringService,
+        geoService: container.geoDistributionService,
+        comparisonService: container.comparisonService,
+        aiService: container.aiAnalysisService,
+        authenticityService: container.authenticityService,
+        campaignComparisonService: container.campaignComparisonService,
+        engagementHeatmapService: container.engagementHeatmapService
+    )
+    DashboardView(viewModel: viewModel)
+        .environment(appState)
 }
