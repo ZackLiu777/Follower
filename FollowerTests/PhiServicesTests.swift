@@ -58,18 +58,20 @@ struct PhiServicesTests {
         #expect(!result.hasAnomalies, "Smooth growth should not trigger anomalies")
     }
 
-    /// 剧烈波动的粉丝数据 → 应检测到异常
+    /// 稳定增长中插入多次剧烈波动 → 应检测到异常
     @Test
     func testAuthenticityDetectsAnomalies() async {
         let service = AuthenticityService()
-        var snapshots = (0..<10).map { i in
-            makeSnapshot(followers: 1000 + i * 10, daysAgo: 9 - i)
+        // 极稳定增长（每天 +1），然后某天突然 +50 再 -50
+        var snapshots = (0..<12).map { i in
+            makeSnapshot(followers: 1000 + i, daysAgo: 11 - i)
         }
-        // 插入一个异常跳跃
-        snapshots[5] = makeSnapshot(followers: 5000, daysAgo: 4)
+        // 插入两处明显异常
+        snapshots[3] = makeSnapshot(followers: 1050, daysAgo: 8)   // +47 from prev
+        snapshots[4] = makeSnapshot(followers: 1000, daysAgo: 7)   // -50 from prev
 
         let result = await service.assess(snapshots: snapshots)
-        #expect(result.hasAnomalies, "Spike should be detected as anomaly")
+        #expect(result.hasAnomalies, "Abnormal ±50 spikes in ±1 baseline should be detected as anomalies")
         #expect(result.anomalyDescription != nil)
     }
 
