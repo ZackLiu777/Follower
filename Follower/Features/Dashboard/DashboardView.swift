@@ -64,85 +64,82 @@ struct DashboardView: View {
                 } else if let error = viewModel.errorMessage {
                     errorView(error: error)
                 } else if viewModel.latestSnapshot != nil {
-                    ScrollView {
-                        VStack(spacing: 12) {
-                            AccountBar(
-                                accounts: viewModel.accounts,
-                                selectedAccountId: viewModel.selectedAccountId,
-                                onSelect: { id in viewModel.selectAccount(id) }
-                            )
-                            // 粉丝周线统计图表 — 与 Trends 页共用同一 TrendChart 组件 + 同一数据源
-                            NavigationLink {
-                                TrendDetailView(
-                                    metricType: .followerGrowth,
-                                    dataPoints: viewModel.followerWeeklyData,
-                                    timeWindow: .week,
-                                    barGradientStart: theme.chartBarGradientStart,
-                                    barGradientEnd: theme.chartBarGradientEnd
+                    ZStack {
+                        LinearGradient(
+                            colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                            startPoint: .top, endPoint: .bottom
+                        ).ignoresSafeArea()
+                        ScrollView {
+                            VStack(spacing: 12) {
+                                AccountBar(
+                                    accounts: viewModel.accounts,
+                                    selectedAccountId: viewModel.selectedAccountId,
+                                    onSelect: { id in viewModel.selectAccount(id) }
                                 )
-                            } label: {
-                                TrendChart(
-                                    dataPoints: viewModel.followerWeeklyData,
-                                    barGradientStart: theme.chartBarGradientStart,
-                                    barGradientEnd: theme.chartBarGradientEnd,
-                                    title: loc(L10n.Trends.followers),
-                                    timeWindow: .week,
-                                    compact: true
+                                // 粉丝周线统计图表 — 与 Trends 页共用同一 TrendChart 组件 + 同一数据源
+                                NavigationLink {
+                                    TrendDetailView(
+                                        metricType: .followerGrowth,
+                                        dataPoints: viewModel.followerWeeklyData,
+                                        timeWindow: .week,
+                                        barGradientStart: theme.chartBarGradientStart,
+                                        barGradientEnd: theme.chartBarGradientEnd
+                                    )
+                                } label: {
+                                    TrendChart(
+                                        dataPoints: viewModel.followerWeeklyData,
+                                        barGradientStart: theme.chartBarGradientStart,
+                                        barGradientEnd: theme.chartBarGradientEnd,
+                                        title: loc(L10n.Trends.followers),
+                                        timeWindow: .week,
+                                        compact: true
+                                    )
+                                    .dashboardCard()
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.horizontal, 4)
+                                KeyMetricsSection(
+                                    engagementRate: viewModel.latestSnapshot?.engagementRate ?? 0,
+                                    reach: viewModel.latestSnapshot?.totalViews ?? 0,
+                                    posts: viewModel.latestSnapshot?.mediaCount ?? 0,
+                                    engagementDelta: viewModel.engagementDelta,
+                                    reachDelta: viewModel.reachDelta,
+                                    postsDelta: viewModel.postsDelta
                                 )
-                                .dashboardCard()
+                                RecentPostsSection(posts: viewModel.recentPosts)
+                                PremiumInsightsSection(
+                                    viewModel: viewModel
+                                )
                             }
-                            .buttonStyle(.plain)
-                            .padding(.horizontal, 4)
-                            KeyMetricsSection(
-                                engagementRate: viewModel.latestSnapshot?.engagementRate ?? 0,
-                                reach: viewModel.latestSnapshot?.totalViews ?? 0,
-                                posts: viewModel.latestSnapshot?.mediaCount ?? 0,
-                                engagementDelta: viewModel.engagementDelta,
-                                reachDelta: viewModel.reachDelta,
-                                postsDelta: viewModel.postsDelta
-                            )
-                            RecentPostsSection(posts: viewModel.recentPosts)
-                            PremiumInsightsSection(
-                                viewModel: viewModel
-                            )
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+                            .padding(.bottom, 24)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                        .padding(.bottom, 24)
+                        .scrollContentBackground(.hidden)
                     }
-                    .scrollContentBackground(.hidden)
-                    .background(
-                        LinearGradient(
-                            colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
                 } else if viewModel.isLoading {
-                    ProgressView(loc(L10n.Common.loading))
-                        .frame(maxWidth: .infinity, minHeight: 300)
-                        .background(
-                            LinearGradient(
-                                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                } else {
-                    EmptyStateView(
-                        icon: "arrow.triangle.2.circlepath",
-                        title: loc(L10n.Dashboard.noDataTitle),
-                        message: loc(L10n.Dashboard.noDataMessage),
-                        actionLabel: loc(L10n.Common.syncNow),
-                        action: { Task { await viewModel.sync() } }
-                    )
-                    .background(
+                    ZStack {
                         LinearGradient(
                             colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
-                            startPoint: .top,
-                            endPoint: .bottom
+                            startPoint: .top, endPoint: .bottom
+                        ).ignoresSafeArea()
+                        ProgressView(loc(L10n.Common.loading))
+                            .frame(maxWidth: .infinity, minHeight: 300)
+                    }
+                } else {
+                    ZStack {
+                        LinearGradient(
+                            colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                            startPoint: .top, endPoint: .bottom
+                        ).ignoresSafeArea()
+                        EmptyStateView(
+                            icon: "arrow.triangle.2.circlepath",
+                            title: loc(L10n.Dashboard.noDataTitle),
+                            message: loc(L10n.Dashboard.noDataMessage),
+                            actionLabel: loc(L10n.Common.syncNow),
+                            action: { Task { await viewModel.sync() } }
                         )
-                    )
+                    }
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -157,41 +154,39 @@ struct DashboardView: View {
     // MARK: - Helpers
 
     private var emptyOrErrorView: some View {
-        EmptyStateView(
-            icon: "person.crop.circle.badge.exclamationmark",
-            title: loc(L10n.Dashboard.noAccountTitle),
-            message: loc(L10n.Dashboard.noAccountMessage),
-            actionLabel: loc(L10n.Dashboard.connectAccount),
-            action: {}
-        )
-        .background(
+        ZStack {
             LinearGradient(
                 colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
-                startPoint: .top,
-                endPoint: .bottom
+                startPoint: .top, endPoint: .bottom
+            ).ignoresSafeArea()
+            EmptyStateView(
+                icon: "person.crop.circle.badge.exclamationmark",
+                title: loc(L10n.Dashboard.noAccountTitle),
+                message: loc(L10n.Dashboard.noAccountMessage),
+                actionLabel: loc(L10n.Dashboard.connectAccount),
+                action: {}
             )
-        )
+        }
     }
 
     private func errorView(error: String) -> some View {
-        ScrollView {
-            VStack(spacing: 12) {
-                ErrorBanner(
-                    message: error,
-                    onDismiss: { viewModel.errorMessage = nil },
-                    onRetry: { Task { await viewModel.loadAccounts() } }
-                )
-            }
-            .padding(.horizontal, 16)
-        }
-        .background(
+        ZStack {
             LinearGradient(
                 colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
-        .scrollContentBackground(.hidden)
+                startPoint: .top, endPoint: .bottom
+            ).ignoresSafeArea()
+            ScrollView {
+                VStack(spacing: 12) {
+                    ErrorBanner(
+                        message: error,
+                        onDismiss: { viewModel.errorMessage = nil },
+                        onRetry: { Task { await viewModel.loadAccounts() } }
+                    )
+                }
+                .padding(.horizontal, 16)
+            }
+            .scrollContentBackground(.hidden)
+        }
     }
 
     private func updateSyncState() {

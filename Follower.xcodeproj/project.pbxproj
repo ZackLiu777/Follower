@@ -34,9 +34,33 @@
 		FF6CBDAA2FD2887500A52FF3 /* FollowerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FollowerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FF2D5E8B300A103600E8F34F /* Exceptions for "Follower" folder in "Follower" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Services/Analysis/ScoringService,
+			);
+			target = FF6CBD902FD2887300A52FF3 /* Follower */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		FF2D5E8C300A103600E8F34F /* Exceptions for "Follower" folder in "Compile Sources" phase from "Follower" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = FF6CBD8D2FD2887300A52FF3 /* Sources */;
+			membershipExceptions = (
+				Services/Analysis/ScoringService,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		FF6CBD932FD2887400A52FF3 /* Follower */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FF2D5E8B300A103600E8F34F /* Exceptions for "Follower" folder in "Follower" target */,
+				FF2D5E8C300A103600E8F34F /* Exceptions for "Follower" folder in "Compile Sources" phase from "Follower" target */,
+			);
 			path = Follower;
 			sourceTree = "<group>";
 		};

@@ -181,19 +181,69 @@ selectedAccountId = accountId
 
 **已写入测试** `ServicesTests.swift` 中的 `testAverageCommentsMetricPerPost` 验证了这个语义。
 
+### 4.7 ⚠️ 3σ 异常检测被异常值「自我隐藏」
+
+**现象**：`testAuthenticityDetectsAnomalies` 持续失败，无论怎么调测试数据都无法触发 `hasAnomalies = true`。
+
+**根因**：`AuthenticityService.detectAnomalies` 使用 mean/stdDev 计算 3σ 阈值。极端异常值本身会撑大标准差 σ → 3σ 阈值同步膨胀 → 异常值落在阈值内被「隐藏」。这是经典统计陷阱：只要异常值足够极端，stdDev 一定会跟着变大。
+
+**修复**：改用 **IQR（Tukey's fences）**——基于四分位数 Q1/Q3 而非均值和标准差。Q1/Q3 不受极端值影响，1.5×IQR 围栏始终保持敏感。
+
+```swift
+// Before (3σ — broken for outliers)
+let mean = deltas.reduce(0, +) / Double(deltas.count)
+let stdDev = sqrt(variance)
+let threshold = 3 * stdDev  // ← inflated by outliers
+
+// After (IQR / Tukey's fences — robust)
+let q1 = sortedDeltas[n / 4]
+let q3 = sortedDeltas[3 * n / 4]
+let iqr = q3 - q1
+let lowerFence = q1 - 1.5 * iqr
+let upperFence = q3 + 1.5 * iqr
+```
+
+### 4.8 ⚠️ Dashboard 空状态/加载态渐变背景不覆盖全屏
+
+**现象**：创建新账号无数据时，Dashboard 上半部分（含导航栏区域）显示白色，下半部分显示淡蓝渐变。视觉上被切为两半。
+
+**根因**：所有状态的渐变背景通过 `.background(LinearGradient(...))` 附加在内容视图上。`EmptyStateView` 和 `ProgressView` 只有 `minHeight: 300`，渐变仅覆盖内容高度。`NavigationStack` 的导航栏和剩余区域显示系统默认白色。
+
+**修复**：5 个状态分支全部从 `.background()` 改为 `ZStack { LinearGradient(...).ignoresSafeArea() + 内容 }`。`.ignoresSafeArea()` 确保渐变从屏幕顶部（包括导航栏后方安全区域）一直延伸到底部。
+
+### 4.9 ⚠️ 新增 PremiumFeatureKey 后 ModelsTests 硬编码 count 失败
+
+**现象**：`testPremiumFeatureKeyAllCases` 和 `testPremiumFeatureKey_AllCases_NotEmpty` 断言 `count == 13` 失败。
+
+**根因**：Phi 迭代新增 7 个 `PremiumFeatureKey` case（`competitorComparison` / `authenticityAssessment` / `mediaKitExport` / `campaignTracking` / `engagementHeatmap` / `contentScheduling` / `commentManagement`），总数从 13 变为 20。测试中硬编码了旧数值。
+
+**修复**：将 `count == 13` 更新为 `count == 20`。
+
+**教训**：`allCases.count` 测试应使用 `>= N` 而非 `== N`，或者用 `#expect(allCases.contains(.newCase))` 逐个验证，避免每次新增 case 都要更新数值。
+
+### 4.10 ⚠️ 同模块内 Mock 类重复定义
+
+**现象**：`PhiServicesTests.swift` 中定义了 `private final class MockSnapshotRepository` 等 Mock 类，与 `PremiumViewModelTests.swift` 中的同名类冲突，编译报错 `invalid redeclaration`。
+
+**根因**：Swift 中 `private` 在文件作用域等价于 `fileprivate`，两个测试文件在同一模块（`FollowerTests`）中定义同名类导致冲突。
+
+**修复**：从 `PhiServicesTests.swift` 中删除全部 Mock 类定义，复用 `PremiumViewModelTests.swift` 中的 internal Mock 类（同模块可见）。
+
 ---
 
 ## 5. 测试覆盖
 
-### 单元测试 (36 tests)
+### 单元测试 (61 tests)
 
 | 测试文件 | 数量 | 覆盖 |
 |----------|------|------|
-| `TrendChartTests` | 16 | `yScaleDomain`(5), `formatY`(4), `weeklyDataPoints`(4), 负值(1), sharedYAxis(2) |
+| `TrendChartTests` | 17 | `computeYScaleDomain`(7), `formatY`(6), `weeklyDataPoints`(4) |
+| `PhiServicesTests` | 23 | `AuthenticityService`(9), `CampaignComparisonService`(5), `EngagementHeatmapService`(7), DashboardVM 集成(2) |
 | `AppStateTests` | 4 | 初始 nil, 读写, 重置, syncState 独立性 |
-| `TrendsViewModelTests` (新增) | 4 | 切换清缓存, 同账户保留, loadInitialAccount 空账户, weeklyDataPoints 一致性 |
+| `TrendsViewModelTests` (新增) | 4 | 切换清缓存, 同账户保留, loadInitialAccount, weeklyDataPoints 一致性 |
 | `ServicesTests` (新增) | 5 | averageComments per-post, averageShares per-post, zero mediaCount, 周聚合 |
-| `PremiumViewModelTests` (更新) | — | MockMetricRepository + makeViewModel 注入 metricRepo |
+| `PremiumViewModelTests` (更新) | 3 | MockMetricRepository, Phi PremiumFeatureKey 验证, displayName |
+| `ModelsTests` (更新) | — | PremiumFeatureKey.count 20 |
 
 ### UI 测试 (7 new tests)
 
