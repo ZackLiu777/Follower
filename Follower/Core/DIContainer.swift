@@ -103,6 +103,11 @@ final class DIContainer {
         self.retentionAnalysisService = RetentionAnalysisService()
         self.geoDistributionService = GeoDistributionService()
         self.aiAnalysisService = AIAnalysisService()
+
+        // Phi: 三大人群画像 Premium 分析服务
+        self.authenticityService = AuthenticityService()
+        self.campaignComparisonService = CampaignComparisonService()
+        self.engagementHeatmapService = EngagementHeatmapService()
     }
 
     // MARK: - Gamma Premium Services
@@ -114,4 +119,10 @@ final class DIContainer {
     let retentionAnalysisService: RetentionAnalysisServiceProtocol
     let geoDistributionService: GeoDistributionServiceProtocol
     let aiAnalysisService: AIAnalysisServiceProtocol
+
+    // MARK: - Phi Premium Services
+
+    let authenticityService: AuthenticityServiceProtocol
+    let campaignComparisonService: CampaignComparisonServiceProtocol
+    let engagementHeatmapService: EngagementHeatmapServiceProtocol
 }

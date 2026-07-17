@@ -419,5 +419,78 @@ enum L10n {
         static let benefit5 = "premium.benefit5"
         static let unlockAll = "premium.unlockAll"
         static let unlocked = "premium.unlocked"
+
+        // MARK: - Phi: 三大人群画像 Premium 功能
+        static let competitorComparison = "premium.competitorComparison"
+        static let authenticityAssessment = "premium.authenticityAssessment"
+        static let mediaKitExport = "premium.mediaKitExport"
+        static let campaignTracking = "premium.campaignTracking"
+        static let engagementHeatmap = "premium.engagementHeatmap"
+        static let contentScheduling = "premium.contentScheduling"
+        static let commentManagement = "premium.commentManagement"
+
+        // MARK: - Phi: Detail view labels
+        static let competitorGrowth = "premium.competitorGrowth"
+        static let competitorYou = "premium.competitorYou"
+        static let competitorPeersAvg = "premium.competitorPeersAvg"
+        static let competitorDesc = "premium.competitorDesc"
+        static let followers = "premium.followers"
+        static let engagement = "premium.engagement"
+
+        static let authenticityScore = "premium.authenticityScore"
+        static let growthPattern = "premium.growthPattern"
+        static let followerAuthenticity = "premium.followerAuthenticity"
+        static let anomalyDetection = "premium.anomalyDetection"
+        static let normal = "premium.normal"
+        static let noAnomalies = "premium.noAnomalies"
+        static let authenticityDesc = "premium.authenticityDesc"
+
+        static let templateProfessional = "premium.templateProfessional"
+        static let templateCreative = "premium.templateCreative"
+        static let templateMinimal = "premium.templateMinimal"
+        static let mediaKit = "premium.mediaKit"
+        static let readyToExport = "premium.readyToExport"
+        static let template = "premium.template"
+        static let includes = "premium.includes"
+        static let mkFollowerGrowth = "premium.mkFollowerGrowth"
+        static let mkEngagementHistory = "premium.mkEngagementHistory"
+        static let mkAudience = "premium.mkAudience"
+        static let mkTopPosts = "premium.mkTopPosts"
+        static let mkContact = "premium.mkContact"
+        static let exportPDF = "premium.exportPDF"
+
+        static let preCampaign = "premium.preCampaign"
+        static let postCampaign = "premium.postCampaign"
+        static let campaignImpact = "premium.campaignImpact"
+        static let newFollowers = "premium.newFollowers"
+        static let growthRate = "premium.growthRate"
+        static let campaignDesc = "premium.campaignDesc"
+
+        static let peakEngagementTime = "premium.peakEngagementTime"
+        static let heatmapDesc = "premium.heatmapDesc"
+
+        static let next3Days = "premium.next3Days"
+        static let reasonPeakEngagement = "premium.reasonPeakEngagement"
+        static let reasonLunchtime = "premium.reasonLunchtime"
+        static let reasonStartOfWeek = "premium.reasonStartOfWeek"
+        static let schedulingDesc = "premium.schedulingDesc"
+
+        static let pending = "premium.pending"
+        static let over24h = "premium.over24h"
+        static let replied = "premium.replied"
+        static let hoursAgo = "premium.hoursAgo"
+        static let commentMgmtDesc = "premium.commentMgmtDesc"
+
+        // MARK: - Content strategy tips
+        static let strategyCarousel = "premium.strategyCarousel"
+        static let strategyCarouselDesc = "premium.strategyCarouselDesc"
+        static let strategyVideo = "premium.strategyVideo"
+        static let strategyVideoDesc = "premium.strategyVideoDesc"
+        static let strategyFrequency = "premium.strategyFrequency"
+        static let strategyFrequencyDesc = "premium.strategyFrequencyDesc"
+        static let strategyHashtag = "premium.strategyHashtag"
+        static let strategyHashtagDesc = "premium.strategyHashtagDesc"
+        static let strategyEngage = "premium.strategyEngage"
+        static let strategyEngageDesc = "premium.strategyEngageDesc"
     }
 }

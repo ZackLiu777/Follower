@@ -25,6 +25,15 @@ enum PremiumFeatureKey: String, Codable, DatabaseValueConvertible, CaseIterable 
     case advancedEncryption
     case multiDeviceSync
 
+    // MARK: - Phi：三大人群画像 Premium 功能
+    case competitorComparison       // 竞品对比（KOL + 品牌方）
+    case authenticityAssessment     // 账号真实性评估（KOL + 品牌方）
+    case mediaKitExport             // 媒体包/商业价值报告导出（KOL + 品牌方）
+    case campaignTracking           // 投放效果跟踪（品牌方）
+    case engagementHeatmap          // 互动热力图（KOL）
+    case contentScheduling          // 内容排期推荐（KOL + 中小企业）
+    case commentManagement          // 评论管理（中小企业）
+
     /// 用户可见的功能名称
     var displayName: String {
         switch self {
@@ -41,6 +50,13 @@ enum PremiumFeatureKey: String, Codable, DatabaseValueConvertible, CaseIterable 
         case .localAIAnalysis: return "Local AI Analysis"
         case .advancedEncryption: return "Advanced Encryption"
         case .multiDeviceSync: return "Multi-Device Sync"
+        case .competitorComparison: return loc(L10n.Premium.competitorComparison)
+        case .authenticityAssessment: return loc(L10n.Premium.authenticityAssessment)
+        case .mediaKitExport: return loc(L10n.Premium.mediaKitExport)
+        case .campaignTracking: return loc(L10n.Premium.campaignTracking)
+        case .engagementHeatmap: return loc(L10n.Premium.engagementHeatmap)
+        case .contentScheduling: return loc(L10n.Premium.contentScheduling)
+        case .commentManagement: return loc(L10n.Premium.commentManagement)
         }
     }
 }

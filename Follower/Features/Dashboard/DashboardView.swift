@@ -420,6 +420,21 @@ private struct PremiumInsightsSection: View {
                           : viewModel.bestPostingTime, locked: false),
                 .init(icon: "lightbulb.fill", label: loc(L10n.Premium.contentStrategy),
                       value: viewModel.aiSummary.isEmpty ? viewModel.contentTip : viewModel.aiSummary, locked: false),
+                // Phi: 三大人群画像 Premium 功能
+                .init(icon: "chart.bar.fill", label: loc(L10n.Premium.competitorComparison),
+                      value: viewModel.comparisonResult.map { "\($0.direction.rawValue) · \(String(format: "%+.0f", $0.absoluteChange))" } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "checkmark.shield.fill", label: loc(L10n.Premium.authenticityAssessment),
+                      value: viewModel.authenticityResult.map { "Score: \(Int($0.score))/100 · \($0.growthPattern)" } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "doc.richtext.fill", label: loc(L10n.Premium.mediaKitExport),
+                      value: "3 templates · PDF export", locked: false),
+                .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking),
+                      value: viewModel.campaignResult.map { String(format: "%+.1f%% growth", $0.followerGrowthRate) } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap),
+                      value: viewModel.heatmapResult.map { "Peak: \($0.peakDescription)" } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "calendar.badge.plus", label: loc(L10n.Premium.contentScheduling),
+                      value: viewModel.activityResult.map { "\($0.activeDays)/\($0.totalDays) \(loc(L10n.Premium.daysActive))" } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "bubble.left.and.bubble.right.fill", label: loc(L10n.Premium.commentManagement),
+                      value: "4 pending · 2 overdue", locked: false),
             ]
         } else {
             return [
@@ -432,6 +447,14 @@ private struct PremiumInsightsSection: View {
                 .init(icon: "person.2.slash", label: loc(L10n.Premium.whoUnfollowedYou), value: "", locked: true),
                 .init(icon: "clock.fill", label: loc(L10n.Premium.bestTimeToPost), value: "", locked: true),
                 .init(icon: "lightbulb.fill", label: loc(L10n.Premium.contentStrategy), value: "", locked: true),
+                // Phi: 三大人群画像 Premium 功能
+                .init(icon: "chart.bar.fill", label: loc(L10n.Premium.competitorComparison), value: "", locked: true),
+                .init(icon: "checkmark.shield.fill", label: loc(L10n.Premium.authenticityAssessment), value: "", locked: true),
+                .init(icon: "doc.richtext.fill", label: loc(L10n.Premium.mediaKitExport), value: "", locked: true),
+                .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking), value: "", locked: true),
+                .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap), value: "", locked: true),
+                .init(icon: "calendar.badge.plus", label: loc(L10n.Premium.contentScheduling), value: "", locked: true),
+                .init(icon: "bubble.left.and.bubble.right.fill", label: loc(L10n.Premium.commentManagement), value: "", locked: true),
             ]
         }
     }
@@ -597,8 +620,16 @@ private struct PremiumInsightsSection: View {
         case 4: GeoDetailView(result: viewModel.geoDistribution)
         case 5: ComparisonDetailView(result: viewModel.comparisonResult)
         case 6: UnfollowListView(followers: viewModel.unfollowList)
-        case 7: BestTimeView()
-        case 8: ContentStrategyView(tip: viewModel.contentTip)
+        case 7: BestTimeView(heatmapResult: viewModel.heatmapResult)
+        case 8: ContentStrategyView(aiSummary: viewModel.aiSummary.isEmpty ? viewModel.contentTip : viewModel.aiSummary)
+        // Phi: 三大人群画像新 Premium 功能
+        case 9: CompetitorDetailView(comparisonResult: viewModel.comparisonResult)
+        case 10: AuthenticityDetailView(result: viewModel.authenticityResult)
+        case 11: MediaKitDetailView()
+        case 12: CampaignDetailView(result: viewModel.campaignResult)
+        case 13: HeatmapDetailView(result: viewModel.heatmapResult)
+        case 14: ContentSchedulingDetailView(activityResult: viewModel.activityResult)
+        case 15: CommentManagementDetailView()
         default: EmptyView()
         }
     }
@@ -647,7 +678,10 @@ private struct PremiumTileItem {
         scoringService: container.scoringService,
         geoService: container.geoDistributionService,
         comparisonService: container.comparisonService,
-        aiService: container.aiAnalysisService
+        aiService: container.aiAnalysisService,
+        authenticityService: container.authenticityService,
+        campaignComparisonService: container.campaignComparisonService,
+        engagementHeatmapService: container.engagementHeatmapService
     )
     DashboardView(viewModel: viewModel)
         .environment(appState)

@@ -36,6 +36,12 @@ final class DashboardViewModel {
     private let comparisonService: ComparisonServiceProtocol
     /// 本地 AI 分析服务（Premium）
     private let aiService: AIAnalysisServiceProtocol
+    /// 真实性评估服务（Premium - Phi）
+    private let authenticityService: AuthenticityServiceProtocol
+    /// 投放效果对比服务（Premium - Phi）
+    private let campaignComparisonService: CampaignComparisonServiceProtocol
+    /// 互动热力图服务（Premium - Phi）
+    private let engagementHeatmapService: EngagementHeatmapServiceProtocol
 
     // MARK: - Published: 核心状态
 
@@ -94,6 +100,15 @@ final class DashboardViewModel {
     /// AI 生成的摘要文本（Premium）
      var aiSummary: String = ""
 
+    // MARK: - Published: Phi 三大人群画像 Premium 数据
+
+    /// 真实性评估结果（Premium）
+     var authenticityResult: AuthenticityResult?
+    /// 投放效果对比结果（Premium）
+     var campaignResult: CampaignResult?
+    /// 互动热力图结果（Premium）
+     var heatmapResult: EngagementHeatmapResult?
+
     // MARK: - Published: Premium Mock 数据（向后兼容，保留 mock 回退）
 
     /// 取关用户列表（Mock）
@@ -118,7 +133,10 @@ final class DashboardViewModel {
         scoringService: ScoringServiceProtocol,
         geoService: GeoDistributionServiceProtocol,
         comparisonService: ComparisonServiceProtocol,
-        aiService: AIAnalysisServiceProtocol
+        aiService: AIAnalysisServiceProtocol,
+        authenticityService: AuthenticityServiceProtocol,
+        campaignComparisonService: CampaignComparisonServiceProtocol,
+        engagementHeatmapService: EngagementHeatmapServiceProtocol
     ) {
         self.snapshotRepo = snapshotRepo
         self.metricRepo = metricRepo
@@ -132,6 +150,9 @@ final class DashboardViewModel {
         self.geoService = geoService
         self.comparisonService = comparisonService
         self.aiService = aiService
+        self.authenticityService = authenticityService
+        self.campaignComparisonService = campaignComparisonService
+        self.engagementHeatmapService = engagementHeatmapService
     }
 
     /// 加载账户列表并自动选中第一个，随后加载全部数据
@@ -255,6 +276,30 @@ final class DashboardViewModel {
         if !snapshots.isEmpty {
             let insights = await aiService.analyze(snapshots: snapshots)
             aiSummary = insights.first(where: { $0.type == .summary })?.detail ?? ""
+        }
+
+        // ── Phi: 三大人群画像 Premium 服务 ──
+
+        // 真实性评估 — 综合互动质量 + 增长曲线 + 异常检测
+        if !snapshots.isEmpty {
+            authenticityResult = await authenticityService.assess(snapshots: snapshots)
+        }
+
+        // 投放效果对比 — 前半段 vs 后半段（模拟 pre/post campaign）
+        if snapshots.count >= 6 {
+            let mid = snapshots.count / 2
+            let preSnapshots = Array(snapshots[0..<mid])
+            let postSnapshots = Array(snapshots[mid..<snapshots.count])
+            campaignResult = await campaignComparisonService.compare(
+                preSnapshots: preSnapshots,
+                postSnapshots: postSnapshots
+            )
+        }
+
+        // 互动热力图 — 基于 Event 时间分布
+        if let events = try? await eventRepo.fetch(accountId: accountId, from: cutOff, to: Date()),
+           !events.isEmpty {
+            heatmapResult = await engagementHeatmapService.generate(from: events)
         }
 
         // Mock 回退 — 保持向后兼容，现有 UI 继续工作
