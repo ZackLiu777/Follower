@@ -6,6 +6,7 @@
 //  这些是纯函数，不依赖 SwiftUI View 树，可直接单元测试。
 //
 
+import SwiftUI
 import Testing
 import Foundation
 @testable import Follower
