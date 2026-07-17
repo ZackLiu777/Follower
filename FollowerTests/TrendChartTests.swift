@@ -2,164 +2,146 @@
 //  TrendChartTests.swift
 //  FollowerTests
 //
-//  Phi: TrendChart Y-axis / formatY / weeklyDataPoints 确定性计算函数测试。
+//  Phi: TrendChart 确定性计算函数测试 — computeYScaleDomain / formatY / weeklyDataPoints。
+//  这些是纯函数，不依赖 SwiftUI View 树，可直接单元测试。
 //
 
 import Testing
 import Foundation
 @testable import Follower
 
-/// Unit tests for TrendChart — covers yScaleDomain, formatY, weeklyDataPoints
+/// Unit tests for TrendChart — covers computeYScaleDomain, formatY, weeklyDataPoints
 struct TrendChartTests {
 
-    // MARK: - yScaleDomain
+    // MARK: - computeYScaleDomain
 
-    /// 全零数据 → 应返回 0...1（而非旧版 -1...1），避免纵坐标出现无意义的负值
+    /// 全零数据 → 返回 0...1（修复前为 -1...1，导致纵坐标出现无意义负值）
     @Test
     func testYScaleDomainAllZerosReturnsZeroToOne() {
-        let points = (0..<7).map { i in
-            TrendDataPoint(date: Date(), value: 0)
-        }
-        let chart = TrendChart(
-            dataPoints: points,
-            barGradientStart: .blue,
-            barGradientEnd: .blue.opacity(0.7),
-            title: "Test",
-            timeWindow: .week
-        )
-        // 通过 weekChart 渲染间接验证 — 全零数据不会崩溃且 upperBound >= 0
-        // yScaleDomain 是 private，但 weekChart 使用 yScaleDomain.upperBound 计算 Y 轴标签
-        #expect(true, "yScaleDomain for all-zero data should return 0...1")
+        let points = (0..<7).map { _ in TrendDataPoint(date: Date(), value: 0) }
+        let domain = TrendChart.computeYScaleDomain(from: points)
+        #expect(domain.lowerBound == 0, "All-zero data lowerBound must be 0")
+        #expect(domain.upperBound == 1, "All-zero data upperBound must be 1")
     }
 
-    /// 全部数据点值相等 → niceMax > niceMin，禁止返回零宽度区间
+    /// 全部值相等 = 5.0 → domain 不应为零宽度
     @Test
     func testYScaleDomainAllEqualValues() {
-        // 构造 7 天相同值 = 5.0 的数据
-        let cal = Calendar.current
-        let points = (0..<7).map { i in
-            let day = cal.date(byAdding: .day, value: -i, to: Date())!
-            return TrendDataPoint(date: day, value: 5.0)
-        }
-        let chart = TrendChart(
-            dataPoints: points,
-            barGradientStart: .blue,
-            barGradientEnd: .blue.opacity(0.7),
-            title: "Test",
-            timeWindow: .week
-        )
-        #expect(true, "yScaleDomain for equal values must not crash")
+        let points = (0..<7).map { _ in TrendDataPoint(date: Date(), value: 5.0) }
+        let domain = TrendChart.computeYScaleDomain(from: points)
+        #expect(domain.lowerBound >= 0)
+        #expect(domain.upperBound > domain.lowerBound,
+                 "niceMax must be > niceMin; fixed-width guard must prevent zero-span domain")
     }
 
-    /// 单一数据点 → 应正常计算 domain
+    /// 单一数据点 → 正常计算 domain
     @Test
     func testYScaleDomainSinglePoint() {
         let points = [TrendDataPoint(date: Date(), value: 42.0)]
-        let chart = TrendChart(
-            dataPoints: points,
-            barGradientStart: .blue,
-            barGradientEnd: .blue.opacity(0.7),
-            title: "Test",
-            timeWindow: .week
-        )
-        #expect(true, "Single point yScaleDomain should not crash")
+        let domain = TrendChart.computeYScaleDomain(from: points)
+        #expect(domain.upperBound >= 42, "Upper bound should cover the single value")
+        #expect(domain.lowerBound >= 0)
     }
 
-    /// 大数值数据 → yScaleDomain 向上取整到美观量级
+    /// 大数值数据 → 向上取整到美观量级
     @Test
     func testYScaleDomainLargeValues() {
-        let points = (0..<7).map { i in
-            TrendDataPoint(date: Date(), value: 12345)
-        }
-        let chart = TrendChart(
-            dataPoints: points,
-            barGradientStart: .blue,
-            barGradientEnd: .blue.opacity(0.7),
-            title: "Test",
-            timeWindow: .week
-        )
-        #expect(true, "Large value yScaleDomain should not crash")
+        let points = (0..<7).map { _ in TrendDataPoint(date: Date(), value: 12345) }
+        let domain = TrendChart.computeYScaleDomain(from: points)
+        #expect(domain.upperBound >= 12345, "Upper bound should cover max value")
+        #expect(domain.lowerBound >= 0)
+    }
+
+    /// 包含负值的数据 → lowerBound 应为负数
+    @Test
+    func testYScaleDomainNegativeValues() {
+        let points = [
+            TrendDataPoint(date: Date(), value: -50),
+            TrendDataPoint(date: Date(), value: 100),
+        ]
+        let domain = TrendChart.computeYScaleDomain(from: points)
+        #expect(domain.lowerBound < 0, "Negative values must produce negative lowerBound")
+        #expect(domain.upperBound > 0)
+    }
+
+    /// 全为负值的数据 → upperBound 接近 0
+    @Test
+    func testYScaleDomainAllNegative() {
+        let points = (0..<7).map { _ in TrendDataPoint(date: Date(), value: -100) }
+        let domain = TrendChart.computeYScaleDomain(from: points)
+        #expect(domain.lowerBound <= -100)
+        #expect(domain.upperBound >= 0 || domain.upperBound > domain.lowerBound)
+    }
+
+    /// 小数值（0~2 范围，如评论/分享）→ domain 应合理缩放到可读范围
+    @Test
+    func testYScaleDomainSmallValues() {
+        let points = (0..<7).map { _ in TrendDataPoint(date: Date(), value: Double.random(in: 0...2)) }
+        let domain = TrendChart.computeYScaleDomain(from: points)
+        #expect(domain.lowerBound >= 0, "Small positive values must not produce negative domain")
+        #expect(domain.upperBound > domain.lowerBound)
     }
 
     // MARK: - formatY
 
-    /// formatY: value >= 10000 → "%.0fk" 格式
+    /// >= 10000 → "%.0fk"
     @Test
     func testFormatYKilo() {
-        // formatY 是 private，通过 weekChart 的 Y 轴标签间接验证
-        // 这里验证数据点值为大数时图表不崩溃
-        let points = (0..<7).map { i in
-            TrendDataPoint(date: Date(), value: 15000)
-        }
-        let chart = TrendChart(
-            dataPoints: points,
-            barGradientStart: .blue,
-            barGradientEnd: .blue.opacity(0.7),
-            title: "Test",
-            timeWindow: .week
-        )
-        #expect(true, "Kilo-value formatY should not crash")
+        #expect(TrendChart.formatY(15000) == "15k")
+        #expect(TrendChart.formatY(10000) == "10k")
+        #expect(TrendChart.formatY(99999) == "100k")
     }
 
-    /// formatY: value >= 1000 → "%.1fk" 格式
+    /// >= 1000 → "%.1fk"
     @Test
     func testFormatYThousand() {
-        let points = (0..<7).map { i in
-            TrendDataPoint(date: Date(), value: 1500)
-        }
-        let chart = TrendChart(
-            dataPoints: points,
-            barGradientStart: .blue,
-            barGradientEnd: .blue.opacity(0.7),
-            title: "Test",
-            timeWindow: .week
-        )
-        #expect(true, "Thousand-value formatY should not crash")
+        #expect(TrendChart.formatY(1500) == "1.5k")
+        #expect(TrendChart.formatY(1000) == "1.0k")
+        #expect(TrendChart.formatY(9999) == "10.0k")
     }
 
-    /// formatY: 0 < value < 1 → "%.1f" 格式（修复前这些值全部显示为 "0"）
+    /// >= 1 → "%.0f"（整数）
+    @Test
+    func testFormatYInteger() {
+        #expect(TrendChart.formatY(1) == "1")
+        #expect(TrendChart.formatY(5) == "5")
+        #expect(TrendChart.formatY(999) == "999")
+    }
+
+    /// 0 < value < 1 → "%.1f"（一位小数）—— 修复前这些值全部显示为 "0"
     @Test
     func testFormatYFractional() {
-        let points = (0..<7).map { i in
-            TrendDataPoint(date: Date(), value: 0.5)
-        }
-        let chart = TrendChart(
-            dataPoints: points,
-            barGradientStart: .blue,
-            barGradientEnd: .blue.opacity(0.7),
-            title: "Test",
-            timeWindow: .week
-        )
-        #expect(true, "Fractional formatY should not crash")
+        #expect(TrendChart.formatY(0.5) == "0.5")
+        #expect(TrendChart.formatY(0.1) == "0.1")
+        #expect(TrendChart.formatY(0.99) == "1.0")  // %.1f rounds
     }
 
-    /// formatY: value == 0 → "0"
+    /// value == 0 → "0"
     @Test
     func testFormatYZero() {
-        let points = [TrendDataPoint(date: Date(), value: 0)]
-        let chart = TrendChart(
-            dataPoints: points,
-            barGradientStart: .blue,
-            barGradientEnd: .blue.opacity(0.7),
-            title: "Test",
-            timeWindow: .week
-        )
-        #expect(true, "Zero formatY should not crash")
+        #expect(TrendChart.formatY(0) == "0")
+    }
+
+    /// 负值
+    @Test
+    func testFormatYNegative() {
+        #expect(TrendChart.formatY(-1) == "0")   // falls through to "0" (week chart has no negative bars)
+        #expect(TrendChart.formatY(-0.5) == "0")
     }
 
     // MARK: - weeklyDataPoints
 
-    /// 空 Metric 数组 → 返回 7 个值为 0 的 data points（当前周）
+    /// 空 Metric 数组 → 返回 7 个值为 0 的 data points
     @Test
     func testWeeklyDataPointsEmpty() {
         let result = TrendChart.weeklyDataPoints(from: [])
-        #expect(result.count == 7, "Should always return 7 data points")
+        #expect(result.count == 7, "Should always return 7 data points (Mon-Sun)")
         for point in result {
             #expect(point.value == 0, "Empty metrics → all values should be 0")
         }
     }
 
-    /// 7 天完整 daily metrics → 7 个 data points 按周一到周日排列
+    /// 7 天完整 daily metrics → 7 个 data points 按周一到周日排列，值正确
     @Test
     func testWeeklyDataPointsFullWeek() {
         let cal = Calendar.current
@@ -185,16 +167,16 @@ struct TrendChartTests {
 
         let result = TrendChart.weeklyDataPoints(from: metrics, calendar: cal, referenceDate: Date())
         #expect(result.count == 7)
-        // 验证值匹配：index 0 (Mon) → 10, index 6 (Sun) → 70
-        #expect(result[0].value == 10)
-        #expect(result[6].value == 70)
-        // 验证日期按周一到周日升序
+        #expect(result[0].value == 10, "Monday should map index 0 → value 10")
+        #expect(result[6].value == 70, "Sunday should map index 6 → value 70")
+        // 日期按周一到周日升序
         for i in 1..<result.count {
-            #expect(result[i-1].date < result[i].date, "Weekly points must be chronological Mon→Sun")
+            #expect(result[i - 1].date < result[i].date,
+                     "Weekly points must be chronological Mon→Sun")
         }
     }
 
-    /// 部分天有数据 → 缺失的天 value = 0
+    /// 部分天有数据 → 缺失天 value = 0
     @Test
     func testWeeklyDataPointsPartialWeek() {
         let cal = Calendar.current
@@ -219,14 +201,14 @@ struct TrendChartTests {
         #expect(result[0].value == 100)  // Monday
         #expect(result[1].value == 0)    // Tuesday — 无数据
         #expect(result[2].value == 300)  // Wednesday
+        #expect(result[3].value == 0)    // Thursday
     }
 
-    /// weeklyDataPoints 使用指定 referenceDate 计算当前周
+    /// 使用指定 referenceDate 可计算不同周的 data points
     @Test
     func testWeeklyDataPointsRespectsReferenceDate() {
         let cal = Calendar.current
-        // 使用 7 天前的日期作为 referenceDate
-        let pastDate = cal.date(byAdding: .day, value: -7, to: Date())!
+        let pastDate = cal.date(byAdding: .day, value: -14, to: Date())!
 
         var cal2 = cal
         cal2.firstWeekday = 2
@@ -243,72 +225,6 @@ struct TrendChartTests {
 
         let result = TrendChart.weeklyDataPoints(from: metrics, calendar: cal, referenceDate: pastDate)
         #expect(result.count == 7)
-        // 该 Metric 落在 pastDate 所在周的周一 → 应有值
-        #expect(result[0].value == 50)
-    }
-
-    // MARK: - Chart with negative values
-
-    /// 包含负值的 dataPoints → yScaleDomain 正确处理负值下限
-    @Test
-    func testChartWithNegativeValues() {
-        let cal = Calendar.current
-        let points = (0..<7).map { i in
-            TrendDataPoint(date: cal.date(byAdding: .day, value: -i, to: Date())!, value: Double(i - 3))
-        }
-        let chart = TrendChart(
-            dataPoints: points,
-            barGradientStart: .blue,
-            barGradientEnd: .blue.opacity(0.7),
-            title: "Test",
-            timeWindow: .week
-        )
-        #expect(true, "Negative values should not crash")
-    }
-
-    // MARK: - Shared Y Axis (Swift Charts)
-
-    /// Day/Month/Year chart 使用 sharedYAxis — 验证 Double 类型标签不崩溃
-    @Test
-    func testDayChartWithFractionalValues() {
-        let cal = Calendar.current
-        let today = cal.startOfDay(for: Date())
-        let points = (0..<24).map { h in
-            TrendDataPoint(
-                date: cal.date(byAdding: .hour, value: h, to: today)!,
-                value: Double.random(in: 0...2)
-            )
-        }
-        let chart = TrendChart(
-            dataPoints: points,
-            barGradientStart: .blue,
-            barGradientEnd: .blue.opacity(0.7),
-            title: "Comments — Day",
-            timeWindow: .day
-        )
-        #expect(true, "Day chart with fractional values should not crash")
-    }
-
-    /// Month chart 小数值 → sharedYAxis 使用 formatY 显示小数
-    @Test
-    func testMonthChartWithSmallValues() {
-        let cal = Calendar.current
-        let comps = cal.dateComponents([.year, .month], from: Date())
-        guard let ms = cal.date(from: comps) else { return }
-        let days = cal.range(of: .day, in: .month, for: ms)!.count
-        let points = (0..<days).map { d in
-            TrendDataPoint(
-                date: cal.date(byAdding: .day, value: d, to: ms)!,
-                value: Double.random(in: 0...3)
-            )
-        }
-        let chart = TrendChart(
-            dataPoints: points,
-            barGradientStart: .blue,
-            barGradientEnd: .blue.opacity(0.7),
-            title: "Shares — Month",
-            timeWindow: .month
-        )
-        #expect(true, "Month chart with small values should not crash")
+        #expect(result[0].value == 50, "Metric on past week's Monday must map to index 0")
     }
 }

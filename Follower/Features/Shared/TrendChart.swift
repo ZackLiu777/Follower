@@ -32,6 +32,11 @@ struct TrendChart: View {
 
     /// 自动计算 Y 轴上下限，向上取整到美观量级（nice rounding）
     private var yScaleDomain: ClosedRange<Double> {
+        Self.computeYScaleDomain(from: dataPoints)
+    }
+
+    /// yScaleDomain 的纯计算逻辑 — 提取为 static 方法以便单元测试
+    static func computeYScaleDomain(from dataPoints: [TrendDataPoint]) -> ClosedRange<Double> {
         let maxV = dataPoints.map(\.value).max() ?? 0
         let minV = dataPoints.map(\.value).min() ?? 0
         // 全零数据 → 0...1，避免纵坐标出现无意义的负值区间
@@ -216,13 +221,17 @@ struct TrendChart: View {
 
     // MARK: - Y Label Formatter (pure SwiftUI 共用)
 
-    private func formatY(_ value: Double) -> String {
+    /// Y 轴刻度标签格式化 — 提取为 static 方法以便单元测试
+    static func formatY(_ value: Double) -> String {
         if value >= 10000 { return String(format: "%.0fk", value / 1000) }
         else if value >= 1000 { return String(format: "%.1fk", value / 1000) }
         else if value >= 1 { return String(format: "%.0f", value) }
         else if value > 0 { return String(format: "%.1f", value) }
         return "0"
     }
+
+    /// 实例转发到 static 方法
+    private func formatY(_ value: Double) -> String { Self.formatY(value) }
 
     // MARK: - Month Chart (28-31 days, unit: .day)
 
