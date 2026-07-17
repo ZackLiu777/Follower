@@ -45,18 +45,21 @@ final class TrendsViewModel {
         self.snapshotRepo = snapshotRepo; self.metricRepo = metricRepo; self.accountRepo = accountRepo
     }
 
-    /// 页面首次加载 — 获取首个账号并拉取其全部时间窗趋势数据
+    /// 页面首次加载 — 获取首个账号 ID（供 fallback），实际数据由 View 层传入
     func loadInitialAccount() async {
         do {
             let accounts = try await accountRepo.fetchAll()
             if selectedAccountId == nil { selectedAccountId = accounts.first?.id }
-            if let id = selectedAccountId { await loadTrends(accountId: id) }
-            if selectedWindow == .day { await generateHourlyData() }
         } catch { errorMessage = error.localizedDescription }
     }
 
-    /// 加载指定账号在所有时间窗下的全部指标数据
+    /// 加载指定账号在所有时间窗下的全部指标数据，并清空旧缓存确保数据隔离
     func loadTrends(accountId: Int64) async {
+        // 切换账号时清空全部指标缓存，防止旧账号数据残留
+        if accountId != selectedAccountId {
+            dailyMetrics = [:]; weeklyMetrics = [:]; monthlyMetrics = [:]; yearlyMetrics = [:]; hourlyData = [:]
+        }
+        selectedAccountId = accountId
         isLoading = true; defer { isLoading = false }
         do {
             var dayDict: [MetricType: [Metric]] = [:]
@@ -104,9 +107,11 @@ final class TrendsViewModel {
             for h in 0..<24 {
                 let date = calendar.date(byAdding: .hour, value: h, to: today) ?? today
                 let v = Double.random(in: -baseVal * 0.03 ... baseVal * 0.05)
-                points.append(TrendDataPoint(date: date, value: max(0, baseVal + v)))
+                points.append(TrendDataPoint(date: date, value: baseVal + v))
             }
             dict[type] = points
+            let vals = points.map(\.value)
+            let _ = print("[generateHourly] \(type) base=\(baseVal) total=\(vals.reduce(0,+)) min=\(vals.min()!) max=\(vals.max()!)")
         }
         hourlyData = dict
     }
@@ -122,7 +127,7 @@ final class TrendsViewModel {
             for h in 0..<24 {
                 let date = calendar.date(byAdding: .hour, value: h, to: today) ?? today
                 let v = Double.random(in: -base * 0.15 ... base * 0.25)
-                points.append(TrendDataPoint(date: date, value: max(0, base + v)))
+                points.append(TrendDataPoint(date: date, value: base + v))
             }
             dict[type] = points
         }
@@ -140,35 +145,25 @@ final class TrendsViewModel {
         let calendar = Calendar.current
         let now = Date()
 
+        let result: [TrendDataPoint]
         switch selectedWindow {
         case .day:
-            return hourlyData[metricType] ?? []
+            result = hourlyData[metricType] ?? []
 
         case .week:
-            var cal = calendar
-            cal.firstWeekday = 2  // Monday — 与 TrendChart.startOfWeek 完全一致
-            let comps = cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)
-            let weekStart = cal.date(from: comps) ?? calendar.startOfDay(for: now)
-
-            // ★ 用 dailyMetrics（日数据），不是 weeklyMetrics（周聚合）
+            // ★ 使用 TrendChart.weeklyDataPoints 共用方法，确保与 Dashboard 数据完全一致
             let raw = dailyMetrics[metricType] ?? []
-
-            return (0..<7).map { i in
-                let dayStart = calendar.date(byAdding: .day, value: i, to: weekStart)!
-                let noon = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: dayStart) ?? dayStart
-                let value = raw
-                    .first { calendar.isDate($0.observedAt, inSameDayAs: dayStart) }?
-                    .value ?? 0
-                return TrendDataPoint(date: noon, value: value)
-            }
+            result = TrendChart.weeklyDataPoints(from: raw, calendar: calendar, referenceDate: now)
 
         case .month:
-            return (monthlyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
+            result = (monthlyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
                 .map { TrendDataPoint(date: $0.observedAt, value: $0.value) }
 
         case .year:
-            return (yearlyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
+            result = (yearlyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
                 .map { TrendDataPoint(date: $0.observedAt, value: $0.value) }
         }
+        let _ = print("[chartData] \(metricType) window=\(selectedWindow) → \(result.count) pts, values: \(result.map(\.value))")
+        return result
     }
 }

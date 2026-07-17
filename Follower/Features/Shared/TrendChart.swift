@@ -20,6 +20,7 @@ struct TrendChart: View {
     let barGradientEnd: Color
     let title: String
     var timeWindow: TimeWindow = .day
+    var compact: Bool = true   // true=卡片模式(140px+数字)  false=详情模式(全尺寸)
 
     /// 图表锚点日期，用于计算时间窗起止
     private var referenceDate: Date { Date() }
@@ -29,13 +30,19 @@ struct TrendChart: View {
 
     // ── Shared Y Domain ──
 
-    /// 自动计算 Y 轴上限，向上取整到美观量级（nice rounding）
+    /// 自动计算 Y 轴上下限，向上取整到美观量级（nice rounding）
     private var yScaleDomain: ClosedRange<Double> {
-        let maxValue = dataPoints.map(\.value).max() ?? 0
-        guard maxValue > 0 else { return 0...1 }
-        let magnitude = pow(10, floor(log10(maxValue)))
-        let niceMax = ceil(maxValue * 1.15 / magnitude) * magnitude
-        return 0...niceMax
+        let maxV = dataPoints.map(\.value).max() ?? 0
+        let minV = dataPoints.map(\.value).min() ?? 0
+        // 全零数据 → 0...1，避免纵坐标出现无意义的负值区间
+        guard maxV != 0 || minV != 0 else { return 0...1 }
+        let absMax = max(abs(maxV), abs(minV), 1.0)
+        let mag = pow(10, floor(log10(absMax)))
+        var niceMax = maxV >= 0 ? ceil(maxV * 1.15 / mag) * mag : ceil(maxV * 0.85 / mag) * mag
+        var niceMin = minV < 0 ? floor(minV * 1.15 / mag) * mag : 0.0
+        // 防止 niceMax == niceMin（所有值相等且恰好等于某刻度时发生）
+        if niceMax <= niceMin { niceMax = niceMin + max(1, mag) }
+        return niceMin...niceMax
     }
 
     /// 柱状图渐变填充色，由外部主题决定起止颜色
@@ -55,6 +62,14 @@ struct TrendChart: View {
 
             if dataPoints.isEmpty { emptyState }
             else {
+                // 详情模式显示统计总数
+                if !compact {
+                    let total = dataPoints.map(\.value).reduce(0, +)
+                    Text(formatInt(total))
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(total >= 0 ? .primary : .red)
+                        .padding(.leading, 4)
+                }
                 switch timeWindow {
                 case .day:   dayChart
                 case .week:  weekChart
@@ -64,7 +79,6 @@ struct TrendChart: View {
             }
         }
         .padding(12)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - Day Chart (24h, unit: .hour)
@@ -104,7 +118,7 @@ struct TrendChart: View {
             }
         }
         .chartYAxis { sharedYAxis }
-        .frame(height: 220)
+        .frame(height: compact ? 140 : 300)
     }
 
     // MARK: - Week Chart (纯 SwiftUI — 7 天等宽 HStack)
@@ -166,10 +180,12 @@ struct TrendChart: View {
                         // Bars — bottom-aligned in each cell
                         HStack(alignment: .bottom, spacing: 0) {
                             ForEach(dataPoints) { point in
-                                let barH = yMax > 0
-                                    ? max(point.value > 0 ? 2 : 0,
-                                          CGFloat(point.value / yMax) * h)
-                                    : 0
+                                let barH: CGFloat = {
+                                    guard yMax > 0 else { return 0 }
+                                    let ratio = CGFloat(point.value / yMax)
+                                    if point.value > 0 { return max(2, ratio * h) }
+                                    return 0
+                                }()
                                 VStack(spacing: 0) {
                                     Spacer(minLength: 0)
                                     Rectangle()
@@ -182,7 +198,7 @@ struct TrendChart: View {
                     }
                 }
             }
-            .frame(height: 200)
+            .frame(height: compact ? 140 : 300)
 
             // ── X-axis labels ──
             HStack(spacing: 0) {
@@ -204,6 +220,7 @@ struct TrendChart: View {
         if value >= 10000 { return String(format: "%.0fk", value / 1000) }
         else if value >= 1000 { return String(format: "%.1fk", value / 1000) }
         else if value >= 1 { return String(format: "%.0f", value) }
+        else if value > 0 { return String(format: "%.1f", value) }
         return "0"
     }
 
@@ -250,7 +267,7 @@ struct TrendChart: View {
             }
         }
         .chartYAxis { sharedYAxis }
-        .frame(height: 220)
+        .frame(height: compact ? 140 : 300)
     }
 
     // MARK: - Year Chart (12 months, unit: .month)
@@ -294,7 +311,7 @@ struct TrendChart: View {
             }
         }
         .chartYAxis { sharedYAxis }
-        .frame(height: 220)
+        .frame(height: compact ? 140 : 300)
     }
 
     // MARK: - Shared Y Axis
@@ -305,8 +322,8 @@ struct TrendChart: View {
             AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
                 .foregroundStyle(Color.secondary.opacity(0.25))
             AxisValueLabel {
-                if let v = value.as(Int.self) {
-                    Text(v, format: .number).font(.caption2).foregroundStyle(.secondary)
+                if let v = value.as(Double.self) {
+                    Text(formatY(v)).font(.caption2).foregroundStyle(.secondary)
                 }
             }
         }
@@ -314,6 +331,10 @@ struct TrendChart: View {
 
     // MARK: - Empty State
 
+
+    private func formatInt(_ val: Double) -> String {
+        return String(format: "%.0f", val)
+    }
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "chart.bar.fill").font(.largeTitle).foregroundColor(.secondary)
@@ -329,6 +350,30 @@ struct TrendChart: View {
         var cal = Calendar.current; cal.firstWeekday = 2
         return cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date))
             ?? cal.startOfDay(for: date)
+    }
+
+    // MARK: - Shared Weekly Data Computation
+
+    /// 从 daily metrics 计算周线 TrendDataPoint 数组。
+    /// Dashboard 与 Trends 共用此方法，确保两个页面渲染完全一致的图表数据。
+    static func weeklyDataPoints(
+        from dailyMetrics: [Metric],
+        calendar: Calendar = .current,
+        referenceDate: Date = Date()
+    ) -> [TrendDataPoint] {
+        var cal = calendar
+        cal.firstWeekday = 2  // Monday
+        let comps = cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: referenceDate)
+        let weekStart = cal.date(from: comps) ?? calendar.startOfDay(for: referenceDate)
+
+        return (0..<7).map { i in
+            let dayStart = calendar.date(byAdding: .day, value: i, to: weekStart)!
+            let noon = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: dayStart) ?? dayStart
+            let value = dailyMetrics
+                .first { calendar.isDate($0.observedAt, inSameDayAs: dayStart) }?
+                .value ?? 0
+            return TrendDataPoint(date: noon, value: value)
+        }
     }
 }
 

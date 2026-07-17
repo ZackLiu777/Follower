@@ -2,10 +2,10 @@
 //  DashboardView.swift
 //  Follower
 //
-//  v3 — 完全按照参考设计图重构:
+//  v4 — 仪表盘重构:
 //      浅灰背景 + 白色卡片 + 蓝色强调
-//      Profile Header → Follower Card → Key Metrics Card →
-//      Growth Insights Card → Recent Posts Card → Premium Grid Card
+//      Profile Header → TrendChart 粉丝周线（与 Trends 页共用组件+数据源） →
+//      Key Metrics Card → Recent Posts Card → Premium Grid Card
 //
 
 import SwiftUI
@@ -71,13 +71,28 @@ struct DashboardView: View {
                                 selectedAccountId: viewModel.selectedAccountId,
                                 onSelect: { id in viewModel.selectAccount(id) }
                             )
-                            FollowerSection(
-                                followersCount: viewModel.latestSnapshot!.followersCount,
-                                delta: viewModel.followerDelta,
-                                deltaPercent: viewModel.followerDeltaPercent,
-                                sparklineData: viewModel.sparklineData,
-                                accountName: viewModel.accounts.first(where: { $0.id == viewModel.selectedAccountId })?.username ?? ""
-                            )
+                            // 粉丝周线统计图表 — 与 Trends 页共用同一 TrendChart 组件 + 同一数据源
+                            NavigationLink {
+                                TrendDetailView(
+                                    metricType: .followerGrowth,
+                                    dataPoints: viewModel.followerWeeklyData,
+                                    timeWindow: .week,
+                                    barGradientStart: theme.chartBarGradientStart,
+                                    barGradientEnd: theme.chartBarGradientEnd
+                                )
+                            } label: {
+                                TrendChart(
+                                    dataPoints: viewModel.followerWeeklyData,
+                                    barGradientStart: theme.chartBarGradientStart,
+                                    barGradientEnd: theme.chartBarGradientEnd,
+                                    title: loc(L10n.Trends.followers),
+                                    timeWindow: .week,
+                                    compact: true
+                                )
+                                .dashboardCard()
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.horizontal, 4)
                             KeyMetricsSection(
                                 engagementRate: viewModel.latestSnapshot?.engagementRate ?? 0,
                                 reach: viewModel.latestSnapshot?.totalViews ?? 0,
@@ -85,12 +100,6 @@ struct DashboardView: View {
                                 engagementDelta: viewModel.engagementDelta,
                                 reachDelta: viewModel.reachDelta,
                                 postsDelta: viewModel.postsDelta
-                            )
-                            GrowthInsightsSection(
-                                aiSummary: viewModel.aiSummary,
-                                contentTip: viewModel.contentTip,
-                                followerDelta: viewModel.followerDelta,
-                                sparklineData: viewModel.sparklineData
                             )
                             RecentPostsSection(posts: viewModel.recentPosts)
                             PremiumInsightsSection(
@@ -137,10 +146,12 @@ struct DashboardView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { toolbar }
             .refreshable { await viewModel.loadAccounts() }
         }
         .task { await viewModel.loadAccounts() }
+        .onChange(of: viewModel.selectedAccountId) { _, newId in
+            appState.selectedAccountId = newId
+        }
     }
 
     // MARK: - Helpers
@@ -195,319 +206,10 @@ struct DashboardView: View {
         }
     }
 
-    private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarTrailing) {
-            if viewModel.isSyncing {
-                ProgressView()
-            } else {
-                Button {
-                    Task { await viewModel.sync() }
-                } label: {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                }
-                .disabled(viewModel.selectedAccountId == nil)
-            }
-        }
-    }
 }
 
 // ═══════════════════════════════════════════════════════
-//  MARK: - 1. AccountBar
-//  参考图: 顶部 Profile Header — 头像 + 用户名 + 账户类型
-// ═══════════════════════════════════════════════════════
-
-private struct AccountBar: View {
-    let accounts: [Account]
-    let selectedAccountId: Int64?
-    let onSelect: (Int64) -> Void
-
-    @Environment(\.theme) private var theme
-
-    var body: some View {
-        HStack(spacing: 12) {
-            // 头像
-            Circle()
-                .fill(theme.accentPrimary.opacity(0.12))
-                .frame(width: 44, height: 44)
-                .overlay {
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(theme.accentPrimary)
-                }
-
-            // 用户名 + 账户类型
-            VStack(alignment: .leading, spacing: 2) {
-                Text("@\(selectedAccount?.username ?? "")")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(theme.textPrimary)
-
-                HStack(spacing: 4) {
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 10))
-                    Text(loc(L10n.Dashboard.accountType))
-                        .font(.system(size: 12))
-                }
-                .foregroundColor(theme.textSecondary)
-            }
-
-            Spacer()
-
-            // 多账户切换指示
-            if accounts.count > 1 {
-                Menu {
-                    ForEach(accounts, id: \.id) { account in
-                        Button {
-                            if let id = account.id { onSelect(id) }
-                        } label: {
-                            HStack {
-                                Text("@\(account.username)")
-                                if account.id == selectedAccountId {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-                    }
-                } label: {
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(theme.textSecondary)
-                        .padding(8)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Circle())
-                }
-            }
-        }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 8)
-    }
-
-    private var selectedAccount: Account? {
-        accounts.first(where: { $0.id == selectedAccountId })
-    }
-}
-
-// ═══════════════════════════════════════════════════════
-//  MARK: - 2. FollowerSection
-//  参考图: 白色卡片 — 标题 + 时间选择器 / 大数字 + delta / 折线图(含坐标轴)
-// ═══════════════════════════════════════════════════════
-
-private struct FollowerSection: View {
-    let followersCount: Int
-    let delta: Int
-    let deltaPercent: Double
-    let sparklineData: [Double]
-    let accountName: String
-
-    @Environment(\.theme) private var theme
-
-    var body: some View {
-        NavigationLink {
-            FollowerDetailView(
-                currentFollowers: followersCount,
-                delta: delta,
-                deltaPercent: deltaPercent,
-                sparklineData: sparklineData,
-                accountName: accountName
-            )
-        } label: {
-            VStack(spacing: 0) {
-                // ── 顶部: 标题 + 时间段 ──
-                HStack {
-                    HStack(spacing: 4) {
-                        Text(loc(L10n.Dashboard.followersTotal))
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(theme.textSecondary)
-                        Image(systemName: "info.circle")
-                            .font(.system(size: 12))
-                            .foregroundColor(theme.textTertiary)
-                    }
-                    Spacer()
-                    HStack(spacing: 2) {
-                        Text("近7天")
-                            .font(.system(size: 12))
-                            .foregroundColor(theme.textSecondary)
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(theme.textTertiary)
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                }
-                .padding(.bottom, 8)
-
-                // ── 大数字 + Delta ──
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(followersCount.formatted(.number))
-                        .font(.system(size: 36, weight: .bold, design: .default))
-                        .foregroundColor(theme.textPrimary)
-                        .tracking(-0.5)
-
-                    HStack(spacing: 4) {
-                        HStack(spacing: 2) {
-                            Image(systemName: delta >= 0 ? "arrow.up" : "arrow.down")
-                                .font(.system(size: 12, weight: .semibold))
-                            Text(abs(delta).formatted(.number))
-                                .font(.system(size: 13, weight: .semibold))
-                            if deltaPercent != 0 {
-                                Text("(\(String(format: "%+.1f%%", deltaPercent)))")
-                                    .font(.system(size: 13, weight: .medium))
-                            }
-                        }
-                        .foregroundColor(delta >= 0 ? theme.positiveGreen : theme.negativeRed)
-
-                        Text("vs 上周")
-                            .font(.system(size: 12))
-                            .foregroundColor(theme.textTertiary)
-                    }
-                }
-                .padding(.bottom, 12)
-
-                // ── 折线图 (含坐标轴) ──
-                if sparklineData.count >= 2 {
-                    FollowerLineChart(data: sparklineData)
-                        .frame(height: 140)
-                }
-            }
-            .padding(16)
-        }
-        .buttonStyle(.plain)
-        .dashboardCard()
-    }
-}
-
-// ═══════════════════════════════════════════════════════
-//  MARK: - 2a. FollowerLineChart
-//  参考图: 蓝色折线 + 浅蓝渐变填充 + X轴日期 + Y轴数值
-// ═══════════════════════════════════════════════════════
-
-private struct FollowerLineChart: View {
-    let data: [Double]
-
-    @Environment(\.theme) private var theme
-
-    /// Y 轴上下留白比例
-    private let yPadding: CGFloat = 0.15
-    /// 左侧 Y 轴标签宽度
-    private let yAxisWidth: CGFloat = 36
-    /// 底部 X 轴标签高度
-    private let xAxisHeight: CGFloat = 18
-
-    var body: some View {
-        let minVal = data.min() ?? 0
-        let maxVal = data.max() ?? 1
-        let range = max(maxVal - minVal, 1)
-        let paddedMin = minVal - range * yPadding
-        let paddedMax = maxVal + range * yPadding
-        let paddedRange = paddedMax - paddedMin
-
-        VStack(spacing: 0) {
-            // 图表主体 + Y 轴
-            HStack(alignment: .top, spacing: 4) {
-                // Y 轴标签
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text(formatK(paddedMax))
-                        .font(.system(size: 10))
-                        .foregroundColor(theme.textTertiary)
-                    Spacer()
-                    Text(formatK(paddedMin))
-                        .font(.system(size: 10))
-                        .foregroundColor(theme.textTertiary)
-                }
-                .frame(width: yAxisWidth)
-
-                // 折线 + 渐变填充
-                GeometryReader { geo in
-                    let w = geo.size.width
-                    let h = geo.size.height
-
-                    ZStack {
-                        // 渐变填充
-                        Path { path in
-                            path.move(to: CGPoint(x: 0, y: h))
-                            for (i, value) in data.enumerated() {
-                                let x = data.count <= 1 ? 0 : CGFloat(i) / CGFloat(data.count - 1) * w
-                                let y = h - CGFloat((value - paddedMin) / paddedRange) * h
-                                path.addLine(to: CGPoint(x: x, y: y))
-                            }
-                            if data.count > 1 {
-                                path.addLine(to: CGPoint(x: w, y: h))
-                            }
-                            path.closeSubpath()
-                        }
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    theme.accentPrimary.opacity(0.18),
-                                    theme.accentPrimary.opacity(0.02),
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-
-                        // 折线
-                        Path { path in
-                            for (i, value) in data.enumerated() {
-                                let x = data.count <= 1 ? 0 : CGFloat(i) / CGFloat(data.count - 1) * w
-                                let y = h - CGFloat((value - paddedMin) / paddedRange) * h
-                                if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
-                                else { path.addLine(to: CGPoint(x: x, y: y)) }
-                            }
-                        }
-                        .stroke(
-                            theme.accentPrimary,
-                            style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
-                        )
-
-                        // 末端圆点
-                        if let lastVal = data.last {
-                            let lastX = w
-                            let lastY = h - CGFloat((lastVal - paddedMin) / paddedRange) * h
-                            Circle()
-                                .fill(theme.accentPrimary)
-                                .frame(width: 6, height: 6)
-                                .position(x: lastX, y: lastY)
-                        }
-                    }
-                }
-            }
-
-            // X 轴日期标签
-            HStack(spacing: 0) {
-                Spacer().frame(width: yAxisWidth + 4) // 与图表左对齐
-                GeometryReader { geo in
-                    HStack(spacing: 0) {
-                        ForEach(0..<chartDates.count, id: \.self) { i in
-                            Text(chartDates[i])
-                                .font(.system(size: 10))
-                                .foregroundColor(theme.textTertiary)
-                                .frame(maxWidth: .infinity, alignment: i == 0 ? .leading : (i == chartDates.count - 1 ? .trailing : .center))
-                        }
-                    }
-                    .frame(width: geo.size.width, height: xAxisHeight)
-                }
-            }
-        }
-    }
-
-    private var chartDates: [String] {
-        let fmt = DateFormatter()
-        fmt.dateFormat = "M/d"
-        return (0..<min(data.count, 7)).reversed().compactMap { offset in
-            Calendar.current.date(byAdding: .day, value: -offset, to: Date())
-        }.map { fmt.string(from: $0) }
-    }
-
-    private func formatK(_ n: Double) -> String {
-        if abs(n) >= 1000 { return String(format: "%.1fK", n / 1000) }
-        return String(format: "%.0f", n)
-    }
-}
-
-// ═══════════════════════════════════════════════════════
-//  MARK: - 3. KeyMetricsSection
+//  MARK: - 2. KeyMetricsSection
 //  参考图: 白色卡片 — 3 列指标（互动率 / 覆盖人数 / 帖子数）
 //  每列: 图标 + 标签 + 大数字 + delta
 // ═══════════════════════════════════════════════════════
@@ -593,138 +295,7 @@ private struct KeyMetricsSection: View {
 }
 
 // ═══════════════════════════════════════════════════════
-//  MARK: - 4. GrowthInsightsSection
-//  参考图: 白色卡片 — 左侧 AI 文本洞察 + 右侧柱状图
-//  标题: "增长洞察" + 星标图标
-// ═══════════════════════════════════════════════════════
-
-private struct GrowthInsightsSection: View {
-    let aiSummary: String
-    let contentTip: String
-    let followerDelta: Int
-    let sparklineData: [Double]
-
-    @Environment(\.theme) private var theme
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            // ── 左侧: 文本洞察 ──
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 4) {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 12))
-                    Text(loc(L10n.Dashboard.growthInsights))
-                        .font(.system(size: 13, weight: .semibold))
-                }
-                .foregroundColor(theme.accentPrimary)
-
-                Text(insightHeadline)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(theme.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(insightDetail)
-                    .font(.system(size: 12))
-                    .foregroundColor(theme.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            // ── 右侧: 柱状图 ──
-            if dailyGrowth.count >= 2 {
-                WeeklyBarChart(data: dailyGrowth)
-                    .frame(width: 100, height: 80)
-            }
-        }
-        .padding(16)
-        .dashboardCard()
-    }
-
-    // MARK: - Data Derivation
-
-    private var dailyGrowth: [Double] {
-        guard sparklineData.count >= 2 else { return [] }
-        return zip(sparklineData.dropFirst(), sparklineData).map { max(0, $0.0 - $0.1) }
-    }
-
-    private var insightHeadline: String {
-        if followerDelta > 0 {
-            return loc(L10n.Dashboard.growthPositiveHeadline)
-        } else if followerDelta < 0 {
-            return loc(L10n.Dashboard.growthNegativeHeadline)
-        }
-        return loc(L10n.Dashboard.growthNeutralHeadline)
-    }
-
-    private var insightDetail: String {
-        if !aiSummary.isEmpty { return aiSummary }
-        if !contentTip.isEmpty { return contentTip }
-        return loc(L10n.Dashboard.growthDefaultDetail)
-    }
-}
-
-// ═══════════════════════════════════════════════════════
-//  MARK: - 4a. WeeklyBarChart
-//  参考图: 蓝色渐变柱状图，7 根柱子代表每日增长
-// ═══════════════════════════════════════════════════════
-
-private struct WeeklyBarChart: View {
-    let data: [Double]
-
-    @Environment(\.theme) private var theme
-
-    var body: some View {
-        let maxVal = data.max() ?? 1
-        let barCount = min(data.count, 7)
-        let recentData = Array(data.suffix(barCount))
-
-        VStack(spacing: 0) {
-            // 柱子
-            GeometryReader { geo in
-                HStack(spacing: 4) {
-                    ForEach(0..<recentData.count, id: \.self) { i in
-                        let ratio = maxVal > 0 ? CGFloat(recentData[i] / maxVal) : 0
-                        VStack {
-                            Spacer()
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [theme.accentPrimary, theme.accentSecondary],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-                                .frame(width: (geo.size.width - CGFloat(recentData.count - 1) * 4) / CGFloat(recentData.count), height: max(geo.size.height * ratio, 4))
-                        }
-                    }
-                }
-            }
-
-            // 日期标签
-            HStack(spacing: 0) {
-                ForEach(0..<barCount, id: \.self) { i in
-                    Text(dayLabel(i))
-                        .font(.system(size: 8))
-                        .foregroundColor(theme.textTertiary)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.top, 4)
-        }
-    }
-
-    private func dayLabel(_ index: Int) -> String {
-        let days = ["日", "一", "二", "三", "四", "五", "六"]
-        let cal = Calendar.current
-        let offset = index + 1
-        guard let date = cal.date(byAdding: .day, value: -offset, to: Date()) else { return "" }
-        let weekday = cal.component(.weekday, from: date)
-        return days[(weekday - 1) % 7]
-    }
-}
-
-// ═══════════════════════════════════════════════════════
-//  MARK: - 5. RecentPostsSection
+//  MARK: - 3. RecentPostsSection
 //  参考图: 白色卡片 — "最近帖子" + "查看全部" + 帖子行列表
 //  每行: 缩略图(60x60) + 标题 + 日期 + 互动数据
 // ═══════════════════════════════════════════════════════
@@ -786,7 +357,7 @@ private struct RecentPostsSection: View {
 }
 
 // ═══════════════════════════════════════════════════════
-//  MARK: - 6. PremiumInsightsSection
+//  MARK: - 4. PremiumInsightsSection
 //  2×2 网格分页滚动 + 底部小点指示器
 //  全部 9 项 Premium 入口，每页 4 格，共 3 页
 // ═══════════════════════════════════════════════════════
@@ -1066,6 +637,7 @@ private struct PremiumTileItem {
     let container = appState.container
     let viewModel = DashboardViewModel(
         snapshotRepo: container.snapshotRepository,
+        metricRepo: container.metricRepository,
         accountRepo: container.accountRepository,
         syncEngine: container.syncEngine,
         eventRepo: container.eventRepository,

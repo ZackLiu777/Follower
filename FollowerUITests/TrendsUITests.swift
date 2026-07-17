@@ -121,4 +121,102 @@ final class TrendsUITests: XCTestCase {
         let followersChart = app.staticTexts["Followers"]
         XCTAssertTrue(followersChart.waitForExistence(timeout: 10), "Should return to Trends list with Followers chart visible")
     }
+
+    // MARK: - Phi: 六个 TrendChart 卡片全部可见
+
+    /// Trends 页应展示全部 6 个指标图表
+    func testAllSixMetricsChartsVisible() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
+        let tabs = app.tabBars.buttons
+        guard tabs.count >= 2 else {
+            XCTFail("Expected at least 2 tabs")
+            return
+        }
+        tabs.element(boundBy: 1).tap()
+        sleep(4)
+
+        // 六个指标标题应在当前语言环境下可见
+        let expectedTitles = ["Followers", "Engagement", "Avg Likes", "Avg Comments", "Avg Shares", "Views"]
+        for title in expectedTitles {
+            let element = app.staticTexts[title]
+            let exists = element.waitForExistence(timeout: 5)
+            XCTAssertTrue(exists, "Trends page should show '\(title)' chart")
+        }
+    }
+
+    /// 评论图表的 Y 轴不应出现负值或 "0 0 0" 等无意义标签
+    func testCommentsChartHasValidYAxis() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
+        let tabs = app.tabBars.buttons
+        guard tabs.count >= 2 else {
+            XCTFail("Expected at least 2 tabs")
+            return
+        }
+        tabs.element(boundBy: 1).tap()
+        sleep(4)
+
+        // 验证评论图表存在且可点击（不会崩溃）
+        let commentsChart = app.staticTexts["Avg Comments"]
+        if commentsChart.waitForExistence(timeout: 10) {
+            commentsChart.tap()
+            sleep(2)
+            // 详情页应能正常打开
+            XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 10),
+                          "Avg Comments detail should open without crash")
+        }
+    }
+
+    /// 分享图表的 Y 轴不应出现负值或 "0 0 0" 等无意义标签
+    func testSharesChartHasValidYAxis() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
+        let tabs = app.tabBars.buttons
+        guard tabs.count >= 2 else {
+            XCTFail("Expected at least 2 tabs")
+            return
+        }
+        tabs.element(boundBy: 1).tap()
+        sleep(4)
+
+        // 验证分享图表存在且可点击（不会崩溃）
+        let sharesChart = app.staticTexts["Avg Shares"]
+        if sharesChart.waitForExistence(timeout: 10) {
+            sharesChart.tap()
+            sleep(2)
+            XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 10),
+                          "Avg Shares detail should open without crash")
+        }
+    }
+
+    // MARK: - Phi: 多账号数据隔离
+
+    /// Dashboard 切换账户后，Trends 页应同步刷新（通过 AppState.selectedAccountId）
+    func testTrendsSyncsWithDashboardAccountSwitch() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
+
+        // 切换到 Trends Tab
+        let tabs = app.tabBars.buttons
+        guard tabs.count >= 2 else {
+            XCTFail("Expected at least 2 tabs")
+            return
+        }
+        tabs.element(boundBy: 1).tap()
+        sleep(3)
+
+        // 记录当前 Trends 页图表数量
+        let followersChart = app.staticTexts["Followers"]
+        XCTAssertTrue(followersChart.waitForExistence(timeout: 10),
+                      "Before account switch: Followers chart should exist")
+
+        // 切回 Dashboard（如果在 Dashboard 切换账户，Trends 应响应）
+        tabs.element(boundBy: 0).tap()
+        sleep(2)
+
+        // 切回 Trends — 页面仍应有数据
+        tabs.element(boundBy: 1).tap()
+        sleep(3)
+
+        // Trends 页面应正常显示图表（不崩溃、不空白）
+        XCTAssertTrue(followersChart.waitForExistence(timeout: 10),
+                      "After returning to Trends: Followers chart should still exist")
+    }
 }

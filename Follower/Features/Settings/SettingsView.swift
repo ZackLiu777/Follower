@@ -20,7 +20,16 @@ struct SettingsView: View {
                 LinearGradient(colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
                 Form {
                 Section { trialSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.trialStatus)) }
-                Section { accountSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.accounts)) }
+                // 添加新账号卡片
+                Section {
+                    Button { showAccountSheet = true } label: {
+                        Label(loc(L10n.Account.connectNew), systemImage: "person.badge.plus")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 4)
+                    }
+                    .listRowBackground(theme.cardSurface)
+                } header: { Text(loc(L10n.Settings.accounts)) }
+                Section { accountSection.listRowBackground(theme.cardSurface) }
                 Section {
                     languageSection.listRowBackground(theme.cardSurface)
                     themeSection.listRowBackground(theme.cardSurface)
@@ -35,18 +44,7 @@ struct SettingsView: View {
             .scrollContentBackground(.hidden)
             }
             .navigationTitle(loc(L10n.Settings.title))
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button { Task { await viewModel.unlockAllPremium() } } label: {
-                        Image(systemName: "crown.fill").foregroundColor(.orange)
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { showAccountSheet = true } label: {
-                        Image(systemName: "person.badge.plus")
-                    }
-                }
-            }
+            .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showAccountSheet) {
                 AccountView(viewModel: AccountViewModel(
                     accountRepo: appState.container.accountRepository,

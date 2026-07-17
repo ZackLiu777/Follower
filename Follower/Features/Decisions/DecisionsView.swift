@@ -40,24 +40,17 @@ struct DecisionsView: View {
                 }
             }
             .navigationTitle(loc(L10n.Decisions.title))
-            .toolbar { refreshToolbarItem }
+            .navigationBarTitleDisplayMode(.inline)
         }
-        .task { await viewModel.loadInitialAccount() }
+        .task {
+            await viewModel.loadInitialAccount()
+            if appState.syncState == .dataReady { await viewModel.refreshDecisions() }
+        }
         .onChange(of: appState.syncState) { _, new in
             if new == .dataReady { Task { await viewModel.refreshDecisions() } }
         }
     }
 
-    // MARK: - Toolbar
-
-    private var refreshToolbarItem: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarTrailing) {
-            Button { Task { await viewModel.refreshDecisions() } } label: {
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .foregroundColor(theme.accentPrimary)
-            }
-        }
-    }
 }
 
 // MARK: - Preview

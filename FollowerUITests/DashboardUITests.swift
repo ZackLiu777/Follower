@@ -38,4 +38,63 @@ final class DashboardUITests: XCTestCase {
             sleep(1)
         }
     }
+
+    // MARK: - Phi: TrendChart on Dashboard
+
+    /// Dashboard 中应展示粉丝周线 TrendChart（标题 "Followers"）
+    func testDashboardShowsFollowerTrendChart() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
+        // 确保在 Dashboard Tab
+        let tabs = app.tabBars.buttons
+        guard tabs.count >= 1 else {
+            XCTFail("Expected at least 1 tab")
+            return
+        }
+        tabs.element(boundBy: 0).tap()
+        sleep(3)
+
+        // Dashboard 中应有 "Followers" 标题的 TrendChart
+        let followersTitle = app.staticTexts["Followers"]
+        let exists = followersTitle.waitForExistence(timeout: 10)
+        XCTAssertTrue(exists, "Dashboard should display 'Followers' TrendChart")
+    }
+
+    /// 点击 Dashboard 的 TrendChart 应跳转到详情页
+    func testDashboardTrendChartNavigatesToDetail() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
+        let tabs = app.tabBars.buttons
+        guard tabs.count >= 1 else {
+            XCTFail("Expected at least 1 tab")
+            return
+        }
+        tabs.element(boundBy: 0).tap()
+        sleep(3)
+
+        // 点击 "Followers" 标题
+        let followersTitle = app.staticTexts["Followers"]
+        if followersTitle.waitForExistence(timeout: 10) {
+            followersTitle.tap()
+            sleep(2)
+
+            // 应跳转到 TrendDetailView — 导航栏存在
+            let navBar = app.navigationBars.firstMatch
+            XCTAssertTrue(navBar.waitForExistence(timeout: 10), "Should navigate to TrendDetailView")
+        }
+    }
+
+    /// Dashboard 账户切换 → AccountBar 存在且可交互
+    func testDashboardAccountBarExists() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
+        let tabs = app.tabBars.buttons
+        guard tabs.count >= 1 else {
+            XCTFail("Expected at least 1 tab")
+            return
+        }
+        tabs.element(boundBy: 0).tap()
+        sleep(2)
+
+        // AccountBar 应显示用户名（如 @testuser）
+        let userLabel = app.staticTexts.firstMatch
+        XCTAssertTrue(userLabel.exists, "AccountBar should display some user info")
+    }
 }

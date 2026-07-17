@@ -82,7 +82,7 @@ extension ActionCardTemplate {
             switch ctx {
             case .growing:
                 return [
-                    String(format: loc(L10n.Decisions.actionDoubleDown), name, String(format: "%.1f", x)),
+                    String(format: loc(L10n.Decisions.actionDoubleDown), name, x),
                     loc(L10n.Decisions.actionEngageTopFans)
                 ]
             case .declining:
@@ -129,11 +129,11 @@ extension ActionCardTemplate {
             let name = "\(type)".capitalized
             switch ctx {
             case .growing:
-                return String(format: loc(L10n.Decisions.reasonMomentum), name, String(format: "%.1f", x))
+                return String(format: loc(L10n.Decisions.reasonMomentum), name, x)
             case .declining:
-                return String(format: loc(L10n.Decisions.reasonDeclining), name, String(format: "%.1f", x))
+                return String(format: loc(L10n.Decisions.reasonDeclining), name, x)
             case .stable, .severe:
-                return String(format: loc(L10n.Decisions.reasonReelOutperform), name, String(format: "%.1f", x))
+                return String(format: loc(L10n.Decisions.reasonReelOutperform), name, x)
             }
         case .alert(let type, let p):
             let name = "\(type)".capitalized

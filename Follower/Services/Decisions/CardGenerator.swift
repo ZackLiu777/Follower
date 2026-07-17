@@ -31,22 +31,22 @@ struct CardGenerator: Sendable {
     static func generate(scores: GrowthScores, features: GrowthFeatures) -> [ActionCard] {
         var cards: [ActionCard] = []
 
-        // Rule 1: 最高分内容类型 → Primary Action Card（阈值 0.3 确保轻量数据也能触发）
-        if let top = scores.contentScores.first, top.1 > 0.3,
+        // Rule 1: 最高分内容类型 → Primary Action Card（阈值极低确保总是触发）
+        if let top = scores.contentScores.first, top.1 > 0.01,
            let stats = features.contentPerformance[top.0] {
             let ctx: CardContext = stats.growthRate > 0.05 ? .growing
                 : stats.growthRate < -0.03 ? .declining : .stable
             cards.append(primaryCard(for: top.0, stats: stats, context: ctx))
         }
 
-        // Rule 2: 疲劳检测 → Alert Card（penalty 决定严重程度）
-        for type in scores.fatiguedTypes {
-            let penalty = features.fatigueIndices[type]?.penalty ?? 0.2
-            cards.append(fatigueCard(for: type, penalty: penalty))
+        // Rule 2: 疲劳检测 → 最多一张 Alert Card（合并所有疲劳类型）
+        if let firstFatigued = scores.fatiguedTypes.first {
+            let maxPenalty = scores.fatiguedTypes.compactMap { features.fatigueIndices[$0]?.penalty }.max() ?? 0.2
+            cards.append(fatigueCard(for: firstFatigued, penalty: maxPenalty))
         }
 
-        // Rule 3: 粉丝不活跃 → Recovery Card（阈值 0.3，轻量数据也触发）
-        if scores.recoveryNeeded > 0.3 {
+        // Rule 3: 粉丝不活跃 → Recovery Card（阈值极低确保总是触发）
+        if scores.recoveryNeeded > 0.01 {
             cards.append(recoveryCard(health: features.followerHealth))
         }
 
@@ -62,19 +62,31 @@ struct CardGenerator: Sendable {
             cards.append(contentsOf: variants)
         }
 
-        return cards.sorted { $0.priority < $1.priority }
+        let sorted = cards.sorted { $0.priority < $1.priority }
+        print("[CardGenerator] generated \(sorted.count) cards:")
+        for c in sorted {
+            print("  [\(c.priority)] \(c.type) | \(c.template.displayTitle) | actions: \(c.template.displayActions.count)")
+        }
+        return sorted
     }
 
-    /// 生成变体卡片填补空缺 — 每张使用不同 icon + 不同 bestDay，避免视觉重复
+    /// 生成变体卡片填补空缺 — 每张不同 variation + bestDay，并去重
     private static func fallbackCards(features: GrowthFeatures, scores: GrowthScores,
                                        count: Int, existing: [ActionCard]) -> [ActionCard] {
         var result: [ActionCard] = []
         let hour = String(features.timingProfile.bestHours.split(separator: "–").first ?? "19:00")
         let baseDay = features.timingProfile.bestDay
-        // variation 0=时间, 1=内容, 2=互动, 3=增长 — 每张不同标题
+        // 收集已有卡片中已使用的 variation
+        let usedVariations = Set(existing.compactMap { card in
+            if case .insight(_, _, let v) = card.template { return v }
+            return nil
+        })
+        var vi = 1
         for i in 0..<count {
-            let v = (i + 1) % 4  // skip 0 (already used by main insight card if present)
-            let day = ((baseDay - 1 + i * 2) % 7) + 1
+            while usedVariations.contains(vi) { vi = (vi + 1) % 4 }
+            let v = vi; vi = (vi + 1) % 4
+            // 每张 fallback 偏移不同天数，确保行动建议不同
+            let day = ((baseDay - 1 + (i + 1) * 2) % 7) + 1
             result.append(ActionCard(id: UUID().uuidString, type: .insight,
                 icon: "lightbulb.fill",
                 template: .insight(bestDay: day, bestHour: hour, variation: v),

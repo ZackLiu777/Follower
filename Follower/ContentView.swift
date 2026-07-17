@@ -33,6 +33,7 @@ private struct ContentViewInner: View {
         self.container = container
         _dashboardVM = State(wrappedValue: DashboardViewModel(
             snapshotRepo: container.snapshotRepository,
+            metricRepo: container.metricRepository,
             accountRepo: container.accountRepository,
             syncEngine: container.syncEngine,
             eventRepo: container.eventRepository,
@@ -91,6 +92,7 @@ private struct ContentViewInner: View {
         }
         .tint(appState.currentTheme.theme.accentPrimary)
         .withTheme(appState.currentTheme.theme)
+        .toolbarBackground(.hidden, for: .tabBar)  // 隐藏 TabBar 背景，让渐变透出
     }
 }
 

@@ -63,6 +63,21 @@ final class MockEventRepository: EventRepositoryProtocol {
     func latestObservedAt(accountId: Int64) async throws -> Date? { events.last?.observedAt }
 }
 
+/// Mock MockMetricRepository — 可预设 Metric 列表，用于隔离数据库依赖
+final class MockMetricRepository: MetricRepositoryProtocol {
+    var metrics: [Metric] = []
+
+    func fetch(accountId: Int64, metricType: MetricType, window: TimeWindow, limit: Int) async throws -> [Metric] {
+        metrics.filter { $0.metricType == metricType && $0.window == window }
+    }
+    func fetch(accountId: Int64, window: TimeWindow, from: Date, to: Date) async throws -> [Metric] {
+        metrics.filter { $0.window == window && $0.observedAt >= from && $0.observedAt <= to }
+    }
+    func upsert(_ metric: Metric) async throws -> Metric { metric }
+    func upsertBatch(_ metrics: [Metric]) async throws -> [Metric] { metrics }
+    func deleteOldMetrics(accountId: Int64, olderThan: Date) async throws -> Int { 0 }
+}
+
 // MARK: - DashboardViewModel Premium Tests
 
 /// Unit tests for DashboardViewModel Premium 数据加载 — covers 全量 Premium 属性填充、空数据降级、结果结构验证
@@ -90,6 +105,7 @@ struct PremiumViewModelTests {
 
         return DashboardViewModel(
             snapshotRepo: snapshotRepo,
+            metricRepo: MockMetricRepository(),
             accountRepo: accountRepo,
             syncEngine: MockSyncEngine(),
             eventRepo: eventRepo,

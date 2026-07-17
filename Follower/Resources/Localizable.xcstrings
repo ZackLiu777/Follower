@@ -7,9 +7,6 @@
     "—" : {
 
     },
-    "(%@)" : {
-
-    },
     "(%@%%)" : {
 
     },
@@ -3589,19 +3586,6 @@
           }
         }
       }
-    },
-    "Over this %@, your %@ went %@ by %@ across %lld data points." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Over this %1$@, your %2$@ went %3$@ by %4$@ across %5$lld data points."
-          }
-        }
-      }
-    },
-    "Period Summary" : {
-
     },
     "Post Detail" : {
 
@@ -8398,9 +8382,6 @@
         }
       }
     },
-    "vs 上周" : {
-
-    },
     "Weight Breakdown" : {
 
     },
@@ -8411,9 +8392,6 @@
 
     },
     "Your best posting time" : {
-
-    },
-    "近7天" : {
 
     }
   },

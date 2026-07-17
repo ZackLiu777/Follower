@@ -14,6 +14,8 @@ import Combine
 final class DashboardViewModel {
     /// Snapshot 数据仓库
     private let snapshotRepo: SnapshotRepositoryProtocol
+    /// Metric 数据仓库（供 TrendChart 使用，与 Trends 页共享同一数据源）
+    private let metricRepo: MetricRepositoryProtocol
     /// 账户数据仓库
     private let accountRepo: AccountRepositoryProtocol
     /// 同步引擎
@@ -58,6 +60,8 @@ final class DashboardViewModel {
      var followerDeltaPercent: Double = 0
     /// 粉丝趋势 Mini 折线图数据
      var sparklineData: [Double] = []
+    /// 粉丝周线趋势数据（供 TrendChart 使用）
+     var followerWeeklyData: [TrendDataPoint] = []
 
     // MARK: - Published: 次要指标
 
@@ -104,6 +108,7 @@ final class DashboardViewModel {
     /// 初始化：注入核心仓库、同步引擎与全部 Premium 分析服务
     init(
         snapshotRepo: SnapshotRepositoryProtocol,
+        metricRepo: MetricRepositoryProtocol,
         accountRepo: AccountRepositoryProtocol,
         syncEngine: SyncEngineProtocol,
         eventRepo: EventRepositoryProtocol,
@@ -116,6 +121,7 @@ final class DashboardViewModel {
         aiService: AIAnalysisServiceProtocol
     ) {
         self.snapshotRepo = snapshotRepo
+        self.metricRepo = metricRepo
         self.accountRepo = accountRepo
         self.syncEngine = syncEngine
         self.eventRepo = eventRepo
@@ -172,6 +178,8 @@ final class DashboardViewModel {
               let current = latestSnapshot else { return }
 
         sparklineData = snapshots.map { Double($0.followersCount) }
+        // 粉丝周线数据 — 使用与 Trends 页相同的数据源（daily metrics），确保图表一致
+        await loadFollowerWeeklyChartData(accountId: accountId)
 
         if let first = snapshots.first {
             followerDelta = current.followersCount - first.followersCount
@@ -180,6 +188,18 @@ final class DashboardViewModel {
             reachDelta = current.totalViews - first.totalViews
             postsDelta = current.mediaCount - first.mediaCount
         }
+    }
+
+    /// 从 daily metrics 计算粉丝周线图表数据 — 使用 TrendChart.weeklyDataPoints 确保与 Trends 页完全一致
+    private func loadFollowerWeeklyChartData(accountId: Int64) async {
+        let raw = (try? await metricRepo.fetch(
+            accountId: accountId,
+            metricType: .followerGrowth,
+            window: .day,
+            limit: 90
+        )) ?? []
+
+        followerWeeklyData = TrendChart.weeklyDataPoints(from: raw)
     }
 
     /// 加载 Mock 帖子列表
