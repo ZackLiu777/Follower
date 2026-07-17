@@ -161,7 +161,8 @@ final class AuthenticityService: AuthenticityServiceProtocol {
         return min(100, max(0, score))
     }
 
-    /// 异常检测：查找单日粉丝变化超过 3σ 的异常点
+    /// 异常检测：使用 IQR（Tukey's fences）检测粉丝日变化的异常跳跃。
+    /// IQR 对极端值鲁棒，不会像 3σ 那样被异常值撑大检测阈值。
     private func detectAnomalies(snapshots: [Snapshot]) -> (hasAnomalies: Bool, description: String?) {
         let sorted = snapshots.sorted { $0.observedAt < $1.observedAt }
         guard sorted.count >= 4 else { return (false, nil) }
@@ -171,14 +172,21 @@ final class AuthenticityService: AuthenticityServiceProtocol {
             deltas.append(Double(sorted[i].followersCount - sorted[i - 1].followersCount))
         }
 
-        let mean = deltas.reduce(0, +) / Double(deltas.count)
-        let variance = deltas.reduce(0) { $0 + pow($1 - mean, 2) } / Double(deltas.count)
-        let stdDev = sqrt(variance)
+        // IQR-based outlier detection (Tukey's fences)
+        let sortedDeltas = deltas.sorted()
+        let n = sortedDeltas.count
+        let q1 = sortedDeltas[n / 4]
+        let q3 = sortedDeltas[3 * n / 4]
+        let iqr = q3 - q1
 
-        guard stdDev > 0 else { return (false, nil) }
+        // 所有变化都相同 → 无异常
+        guard iqr > 0 else { return (false, nil) }
+
+        let lowerFence = q1 - 1.5 * iqr
+        let upperFence = q3 + 1.5 * iqr
 
         var anomalyCount = 0
-        for (i, delta) in deltas.enumerated() where abs(delta - mean) > 3 * stdDev {
+        for delta in deltas where delta < lowerFence || delta > upperFence {
             anomalyCount += 1
         }
 
