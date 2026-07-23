@@ -53,16 +53,18 @@ struct Theme: Sendable {
     /// 深色模式标志 — 驱动 preferredColorScheme
     let isDark: Bool
 
-    // MARK: - Apple Native（明亮天蓝 → 纯白）
+    // MARK: - Apple Native（明亮天蓝 → 浅蓝渐变，玻璃卡片）
 
     static let appleNative = Theme(
         backgroundPrimary: Color(.systemBackground),
         backgroundSecondary: Color(.secondarySystemBackground),
         backgroundGrouped: Color(.systemGroupedBackground),
-        backgroundGradientStart: Color(red: 0.85, green: 0.93, blue: 1.0),
-        backgroundGradientEnd: Color(.systemBackground),
-        cardSurface: Color(red: 0.85, green: 0.93, blue: 1.0).opacity(0.6),
-        cardElevated: Color(red: 0.85, green: 0.93, blue: 1.0).opacity(0.85),
+        backgroundGradientStart: Color(red: 0.55, green: 0.80, blue: 1.0),
+        backgroundGradientEnd: Color(red: 0.88, green: 0.96, blue: 1.0),
+        // 同色系玻璃：用渐变起始色的低不透明度，与背景完美融合
+        cardSurface: Color(red: 0.55, green: 0.80, blue: 1.0).opacity(0.22),
+        // elevated 稍实，但依然是同色系
+        cardElevated: Color(red: 0.55, green: 0.80, blue: 1.0).opacity(0.38),
         textPrimary: .primary, textSecondary: .secondary, textTertiary: Color(.tertiaryLabel), textInverted: .white,
         accentPrimary: Color(red: 0.0, green: 0.45, blue: 0.88), accentSecondary: Color(red: 0.25, green: 0.60, blue: 0.95),
         positiveGreen: .green, negativeRed: .red, warningOrange: .orange,
@@ -117,35 +119,42 @@ struct Theme: Sendable {
 
     // MARK: - Apple Dark（深靛蓝 → 暗蓝灰渐变）
 
+    // MARK: - Apple Dark（深黑 → 暗蓝渐变）
+
     static let appleDark = Theme(
-        backgroundPrimary: Color(red: 0.06, green: 0.08, blue: 0.14),
-        backgroundSecondary: Color(red: 0.10, green: 0.13, blue: 0.20),
-        backgroundGrouped: Color(red: 0.04, green: 0.05, blue: 0.10),
-        backgroundGradientStart: Color(red: 0.08, green: 0.12, blue: 0.22),
-        backgroundGradientEnd: Color(red: 0.04, green: 0.05, blue: 0.10),
-        cardSurface: Color.white.opacity(0.08),
-        cardElevated: Color.white.opacity(0.12),
-        textPrimary: Color(red: 0.92, green: 0.94, blue: 0.97), textSecondary: Color(red: 0.60, green: 0.65, blue: 0.75),
-        textTertiary: Color(red: 0.38, green: 0.42, blue: 0.52), textInverted: .black,
-        accentPrimary: Color(red: 0.30, green: 0.60, blue: 1.0), accentSecondary: Color(red: 0.45, green: 0.72, blue: 1.0),
-        positiveGreen: Color(red: 0.25, green: 0.80, blue: 0.35), negativeRed: Color(red: 1.0, green: 0.35, blue: 0.35),
+        backgroundPrimary: Color(red: 0.02, green: 0.03, blue: 0.06),
+        backgroundSecondary: Color(red: 0.05, green: 0.06, blue: 0.10),
+        backgroundGrouped: Color(red: 0.01, green: 0.02, blue: 0.04),
+        backgroundGradientStart: Color(red: 0.03, green: 0.05, blue: 0.12),
+        backgroundGradientEnd: Color(red: 0.01, green: 0.02, blue: 0.04),
+        cardSurface: Color(red: 0.08, green: 0.10, blue: 0.16).opacity(0.85),
+        cardElevated: Color(red: 0.12, green: 0.14, blue: 0.20).opacity(0.90),
+        textPrimary: Color(red: 0.95, green: 0.96, blue: 0.98),
+        textSecondary: Color(red: 0.65, green: 0.70, blue: 0.80),
+        textTertiary: Color(red: 0.40, green: 0.45, blue: 0.55),
+        textInverted: .black,
+        accentPrimary: Color(red: 0.30, green: 0.60, blue: 1.0),
+        accentSecondary: Color(red: 0.45, green: 0.72, blue: 1.0),
+        positiveGreen: Color(red: 0.25, green: 0.80, blue: 0.35),
+        negativeRed: Color(red: 1.0, green: 0.35, blue: 0.35),
         warningOrange: Color(red: 1.0, green: 0.65, blue: 0.20),
         chartLine: Color(red: 0.30, green: 0.60, blue: 1.0),
         chartArea: Color(red: 0.30, green: 0.60, blue: 1.0).opacity(0.12),
-        chartGrid: Color.white.opacity(0.08),
+        chartGrid: Color(red: 0.15, green: 0.18, blue: 0.25).opacity(0.50),
         chartBarGradientStart: Color(red: 0.30, green: 0.60, blue: 1.0),
         chartBarGradientEnd: Color(red: 0.20, green: 0.45, blue: 0.85),
         badgePremiumStart: Color(red: 1.0, green: 0.60, blue: 0.20),
         badgePremiumEnd: Color(red: 1.0, green: 0.30, blue: 0.50),
-        badgeTrial: Color(red: 1.0, green: 0.60, blue: 0.20), badgeLocked: Color.white.opacity(0.25),
+        badgeTrial: Color(red: 1.0, green: 0.60, blue: 0.20),
+        badgeLocked: Color(red: 0.20, green: 0.22, blue: 0.28),
         buttonPrimaryBg: Color(red: 0.30, green: 0.60, blue: 1.0),
         buttonDestructiveBg: Color(red: 0.90, green: 0.25, blue: 0.25),
-        buttonDisabledFg: Color.white.opacity(0.20),
-        divider: Color.white.opacity(0.08),
-        navigationBg: Color(red: 0.06, green: 0.08, blue: 0.14), emptyStateIcon: Color.white.opacity(0.15),
+        buttonDisabledFg: Color(red: 0.25, green: 0.28, blue: 0.35),
+        divider: Color(red: 0.12, green: 0.14, blue: 0.20).opacity(0.60),
+        navigationBg: Color(red: 0.02, green: 0.03, blue: 0.06),
+        emptyStateIcon: Color(red: 0.20, green: 0.22, blue: 0.30),
         displayName: "Apple Dark", liquidGlassEnabled: true, isDark: true
     )
-
     // MARK: - Forest（鲜亮薄荷绿 → 柔白翠绿）
 
     static let forest = Theme(
