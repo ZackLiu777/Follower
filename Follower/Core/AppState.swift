@@ -27,7 +27,7 @@ final class AppState {
 
     // MARK: - Published
 
-     var currentTheme: AppTheme = .appleNative
+     var currentTheme: AppTheme = .instagram
      var currentLanguage: AppLanguage = LanguageStore.shared.current
      var isTrialActive: Bool = false
      var trialStartDate: Date?
