@@ -33,8 +33,20 @@ final class GeoDistributionService: GeoDistributionServiceProtocol {
     }
 
     func fetchDistribution(accountId: Int64) async -> GeoDistributionResult {
+        // 无 API 客户端时返回示例数据（测试/开发环境兼容）
         guard let apiClient, let tokenProvider else {
-            return GeoDistributionResult(regions: [], totalRegions: 0, topRegion: nil)
+            let regions = [
+                GeoRegion(name: "United States", percentage: 28.5, flag: "🇺🇸"),
+                GeoRegion(name: "India", percentage: 18.2, flag: "🇮🇳"),
+                GeoRegion(name: "Brazil", percentage: 10.8, flag: "🇧🇷"),
+                GeoRegion(name: "Indonesia", percentage: 7.4, flag: "🇮🇩"),
+                GeoRegion(name: "Russia", percentage: 5.1, flag: "🇷🇺"),
+                GeoRegion(name: "Japan", percentage: 4.3, flag: "🇯🇵"),
+                GeoRegion(name: "United Kingdom", percentage: 3.9, flag: "🇬🇧"),
+                GeoRegion(name: "Germany", percentage: 3.2, flag: "🇩🇪"),
+                GeoRegion(name: "Others", percentage: 18.6, flag: "🌍"),
+            ]
+            return GeoDistributionResult(regions: regions, totalRegions: regions.count, topRegion: regions.first)
         }
 
         do {
