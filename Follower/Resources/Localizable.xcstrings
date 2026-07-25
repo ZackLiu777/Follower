@@ -202,6 +202,9 @@
     "Absolute Change" : {
 
     },
+    "Access Token (IGAA...)" : {
+
+    },
     "account.addAccount" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -958,9 +961,6 @@
       }
     },
     "Comparison data will appear here once enough historical data is recorded." : {
-
-    },
-    "Daily Engagement" : {
 
     },
     "dashboard.accountType" : {
@@ -3550,7 +3550,13 @@
     "How each interaction type contributes to your quality score" : {
 
     },
+    "Instagram API" : {
+
+    },
     "Mock Content" : {
+
+    },
+    "Mode" : {
 
     },
     "Month" : {
@@ -3593,6 +3599,9 @@
           }
         }
       }
+    },
+    "Paste your Instagram Graph API access token." : {
+
     },
     "Post Detail" : {
 
@@ -8508,6 +8517,9 @@
 
     },
     "Quality scores will appear here once enough engagement data is recorded." : {
+
+    },
+    "Quick Test" : {
 
     },
     "Recent Activity" : {

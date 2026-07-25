@@ -8,7 +8,7 @@ import SwiftUI
 
 /// 完整帖子列表 — NavigationLink 进入 PostDetailView
 struct PostListView: View {
-    let posts: [MockPost]
+    let posts: [MediaPost]
 
     var body: some View {
         List(posts) { post in

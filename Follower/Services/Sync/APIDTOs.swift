@@ -44,6 +44,7 @@ struct APITrendDataPoint: Codable {
     let followingCount: Int
     let mediaCount: Int
     let engagementRate: Double
+    let totalViews: Int
 }
 
 /// API 返回的趋势时间序列

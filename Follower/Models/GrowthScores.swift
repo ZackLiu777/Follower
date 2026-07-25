@@ -26,16 +26,3 @@ struct GrowthScores: Sendable {
     var topScore: Double { contentScores.first?.1 ?? 0 }
 }
 
-// MARK: - Mock Data (Preview)
-
-extension GrowthScores {
-    /// 模拟评分数据，供 Preview 和开发调试使用
-    static func mock() -> GrowthScores {
-        GrowthScores(
-            contentScores: [(.reel, 0.87), (.carousel, 0.52), (.photo, 0.31)],
-            growthHealth: 0.68,
-            recoveryNeeded: 0.64,
-            fatiguedTypes: [.carousel]
-        )
-    }
-}

@@ -504,13 +504,6 @@ struct ContentSchedulingDetailView: View {
 struct CommentManagementDetailView: View {
     @Environment(\.theme) private var theme
 
-    private let pendingComments: [(user: String, comment: String, hoursAgo: Int)] = [
-        ("@fan_account", "Love this post! 🔥", 2),
-        ("@new_follower", "What camera do you use?", 8),
-        ("@collab_brand", "DM us for partnership 🤝", 23),
-        ("@regular_viewer", "Post more reels please!", 26),
-    ]
-
     var body: some View {
         ZStack {
             LinearGradient(
@@ -518,79 +511,14 @@ struct CommentManagementDetailView: View {
                 startPoint: .top, endPoint: .bottom
             ).ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: 20) {
-                    HStack(spacing: 20) {
-                        statBadge(count: "4", label: loc(L10n.Premium.pending), color: theme.warningOrange)
-                        statBadge(count: "2", label: loc(L10n.Premium.over24h), color: theme.negativeRed)
-                        statBadge(count: "12", label: loc(L10n.Premium.replied), color: theme.positiveGreen)
-                    }
-                    .padding(.horizontal)
-
-                    ForEach(pendingComments, id: \.user) { item in
-                        HStack(alignment: .top, spacing: 12) {
-                            Circle().fill(theme.accentPrimary.opacity(0.1)).frame(width: 36, height: 36)
-                                .overlay {
-                                    Text(String(item.user.prefix(1))).font(.caption).fontWeight(.bold)
-                                        .foregroundColor(theme.accentPrimary)
-                                }
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack {
-                                    Text(item.user).font(.subheadline).fontWeight(.semibold)
-                                    Spacer()
-                                    Text(String(format: loc(L10n.Premium.hoursAgo), item.hoursAgo))
-                                        .font(.caption2)
-                                        .foregroundColor(item.hoursAgo >= 24 ? theme.negativeRed : .secondary)
-                                }
-                                Text(item.comment).font(.subheadline).foregroundColor(.primary)
-                            }
-                        }
-                        .padding().background(.regularMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12)).padding(.horizontal)
-                    }
-
-                    Text(loc(L10n.Premium.commentMgmtDesc))
-                        .font(.caption).foregroundColor(.secondary).padding(.horizontal)
-                }
-                .padding(.vertical)
-            }
-            .scrollContentBackground(.hidden)
+            ContentUnavailableView(
+                loc(L10n.Premium.commentManagement),
+                systemImage: "bubble.left.and.bubble.right",
+                description: Text(loc(L10n.Premium.commentMgmtDesc))
+            )
         }
         .navigationTitle(loc(L10n.Premium.commentManagement))
         .navigationBarTitleDisplayMode(.inline)
     }
-
-    private func statBadge(count: String, label: String, color: Color) -> some View {
-        VStack(spacing: 4) {
-            Text(count).font(.title2).fontWeight(.bold).foregroundColor(color)
-            Text(label).font(.caption2).foregroundColor(.secondary)
-        }
-        .padding().frame(maxWidth: .infinity)
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
 }
 
-// MARK: - Previews
-
-#Preview("Competitor") {
-    NavigationStack { CompetitorDetailView(comparisonResult: nil) }
-}
-#Preview("Authenticity") {
-    NavigationStack { AuthenticityDetailView(result: nil) }
-}
-#Preview("Media Kit") {
-    NavigationStack { MediaKitDetailView() }
-}
-#Preview("Campaign") {
-    NavigationStack { CampaignDetailView(result: nil) }
-}
-#Preview("Heatmap") {
-    NavigationStack { HeatmapDetailView(result: nil) }
-}
-#Preview("Scheduling") {
-    NavigationStack { ContentSchedulingDetailView(activityResult: nil) }
-}
-#Preview("Comments") {
-    NavigationStack { CommentManagementDetailView() }
-}

@@ -83,63 +83,6 @@ final class TrendsViewModel {
         } catch { errorMessage = error.localizedDescription }
     }
 
-    /// Day 窗口：基于最新日 Snapshot 实时生成 24 小时假数据（不持久化）
-    func generateHourlyData() async {
-        guard let accountId = selectedAccountId,
-              let snap = try? await snapshotRepo.latest(accountId: accountId) else {
-            hourlyData = mockHourly()
-            return
-        }
-        var dict: [MetricType: [TrendDataPoint]] = [:]
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        for type in Self.visibleMetricTypes {
-            let baseVal: Double = switch type {
-            case .followerGrowth: Double(snap.followersCount)
-            case .engagementTrend: snap.engagementRate * 100
-            case .averageLikes: Double(snap.totalLikes)
-            case .averageComments: Double(snap.totalComments)
-            case .averageShares: Double(snap.totalShares)
-            case .profileViews: Double(snap.totalViews)
-            default: 0
-            }
-            var points: [TrendDataPoint] = []
-            for h in 0..<24 {
-                let date = calendar.date(byAdding: .hour, value: h, to: today) ?? today
-                let v = Double.random(in: -baseVal * 0.03 ... baseVal * 0.05)
-                points.append(TrendDataPoint(date: date, value: baseVal + v))
-            }
-            dict[type] = points
-            let vals = points.map(\.value)
-            let _ = print("[generateHourly] \(type) base=\(baseVal) total=\(vals.reduce(0,+)) min=\(vals.min()!) max=\(vals.max()!)")
-        }
-        hourlyData = dict
-    }
-
-    /// 无 Snapshot 时的纯 mock 24 小时数据
-    private func mockHourly() -> [MetricType: [TrendDataPoint]] {
-        var dict: [MetricType: [TrendDataPoint]] = [:]
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
-        for type in Self.visibleMetricTypes {
-            let base = Double(abs(type.localizedName.hashValue) % 800 + 300)
-            var points: [TrendDataPoint] = []
-            for h in 0..<24 {
-                let date = calendar.date(byAdding: .hour, value: h, to: today) ?? today
-                let v = Double.random(in: -base * 0.15 ... base * 0.25)
-                points.append(TrendDataPoint(date: date, value: base + v))
-            }
-            dict[type] = points
-        }
-        return dict
-    }
-
-    /// 切换时间窗 — 若切到 day 则重新生成每小时假数据
-    func selectWindow(_ window: TimeWindow) async {
-        selectedWindow = window
-        if window == .day { await generateHourlyData() }
-    }
-    
     /// 根据当前时间窗返回指定指标的 TrendDataPoint 数组，供图表渲染
     func chartData(for metricType: MetricType) -> [TrendDataPoint] {
         let calendar = Calendar.current
@@ -163,7 +106,42 @@ final class TrendsViewModel {
             result = (yearlyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
                 .map { TrendDataPoint(date: $0.observedAt, value: $0.value) }
         }
-        let _ = print("[chartData] \(metricType) window=\(selectedWindow) → \(result.count) pts, values: \(result.map(\.value))")
         return result
+    }
+
+    /// 日视图：基于最新 Snapshot 按 24 小时均分
+    func generateHourlyData() async {
+        guard let accountId = selectedAccountId,
+              let snap = try? await snapshotRepo.latest(accountId: accountId) else {
+            hourlyData = [:]
+            return
+        }
+        var dict: [MetricType: [TrendDataPoint]] = [:]
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        for type in Self.visibleMetricTypes {
+            let baseVal: Double = switch type {
+            case .followerGrowth: Double(snap.followersCount)
+            case .engagementTrend: snap.engagementRate * 100
+            case .averageLikes: Double(snap.totalLikes)
+            case .averageComments: Double(snap.totalComments)
+            case .averageShares: Double(snap.totalShares)
+            case .profileViews: Double(snap.totalViews)
+            default: 0
+            }
+            let hourlyValue = max(0, baseVal / 24.0)
+            let points = (0..<24).map { h in
+                let date = calendar.date(byAdding: .hour, value: h, to: today) ?? today
+                return TrendDataPoint(date: date, value: hourlyValue)
+            }
+            dict[type] = points
+        }
+        hourlyData = dict
+    }
+
+    /// 切换时间窗 — day 窗口时按小时均分
+    func selectWindow(_ window: TimeWindow) async {
+        selectedWindow = window
+        if window == .day { await generateHourlyData() }
     }
 }

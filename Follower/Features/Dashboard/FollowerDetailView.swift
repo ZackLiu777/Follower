@@ -21,6 +21,7 @@ struct FollowerDetailView: View {
     let sparklineData: [Double]
     /// 当前账户用户名（用于标题）
     let accountName: String
+    let unfollowList: [UnfollowEntry]
 
     /// Hero 卡片 + 7 天增长曲线 + 最近动态列表 UI
     var body: some View {
@@ -67,10 +68,10 @@ struct FollowerDetailView: View {
                     // Mock 粉丝动态列表
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Recent Activity").font(.headline).padding(.horizontal)
-                        ForEach(MockFollowerListGenerator().generateUnfollows(count: 6)) { f in
+                        ForEach(unfollowList) { f in
                             HStack {
                                 ZStack {
-                                    Circle().fill(Color(hex: f.avatarColor) ?? .gray).frame(width: 36, height: 36)
+                                    Circle().fill(Color.gray.opacity(0.3)).frame(width: 36, height: 36)
                                     Text(String(f.displayName.prefix(1))).font(.caption).foregroundColor(.white)
                                 }
                                 VStack(alignment: .leading) {
@@ -96,8 +97,3 @@ struct FollowerDetailView: View {
     }
 }
 
-#Preview {
-    NavigationStack {
-        FollowerDetailView(currentFollowers: 12345, delta: 234, deltaPercent: 1.9, sparklineData: [90, 95, 102, 98, 105, 110, 108], accountName: "demo")
-    }
-}

@@ -48,7 +48,9 @@ struct SettingsView: View {
             .sheet(isPresented: $showAccountSheet) {
                 AccountView(viewModel: AccountViewModel(
                     accountRepo: appState.container.accountRepository,
-                    syncEngine: appState.container.syncEngine
+                    syncEngine: appState.container.syncEngine,
+                    apiClient: appState.container.apiClient,
+                    tokenProvider: appState.container.tokenProvider
                 ))
             }
         }

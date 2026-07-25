@@ -9,7 +9,7 @@ import SwiftUI
 /// 帖子列表行视图：缩略图占位 + 标题 + 日期 + 赞/评论/曝光统计
 struct PostRowView: View {
     /// 帖子数据模型
-    let post: MockPost
+    let post: MediaPost
 
     /// 水平布局：缩略图 | 标题+日期 | 三项互动统计
     var body: some View {
@@ -19,7 +19,7 @@ struct PostRowView: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color(hex: post.colorHex) ?? .gray)
                     .frame(width: 48, height: 48)
-                Image(systemName: post.type.rawValue)
+                Image(systemName: post.typeIconName)
                     .font(.caption)
                     .foregroundColor(.white)
             }
@@ -45,7 +45,7 @@ struct PostRowView: View {
                     Image(systemName: "text.bubble.fill").font(.caption2).foregroundColor(.blue)
                 }
                 VStack(spacing: 1) {
-                    Text(post.formattedReach).font(.caption).fontWeight(.medium)
+                    Text("").font(.caption).fontWeight(.medium)
                     Image(systemName: "eye.fill").font(.caption2).foregroundColor(.gray)
                 }
             }
