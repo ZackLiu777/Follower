@@ -35,9 +35,28 @@ struct IGInsightValue: Codable {
     let period: String?
     /// 时间序列数据点
     let values: [IGInsightDataPoint]?
+    /// 标量值（breakdown 格式的指标，如 audience_country）
+    let totalValue: IGInsightTotalValue?
 
     enum CodingKeys: String, CodingKey {
         case name, period, values
+        case totalValue = "total_value"
+    }
+}
+
+/// 标量值的 breakdown 结构
+struct IGInsightTotalValue: Codable {
+    let breakdowns: [IGInsightBreakdown]?
+}
+
+/// 单个 breakdown 条目：维度值 + 数值
+struct IGInsightBreakdown: Codable {
+    let dimensionValues: [String]?
+    let value: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case dimensionValues = "dimension_values"
+        case value
     }
 }
 

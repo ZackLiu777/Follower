@@ -49,7 +49,7 @@ private struct ContentViewInner: View {
             engagementHeatmapService: container.engagementHeatmapService
         ))
         _trendsVM = State(wrappedValue: TrendsViewModel(
-            snapshotRepo: container.snapshotRepository,
+            snapshotRepo: container.snapshotRepository, 
             metricRepo: container.metricRepository,
             accountRepo: container.accountRepository
         ))

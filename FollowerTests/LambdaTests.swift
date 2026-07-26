@@ -1,88 +1,100 @@
 //
 //  LambdaTests.swift
 //  FollowerTests
-
 //
-//  Step 1: Mock 生成器、Delta 计算、枚举验证
-//  Step 2: Post 模型、ID 唯一性
-//  Step 3: Premium 数据结构
-//  Step 4: TrendDataPoint 模型
+//  Lambda model tests: PostType, TrendDataPoint, MediaPost, UnfollowEntry, CommentItem.
+//
 
 import Testing
 import Foundation
 @testable import Follower
 
-/// Unit tests for mock generators, delta calculations, and model edge cases
 struct LambdaTests {
 
-    // MARK: - MockPostGenerator
+    // MARK: - PostType enum (from MockStubs, test compatibility)
 
-    /// MockPostGenerator 生成 count → 返回指定数量的 posts
     @Test
-    func testMockPostGeneratorCount() {
-        #expect(MockPostGenerator().generate(count: 5).count == 5)
-        #expect(MockPostGenerator().generate(count: 20).count == 20)
+    func testPostTypeAllCases() {
+        #expect(PostType.allCases.count == 3)
     }
 
-    /// MockPost 字段 → id、caption、colorHex 均非空
-    @Test
-    func testMockPostHasNonEmptyFields() {
-        for post in MockPostGenerator().generate(count: 3) {
-            #expect(!post.id.isEmpty)
-            #expect(!post.caption.isEmpty)
-            #expect(!post.colorHex.isEmpty)
-        }
-    }
+    // MARK: - MediaPost model
 
-    /// MockPost 排序 → 按 date 降序排列
     @Test
-    func testMockPostsSortedNewestFirst() {
-        let posts = MockPostGenerator().generate(count: 30)
-        for i in 0..<posts.count - 1 {
-            #expect(posts[i].date >= posts[i + 1].date)
-        }
-    }
-
-    /// MockPost 格式化 → formattedLikes 和 formattedReach 包含 "K"
-    @Test
-    func testMockPostFormattedValues() {
-        let p1 = MockPost(
-            id: "1",
-            type: .image,
-            date: Date(),
-            likes: 1500,
-            comments: 20,
-            reach: 5000,
-            saves: 10,
-            caption: "test",
-            colorHex: "#FF0000"
+    func testMediaPost_Fields() {
+        let post = MediaPost(
+            id: 1, igMediaID: "abc", type: .image,
+            date: Date(), likes: 1500, comments: 20,
+            caption: "Test post", mediaURL: nil, permalink: nil
         )
-
-        #expect(p1.formattedLikes.contains("K"))
-        #expect(p1.formattedReach.contains("K"))
+        #expect(post.id == 1)
+        #expect(post.igMediaID == "abc")
+        #expect(post.type == .image)
+        #expect(post.likes == 1500)
+        #expect(post.comments == 20)
+        #expect(!post.caption.isEmpty)
     }
 
-    // MARK: - MockFollowerListGenerator
-
-    /// MockFollowerListGenerator 生成 unfollows → 返回指定数量
     @Test
-    func testMockFollowerListCount() {
-        #expect(MockFollowerListGenerator().generateUnfollows(count: 4).count == 4)
+    func testMediaPost_FormattedLikes() {
+        let post = MediaPost(
+            id: 1, igMediaID: "a", type: .image,
+            date: Date(), likes: 1500, comments: 0,
+            caption: "", mediaURL: nil, permalink: nil
+        )
+        #expect(post.formattedLikes.contains("K"))
     }
 
-    /// MockFollowerList unfollows → isUnfollow 为 true 且 username/displayName 非空
     @Test
-    func testMockFollowerListAreUnfollows() {
-        for f in MockFollowerListGenerator().generateUnfollows(count: 5) {
-            #expect(f.isUnfollow)
-            #expect(!f.username.isEmpty)
-            #expect(!f.displayName.isEmpty)
-        }
+    func testMediaPost_TypeIconName() {
+        let image = MediaPost(id: 1, igMediaID: "a", type: .image, date: Date(), likes: 0, comments: 0, caption: "", mediaURL: nil, permalink: nil)
+        let video = MediaPost(id: 2, igMediaID: "b", type: .video, date: Date(), likes: 0, comments: 0, caption: "", mediaURL: nil, permalink: nil)
+        let carousel = MediaPost(id: 3, igMediaID: "c", type: .carousel, date: Date(), likes: 0, comments: 0, caption: "", mediaURL: nil, permalink: nil)
+
+        #expect(image.typeIconName == "photo")
+        #expect(video.typeIconName == "video.fill")
+        #expect(carousel.typeIconName == "square.on.square")
+    }
+
+    // MARK: - UnfollowEntry model
+
+    @Test
+    func testUnfollowEntry_Fields() {
+        let entry = UnfollowEntry(
+            id: "1", username: "test_user", displayName: "Test User",
+            date: Date(), isUnfollow: true
+        )
+        #expect(entry.id == "1")
+        #expect(entry.username == "test_user")
+        #expect(entry.displayName == "Test User")
+        #expect(entry.isUnfollow == true)
+    }
+
+    // MARK: - CommentItem model
+
+    @Test
+    func testCommentItem_Fields() {
+        let item = CommentItem(
+            id: "1", username: "test_user", text: "Great post!",
+            timestamp: Date(), isReplied: false
+        )
+        #expect(item.id == "1")
+        #expect(item.username == "test_user")
+        #expect(!item.text.isEmpty)
+        #expect(item.isReplied == false)
+    }
+
+    @Test
+    func testCommentItem_Replied() {
+        let replied = CommentItem(
+            id: "2", username: "fan", text: "Fire emoji",
+            timestamp: Date(), isReplied: true
+        )
+        #expect(replied.isReplied == true)
     }
 
     // MARK: - Follower delta logic
 
-    /// Delta 正增长 → 100 粉，增长率为 10%
     @Test
     func testFollowerDeltaPositive() {
         let delta = 1100 - 1000
@@ -90,73 +102,34 @@ struct LambdaTests {
         #expect(Double(delta) / 1000 * 100 == 10.0)
     }
 
-    /// Delta 负增长 → -100
     @Test
     func testFollowerDeltaNegative() {
         #expect(1000 - 1100 == -100)
     }
 
-    /// Delta 零增长 → 0
     @Test
     func testFollowerDeltaZero() {
         #expect(1000 - 1000 == 0)
     }
 
-    // MARK: - PostType enum
-
-    /// PostType allCases → 共 3 种类型
-    @Test
-    func testPostTypeAllCases() {
-        #expect(PostType.allCases.count == 3)
-    }
-
     // MARK: - TrendDataPoint
 
-    /// TrendDataPoint id → 等于 date
     @Test
     func testTrendDataPointIdentifiable() {
         let d = Date()
         #expect(TrendDataPoint(date: d, value: 100).id == d)
     }
 
-    // MARK: - Premium: delta percentage edge cases
+    // MARK: - Edge cases
 
-    /// 除零保护 → base 为 0 时返回 0
     @Test
     func testDeltaPercentWhenBaseIsZero() {
-        // first=0, latest=100 → would be division by zero
-        let pct: Double = 0 > 0 ? 100 / 0 : 0 // guard against div0
+        let pct: Double = 0 > 0 ? 100 / 0 : 0
         #expect(pct == 0)
     }
 
-    // MARK: - MockPost sort stability
-
-    /// MockPost ID 唯一性 → 20 个 post 有 20 个不同 ID
-    @Test
-    func testMockPostsAllHaveUniqueIDs() {
-        let posts = MockPostGenerator().generate(count: 20)
-        let ids = Set(posts.map(\.id))
-        #expect(ids.count == 20)
-    }
-
-    // MARK: - MockFollower display name
-
-    /// MockFollower displayName → trim 后非空
-    @Test
-    func testMockFollowerDisplayNameNotEmpty() {
-        for f in MockFollowerListGenerator().generateUnfollows(count: 3) {
-            #expect(!f.displayName.trimmingCharacters(in: .whitespaces).isEmpty)
-        }
-    }
-
-    // MARK: - DashboardViewModel initial state (SyncEngine=actor, tested via UI)
-
-    /// DashboardViewModel 默认值 → placeholder test，VM 由 UI 测试覆盖
     @Test
     func testDashboardVMPublishedDefaults() {
-        // VM can't be tested with real SyncEngine (actor crash in XCTest).
-        // Default @Published values verified syntactically correct above.
-        // Integration covered by UI tests (PremiumUITests).
-        #expect(true) // placeholder — VM tested via UI
+        #expect(true)
     }
 }

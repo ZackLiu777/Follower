@@ -537,7 +537,56 @@ struct PremiumServicesTests {
         }
     }
 
+
+    /// countryInfo 映射 — US → 🇺🇸
+    @Test
+    func testCountryInfo_US() {
+        let info = GeoDistributionService.countryInfo(for: "US")
+        #expect(info.name == "United States")
+        #expect(info.flag == "🇺🇸")
+    }
+
+    /// countryInfo 映射 — JP → 🇯🇵
+    @Test
+    func testCountryInfo_JP() {
+        let info = GeoDistributionService.countryInfo(for: "JP")
+        #expect(info.name == "Japan")
+        #expect(info.flag == "🇯🇵")
+    }
+
+    /// countryInfo 映射 — 未知代码 → 🌐
+    @Test
+    func testCountryInfo_Unknown() {
+        let info = GeoDistributionService.countryInfo(for: "XX")
+        #expect(info.name == "XX")
+        #expect(info.flag == "🌐")
+    }
+
+    /// countryInfo 映射 — 大小写不敏感
+    @Test
+    func testCountryInfo_CaseInsensitive() {
+        let info = GeoDistributionService.countryInfo(for: "gb")
+        #expect(info.name == "United Kingdom")
+        #expect(info.flag == "🇬🇧")
+    }
+
+    /// fallbackRegions 返回 9 个地区
+    @Test
+    func testFallbackRegions_CountIsNine() {
+        let result = GeoDistributionService.fallbackRegions()
+        #expect(result.totalRegions == 9)
+        #expect(result.regions.count == 9)
+    }
+
+    /// fallbackRegions topRegion 为 United States
+    @Test
+    func testFallbackRegions_TopRegionIsUS() {
+        let result = GeoDistributionService.fallbackRegions()
+        #expect(result.topRegion?.name == "United States")
+    }
+
     // MARK: - AIAnalysisService
+
 
     /// 增长趋势 → 应返回包含 summary 的洞察
     @MainActor

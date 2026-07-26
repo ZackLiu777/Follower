@@ -624,7 +624,7 @@ private struct PremiumInsightsSection: View {
         case 12: CampaignDetailView(result: viewModel.campaignResult)
         case 13: HeatmapDetailView(result: viewModel.heatmapResult)
         case 14: ContentSchedulingDetailView(activityResult: viewModel.activityResult)
-        case 15: CommentManagementDetailView()
+        case 15: CommentManagementDetailView(comments: [])
         default: EmptyView()
         }
     }

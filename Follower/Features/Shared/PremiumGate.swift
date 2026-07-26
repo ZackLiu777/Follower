@@ -3,9 +3,8 @@
 //  Follower
 //
 //  Premium 功能门控组件。
-//  - 试用期间：显示完整功能 + "Trial" 标记
-//  - 试用结束后：仍显示按钮，但点击展示升级提示
-//  - 不阻塞基础功能
+//  - Dashboard 卡片点击：sheet 75% 高度，下滑关闭
+//  - Decisions Tab：全屏铺满 UpgradePromptView
 //
 
 import SwiftUI
@@ -17,19 +16,14 @@ struct PremiumGateModifier: ViewModifier {
     @Environment(AppState.self) private var appState
     @State private var showUpgradePrompt: Bool = false
 
-    /// 同步读取 Premium 解锁状态 — 解锁后立即反映，无异步延迟
     private var isEnabled: Bool {
         appState.premiumEnabledFlags[featureKey.rawValue] ?? false
     }
 
-    /// 包裹原始 content，未解锁时加锁图标、试用中加 Trial 标签、点击触发升级弹窗
     func body(content: Content) -> some View {
         Button {
-            if isEnabled {
-                // Feature enabled — no action
-            } else {
-                showUpgradePrompt = true
-            }
+            if isEnabled { return }
+            showUpgradePrompt = true
         } label: {
             content
                 .overlay(alignment: .topTrailing) {
@@ -43,10 +37,10 @@ struct PremiumGateModifier: ViewModifier {
         .buttonStyle(.plain)
         .sheet(isPresented: $showUpgradePrompt) {
             UpgradePromptView(featureKey: featureKey)
+                .presentationDetents([.fraction(0.75)])
         }
     }
 
-    /// 锁图标徽章 — 表示该功能需 Premium 解锁
     private var premiumLockBadge: some View {
         Image(systemName: "lock.fill")
             .font(.caption2)
@@ -57,7 +51,6 @@ struct PremiumGateModifier: ViewModifier {
             .padding(6)
     }
 
-    /// 试用中标签 — 橙色 Capsule 提示当前处于试用期
     private var trialBadge: some View {
         Text(loc(L10n.Premium.trialBadge))
             .font(.system(size: 8, weight: .bold))
@@ -68,25 +61,18 @@ struct PremiumGateModifier: ViewModifier {
             .clipShape(Capsule())
             .padding(4)
     }
-
 }
 
 // MARK: - PremiumBadge
 
-/// Premium 功能标记（列表/卡片中使用）
 struct PremiumBadge: View {
-    /// 橙色→粉色渐变 PREMIUM 标签
     var body: some View {
         Text("PREMIUM")
             .font(.system(size: 8, weight: .bold))
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
             .background(
-                LinearGradient(
-                    colors: [.orange, .pink],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
+                LinearGradient(colors: [.orange, .pink], startPoint: .leading, endPoint: .trailing)
             )
             .foregroundColor(.white)
             .clipShape(Capsule())
@@ -96,7 +82,6 @@ struct PremiumBadge: View {
 // MARK: - View Extension
 
 extension View {
-    /// 为 Premium 功能添加门控
     func premiumGate(feature: PremiumFeatureKey) -> some View {
         modifier(PremiumGateModifier(featureKey: feature))
     }
@@ -104,96 +89,119 @@ extension View {
 
 // MARK: - UpgradePromptView
 
-/// 升级提示页，试用结束或点击锁定功能时弹出
 struct UpgradePromptView: View {
     let featureKey: PremiumFeatureKey
     @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var appState
+    @Environment(\.theme) private var theme
 
-    /// 升级页布局：皇冠图标 → 功能名称 → 权益列表 → 升级按钮（或试用提示）
+    /// 当前 Premium 功能列表
+    private let premiumFeatures: [(icon: String, name: String)] = [
+        ("chart.line.uptrend.xyaxis", "Trend Prediction & Growth Forecast"),
+        ("bolt.fill", "Activity & Retention Analysis"),
+        ("star.fill", "Engagement Quality Scoring"),
+        ("globe.asia.australia.fill", "Geo Distribution"),
+        ("checkmark.shield", "Authenticity Assessment"),
+        ("calendar.badge.clock", "Best Time to Post (Heatmap)"),
+        ("arrow.left.arrow.right", "Campaign Tracking"),
+        ("sparkle.magnifyingglass", "Growth Decisions Engine"),
+        ("bubble.left.and.bubble.right", "Comment Management"),
+        ("doc.richtext.fill", "Media Kit Export"),
+    ]
+
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                Image(systemName: "crown.fill")
-                    .font(.system(size: 56))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.orange, .pink],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
+        VStack(spacing: 0) {
+            // 下滑指示条
+            RoundedRectangle(cornerRadius: 2.5)
+                .fill(theme.divider)
+                .frame(width: 36, height: 5)
+                .padding(.top, 12)
+                .padding(.bottom, 20)
+
+            // 皇冠图标
+            Image(systemName: "crown.fill")
+                .font(.system(size: 48))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [theme.chartBarGradientStart, theme.chartBarGradientEnd],
+                        startPoint: .leading, endPoint: .trailing
                     )
-                    .padding(.top, 40)
+                )
+                .padding(.bottom, 16)
 
-                Text(loc(L10n.Premium.premiumFeature))
-                    .font(.title2)
-                    .fontWeight(.bold)
+            // 标题
+            Text(loc(L10n.Premium.premiumFeature))
+                .font(.title2).fontWeight(.bold)
+                .foregroundColor(theme.textPrimary)
+                .padding(.bottom, 4)
 
-                Text(featureKey.displayName)
-                    .font(.headline)
-                    .foregroundColor(.accentColor)
+            Text(featureKey.displayName)
+                .font(.subheadline)
+                .foregroundColor(theme.accentPrimary)
+                .padding(.bottom, 24)
 
-                VStack(alignment: .leading, spacing: 12) {
-                    premiumBenefit(loc(L10n.Premium.benefit1))
-                    premiumBenefit(loc(L10n.Premium.benefit2))
-                    premiumBenefit(loc(L10n.Premium.benefit3))
-                    premiumBenefit(loc(L10n.Premium.benefit4))
-                    premiumBenefit(loc(L10n.Premium.benefit5))
-                }
-                .padding(.horizontal)
-
-                Spacer()
-
-                VStack(spacing: 12) {
-                    if appState.isTrialActive {
-                        Text(loc(L10n.Premium.trialActive))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    } else {
-                        Button {
-                            dismiss()
-                        } label: {
-                            Text(loc(L10n.Premium.upgradeTo))
-                                .fontWeight(.semibold)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(
-                                    LinearGradient(
-                                        colors: [.orange, .pink],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .foregroundColor(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+            // Premium 功能卡片列表
+            ScrollView {
+                LazyVGrid(
+                    columns: [GridItem(.flexible()), GridItem(.flexible())],
+                    spacing: 10
+                ) {
+                    ForEach(premiumFeatures, id: \.icon) { feature in
+                        VStack(spacing: 8) {
+                            Image(systemName: feature.icon)
+                                .font(.title3)
+                                .foregroundColor(theme.accentPrimary)
+                            Text(feature.name)
+                                .font(.system(size: 10))
+                                .foregroundColor(theme.textSecondary)
+                                .multilineTextAlignment(.center)
+                                .lineLimit(2)
                         }
-                        .padding(.horizontal)
-
-                        Text(loc(L10n.Premium.comingSoon))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                        .padding(10)
+                        .frame(maxWidth: .infinity, minHeight: 72)
+                        .background(theme.cardSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }
-                .padding(.bottom, 30)
+                .padding(.horizontal, 20)
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(loc(L10n.Premium.close)) { dismiss() }
+            .frame(maxHeight: 280)
+
+            Spacer()
+
+            // 底部操作区
+            VStack(spacing: 12) {
+                if appState.isTrialActive {
+                    Text(loc(L10n.Premium.trialActive))
+                        .font(.caption).foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                } else {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text(loc(L10n.Premium.upgradeTo))
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                LinearGradient(
+                                    colors: [theme.chartBarGradientStart, theme.chartBarGradientEnd],
+                                    startPoint: .leading, endPoint: .trailing
+                                )
+                            )
+                            .foregroundColor(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    .padding(.horizontal, 20)
+
+                    Text(loc(L10n.Premium.comingSoon))
+                        .font(.caption).foregroundColor(.secondary)
                 }
             }
+            .padding(.bottom, 30)
         }
-    }
-
-    /// 单条权益行 — 绿色对勾 + 文字描述
-    private func premiumBenefit(_ text: String) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
-                .font(.caption)
-            Text(text)
-                .font(.subheadline)
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(theme.backgroundGradientStart)
     }
 }
 
