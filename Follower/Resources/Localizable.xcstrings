@@ -757,6 +757,12 @@
     "Churn Risk Level" : {
 
     },
+    "Client ID (App ID)" : {
+
+    },
+    "Client Secret" : {
+
+    },
     "common.cancel" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -961,6 +967,9 @@
       }
     },
     "Comparison data will appear here once enough historical data is recorded." : {
+
+    },
+    "Connecting..." : {
 
     },
     "dashboard.accountType" : {
@@ -3550,7 +3559,10 @@
     "How each interaction type contributes to your quality score" : {
 
     },
-    "Instagram API" : {
+    "Login with Instagram" : {
+
+    },
+    "Login with your Instagram account via Meta OAuth." : {
 
     },
     "Mock Content" : {
@@ -3600,7 +3612,10 @@
         }
       }
     },
-    "Paste your Instagram Graph API access token." : {
+    "OAuth" : {
+
+    },
+    "Paste your Instagram access token directly." : {
 
     },
     "Post Detail" : {
@@ -8519,9 +8534,6 @@
     "Quality scores will appear here once enough engagement data is recorded." : {
 
     },
-    "Quick Test" : {
-
-    },
     "Recent Activity" : {
 
     },
@@ -8553,6 +8565,9 @@
           }
         }
       }
+    },
+    "Redirect URI" : {
+
     },
     "Retention data will appear here once enough snapshots are recorded." : {
 
@@ -9634,6 +9649,12 @@
       }
     },
     "Take action" : {
+
+    },
+    "Test" : {
+
+    },
+    "Token" : {
 
     },
     "Top Region" : {

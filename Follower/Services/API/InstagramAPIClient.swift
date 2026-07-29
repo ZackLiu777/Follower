@@ -37,6 +37,9 @@ final class InstagramAPIClient: InstagramAPIClientProtocol {
 
     func fetchProfile(accessToken: String) async throws -> IGUser {
         let url = "\(baseURL)/me?fields=id,username,name,followers_count,follows_count,media_count&access_token=\(accessToken)"
+        #if DEBUG
+        print("[APIClient] fetchProfile URL length: \(url.count), token length: \(accessToken.count)")
+        #endif
         return try await get(url)
     }
 
