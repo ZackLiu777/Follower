@@ -2,57 +2,51 @@
 //  AccountViewModel.swift
 //  Follower
 //
-//  账号管理 ViewModel。
-//  负责：
-//  - 登录与账号绑定
-//  - 账号列表管理
-//  - 撤销授权
-//  Alpha 阶段使用模拟登录。
+//  账号管理 ViewModel — Instagram token 连接 / 撤销 / 删除。
 //
 
 import Foundation
 import SwiftUI
-import Combine
 
-/// 账号管理 ViewModel — 添加 / 撤销 / 删除账号（Alpha 阶段使用模拟登录）
 @MainActor
 @Observable
 final class AccountViewModel {
-    // MARK: - Dependencies
-
+    enum AddMode: String, Hashable {
+        case token
+        case manual
+    }
     private let accountRepo: AccountRepositoryProtocol
     private let syncEngine: SyncEngineProtocol
-
-    // MARK: - Published State
+    private let apiClient: InstagramAPIClientProtocol
+    private let tokenProvider: TokenProviderProtocol
 
     var accounts: [Account] = []
+    var isLoading: Bool = false
+    var isConnecting: Bool = false
     var isAddingAccount: Bool = false
-    var selectedPlatform: Platform = .instagram
+    var addMode: AddMode = .token
     var username: String = ""
     var displayName: String = ""
-
-    var isLoading: Bool = false
     var errorMessage: String?
     var shouldDismiss: Bool = false
 
-    // MARK: - Init
-
-    /// 注入依赖：AccountRepo / SyncEngine
     init(
         accountRepo: AccountRepositoryProtocol,
-        syncEngine: SyncEngineProtocol
+        syncEngine: SyncEngineProtocol,
+        apiClient: InstagramAPIClientProtocol,
+        tokenProvider: TokenProviderProtocol
     ) {
         self.accountRepo = accountRepo
         self.syncEngine = syncEngine
+        self.apiClient = apiClient
+        self.tokenProvider = tokenProvider
     }
 
     // MARK: - Public
 
-    /// 加载所有已连接账号
     func loadAccounts() async {
         isLoading = true
         defer { isLoading = false }
-
         do {
             accounts = try await accountRepo.fetchAll()
         } catch {
@@ -60,42 +54,59 @@ final class AccountViewModel {
         }
     }
 
-    /// 添加账号（Alpha 阶段模拟绑定）
-    func addAccount() async {
-        guard !username.isEmpty, !displayName.isEmpty else {
-            errorMessage = loc(L10n.Account.requiredFields)
+    /// 用 Instagram access token 连接账号
+    func connectWithToken(_ token: String) async {
+        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            errorMessage = "Please enter a valid access token."
             return
         }
 
-        isLoading = true
-        defer {
-            isLoading = false
-            isAddingAccount = false
-        }
+        isConnecting = true
+        defer { isConnecting = false }
 
         do {
+            // 1. 验证 token：调 /me
+            let user = try await apiClient.fetchProfile(accessToken: trimmed)
+
+            // 2. 创建 Account（真实数据）
             let account = Account(
-                platform: selectedPlatform,
-                username: username,
-                displayName: displayName,
+                platform: .instagram,
+                username: user.username,
+                displayName: user.name ?? user.username,
                 authState: .authorized,
                 createdAt: Date(),
                 updatedAt: Date()
             )
-            _ = try await accountRepo.insert(account)
+            let saved = try await accountRepo.insert(account)
+            guard let accountId = saved.id else {
+                errorMessage = "Failed to save account."
+                return
+            }
 
-            username = ""
-            displayName = ""
+            // 3. Token 存 Keychain
+            try await tokenProvider.storeToken(accountId: accountId, accessToken: trimmed)
+
+            // 4. 首次全量同步
+            do {
+                _ = try await syncEngine.sync(accountId: accountId)
+            } catch {
+                // 同步失败不阻塞（可能是网络问题）
+            }
+
             await loadAccounts()
+            NotificationCenter.default.post(name: .accountCreated, object: nil)
             shouldDismiss = true
+        } catch let error as APIError {
+            errorMessage = error.localizedDescription
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
-    /// 撤销授权（用户权利）
     func revokeAccount(_ id: Int64) async {
         do {
+            try? await tokenProvider.deleteToken(accountId: id)
             var account = try await accountRepo.fetch(id: id)
             account?.authState = .revoked
             if var updated = account {
@@ -107,11 +118,38 @@ final class AccountViewModel {
         }
     }
 
-    /// 删除账号
     func deleteAccount(_ id: Int64) async {
         do {
+            try? await tokenProvider.deleteToken(accountId: id)
             try await accountRepo.delete(id: id)
             await loadAccounts()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// 手动创建测试账号（无 token，用于验证空状态 UI）
+    func addAccount() async {
+        guard !username.isEmpty, !displayName.isEmpty else { return }
+
+        isLoading = true
+        defer { isLoading = false; isAddingAccount = false }
+
+        do {
+            let account = Account(
+                platform: .instagram,
+                username: username,
+                displayName: displayName,
+                authState: .authorized,
+                createdAt: Date(),
+                updatedAt: Date()
+            )
+            _ = try await accountRepo.insert(account)
+            username = ""
+            displayName = ""
+            await loadAccounts()
+            NotificationCenter.default.post(name: .accountCreated, object: nil)
+            shouldDismiss = true
         } catch {
             errorMessage = error.localizedDescription
         }

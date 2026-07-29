@@ -57,18 +57,7 @@ struct EngagementDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .padding(.horizontal)
 
-                    // Mock 每日互动柱状图
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Daily Engagement").font(.headline).padding(.horizontal)
-                        Chart {
-                            ForEach(Array(MockEngagementGenerator.daily().enumerated()), id: \.0) { i, val in
-                                BarMark(x: .value("", i), y: .value("", val))
-                                    .foregroundStyle(theme.accentPrimary.opacity(0.6))
-                            }
-                        }
-                        .frame(height: 160)
-                        .padding(.horizontal)
-                    }
+
                 }
                 .padding(.vertical)
             }
@@ -97,13 +86,6 @@ struct EngagementDetailView: View {
     }
 }
 
-/// 生成每日 Mock 互动率数据的辅助枚举
-private enum MockEngagementGenerator {
-    /// 返回 7 天随机互动率数组
-    static func daily() -> [Double] {
-        (0..<7).map { _ in Double.random(in: 0.01...0.08) }
-    }
-}
 
 #Preview {
     NavigationStack {

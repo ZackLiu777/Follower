@@ -499,17 +499,26 @@ struct ContentSchedulingDetailView: View {
     }
 }
 
-// MARK: - 评论管理详情（Alpha 保留 UI 壳，实际对接 Instagram API 后续实现）
+// MARK: - 评论管理详情
+
+/// 单条评论数据
+struct CommentItem: Identifiable, Sendable {
+    let id: String
+    let username: String
+    let text: String
+    let timestamp: Date
+    let isReplied: Bool
+}
 
 struct CommentManagementDetailView: View {
     @Environment(\.theme) private var theme
+    let comments: [CommentItem]
 
-    private let pendingComments: [(user: String, comment: String, hoursAgo: Int)] = [
-        ("@fan_account", "Love this post! 🔥", 2),
-        ("@new_follower", "What camera do you use?", 8),
-        ("@collab_brand", "DM us for partnership 🤝", 23),
-        ("@regular_viewer", "Post more reels please!", 26),
-    ]
+    private var pendingCount: Int { comments.filter { !$0.isReplied }.count }
+    private var repliedCount: Int { comments.filter { $0.isReplied }.count }
+    private var over24hCount: Int {
+        comments.filter { !$0.isReplied && Date().timeIntervalSince($0.timestamp) > 86400 }.count
+    }
 
     var body: some View {
         ZStack {
@@ -518,43 +527,63 @@ struct CommentManagementDetailView: View {
                 startPoint: .top, endPoint: .bottom
             ).ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: 20) {
-                    HStack(spacing: 20) {
-                        statBadge(count: "4", label: loc(L10n.Premium.pending), color: theme.warningOrange)
-                        statBadge(count: "2", label: loc(L10n.Premium.over24h), color: theme.negativeRed)
-                        statBadge(count: "12", label: loc(L10n.Premium.replied), color: theme.positiveGreen)
-                    }
-                    .padding(.horizontal)
-
-                    ForEach(pendingComments, id: \.user) { item in
-                        HStack(alignment: .top, spacing: 12) {
-                            Circle().fill(theme.accentPrimary.opacity(0.1)).frame(width: 36, height: 36)
-                                .overlay {
-                                    Text(String(item.user.prefix(1))).font(.caption).fontWeight(.bold)
-                                        .foregroundColor(theme.accentPrimary)
-                                }
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack {
-                                    Text(item.user).font(.subheadline).fontWeight(.semibold)
-                                    Spacer()
-                                    Text(String(format: loc(L10n.Premium.hoursAgo), item.hoursAgo))
-                                        .font(.caption2)
-                                        .foregroundColor(item.hoursAgo >= 24 ? theme.negativeRed : .secondary)
-                                }
-                                Text(item.comment).font(.subheadline).foregroundColor(.primary)
-                            }
+            if comments.isEmpty {
+                ContentUnavailableView(
+                    loc(L10n.Premium.commentManagement),
+                    systemImage: "bubble.left.and.bubble.right",
+                    description: Text(loc(L10n.Premium.commentMgmtDesc))
+                )
+            } else {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // 统计徽章
+                        HStack(spacing: 20) {
+                            statBadge(count: "\(pendingCount)", label: loc(L10n.Premium.pending), color: theme.warningOrange)
+                            statBadge(count: "\(over24hCount)", label: loc(L10n.Premium.over24h), color: theme.negativeRed)
+                            statBadge(count: "\(repliedCount)", label: loc(L10n.Premium.replied), color: theme.positiveGreen)
                         }
-                        .padding().background(.regularMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12)).padding(.horizontal)
-                    }
+                        .padding(.horizontal)
 
-                    Text(loc(L10n.Premium.commentMgmtDesc))
-                        .font(.caption).foregroundColor(.secondary).padding(.horizontal)
+                        // 评论列表
+                        ForEach(comments) { item in
+                            HStack(alignment: .top, spacing: 12) {
+                                Circle()
+                                    .fill(item.isReplied ? theme.positiveGreen.opacity(0.2) : theme.accentPrimary.opacity(0.1))
+                                    .frame(width: 36, height: 36)
+                                    .overlay {
+                                        Text(String(item.username.prefix(1).uppercased()))
+                                            .font(.caption).fontWeight(.bold)
+                                            .foregroundColor(item.isReplied ? theme.positiveGreen : theme.accentPrimary)
+                                    }
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack {
+                                        Text("@\(item.username)").font(.subheadline).fontWeight(.semibold)
+                                        Spacer()
+                                        if item.isReplied {
+                                            Label(loc(L10n.Premium.replied), systemImage: "checkmark.circle.fill")
+                                                .font(.caption2).foregroundColor(theme.positiveGreen)
+                                        } else {
+                                            Text(timeAgo(from: item.timestamp))
+                                                .font(.caption2)
+                                                .foregroundColor(
+                                                    Date().timeIntervalSince(item.timestamp) > 86400
+                                                        ? theme.negativeRed : .secondary
+                                                )
+                                        }
+                                    }
+                                    Text(item.text).font(.subheadline).foregroundColor(.primary)
+                                }
+                            }
+                            .padding()
+                            .background(.regularMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .padding(.horizontal)
+                        }
+                    }
+                    .padding(.vertical)
                 }
-                .padding(.vertical)
+                .scrollContentBackground(.hidden)
             }
-            .scrollContentBackground(.hidden)
         }
         .navigationTitle(loc(L10n.Premium.commentManagement))
         .navigationBarTitleDisplayMode(.inline)
@@ -569,28 +598,12 @@ struct CommentManagementDetailView: View {
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
+
+    private func timeAgo(from date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        if interval < 3600 { return "\(Int(interval / 60))m ago" }
+        if interval < 86400 { return "\(Int(interval / 3600))h ago" }
+        return "\(Int(interval / 86400))d ago"
+    }
 }
 
-// MARK: - Previews
-
-#Preview("Competitor") {
-    NavigationStack { CompetitorDetailView(comparisonResult: nil) }
-}
-#Preview("Authenticity") {
-    NavigationStack { AuthenticityDetailView(result: nil) }
-}
-#Preview("Media Kit") {
-    NavigationStack { MediaKitDetailView() }
-}
-#Preview("Campaign") {
-    NavigationStack { CampaignDetailView(result: nil) }
-}
-#Preview("Heatmap") {
-    NavigationStack { HeatmapDetailView(result: nil) }
-}
-#Preview("Scheduling") {
-    NavigationStack { ContentSchedulingDetailView(activityResult: nil) }
-}
-#Preview("Comments") {
-    NavigationStack { CommentManagementDetailView() }
-}

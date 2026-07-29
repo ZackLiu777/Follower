@@ -2,14 +2,16 @@
 //  AccountView.swift
 //  Follower
 //
-//  账号管理页面。Beta: 全部文案本地化。
+//  账号管理页面 — Instagram Token 连接 / 手动创建 / 撤销 / 删除。
+//
 
 import SwiftUI
 
-/// 账号管理页面 — 连接 / 撤销 / 删除 Instagram 账号
 struct AccountView: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var viewModel: AccountViewModel
+
+    @State private var accessToken: String = ""
 
     var body: some View {
         NavigationStack {
@@ -31,10 +33,12 @@ struct AccountView: View {
                         Text(loc(L10n.Account.connectedAccounts))
                     }
                 }
+
                 // MARK: 添加新账号
                 Section {
-                    if viewModel.isAddingAccount { addAccountForm }
-                    else {
+                    if viewModel.isAddingAccount {
+                        addAccountForm
+                    } else {
                         Button { viewModel.isAddingAccount = true } label: {
                             Label(loc(L10n.Account.connectNew), systemImage: "plus.circle.fill")
                         }
@@ -42,7 +46,11 @@ struct AccountView: View {
                 } header: {
                     Text(viewModel.isAddingAccount ? loc(L10n.Account.addAccount) : loc(L10n.Account.connectNew))
                 } footer: {
-                    Text(loc(L10n.Account.footerHint))
+                    if let error = viewModel.errorMessage {
+                        Text(error).foregroundColor(.red).font(.caption)
+                    } else {
+                        Text(loc(L10n.Account.footerHint))
+                    }
                 }
             }
             .navigationTitle(loc(L10n.Account.title))
@@ -53,21 +61,35 @@ struct AccountView: View {
                             viewModel.isAddingAccount = false
                             viewModel.username = ""
                             viewModel.displayName = ""
+                            viewModel.addMode = .manual
                         }
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if viewModel.isAddingAccount {
-                        Button {
-                            Task { await viewModel.addAccount() }
-                        } label: {
-                            if viewModel.isLoading {
-                                ProgressView()
-                            } else {
-                                Text(loc(L10n.Account.connect)).fontWeight(.semibold)
+                        if viewModel.addMode == .token {
+                            Button {
+                                Task { await viewModel.connectWithToken(accessToken) }
+                            } label: {
+                                if viewModel.isConnecting {
+                                    ProgressView()
+                                } else {
+                                    Text(loc(L10n.Account.connect)).fontWeight(.semibold)
+                                }
                             }
+                            .disabled(accessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isConnecting)
+                        } else {
+                            Button {
+                                Task { await viewModel.addAccount() }
+                            } label: {
+                                if viewModel.isLoading {
+                                    ProgressView()
+                                } else {
+                                    Text(loc(L10n.Account.connect)).fontWeight(.semibold)
+                                }
+                            }
+                            .disabled(viewModel.username.isEmpty || viewModel.displayName.isEmpty || viewModel.isLoading)
                         }
-                        .disabled(viewModel.username.isEmpty || viewModel.displayName.isEmpty || viewModel.isLoading)
                     } else {
                         Button(loc(L10n.Common.done)) { dismiss() }
                     }
@@ -80,7 +102,40 @@ struct AccountView: View {
         }
     }
 
-    /// 单行账号信息 — 头像 + 用户名 + 认证状态 badge
+    // MARK: - Add Account Form
+
+    private var addAccountForm: some View {
+        Group {
+            // 模式切换
+            Picker("Mode", selection: $viewModel.addMode) {
+                Text("Instagram API").tag(AccountViewModel.AddMode.token)
+                Text("Quick Test").tag(AccountViewModel.AddMode.manual)
+            }
+            .pickerStyle(.segmented)
+
+            if viewModel.addMode == .token {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Paste your Instagram Graph API access token.")
+                        .font(.caption).foregroundColor(.secondary)
+                    SecureField("Access Token (IGAA...)", text: $accessToken)
+                        .textContentType(.password)
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                        .font(.caption)
+                }
+            } else {
+                Group {
+                    TextField(loc(L10n.Account.username), text: $viewModel.username)
+                        .textContentType(.username).autocapitalization(.none)
+                    TextField(loc(L10n.Account.displayName), text: $viewModel.displayName)
+                        .textContentType(.name)
+                }
+            }
+        }
+    }
+
+    // MARK: - Account Row
+
     @ViewBuilder
     private func accountRow(_ account: Account) -> some View {
         HStack {
@@ -104,17 +159,6 @@ struct AccountView: View {
         }
     }
 
-    /// 添加账号表单 — 用户名 + 显示名输入
-    private var addAccountForm: some View {
-        Group {
-            TextField(loc(L10n.Account.username), text: $viewModel.username)
-                .textContentType(.username).autocapitalization(.none)
-            TextField(loc(L10n.Account.displayName), text: $viewModel.displayName)
-                .textContentType(.name)
-        }
-    }
-
-    /// 将 AuthState 转换为本地化显示字符串
     private func authDisplayName(_ state: AuthState) -> String {
         switch state {
         case .authorized: return loc(L10n.Account.authorized)
@@ -122,13 +166,6 @@ struct AccountView: View {
         case .revoked: return loc(L10n.Account.revoked)
         }
     }
-}
-
-#Preview {
-    AccountView(viewModel: AccountViewModel(
-        accountRepo: PreviewMocks.accountRepo,
-        syncEngine: PreviewMocks.syncEngine
-    ))
 }
 
 #if DEBUG
@@ -140,6 +177,12 @@ private enum PreviewMocks {
     static let metricRepo = MetricRepository(db: db)
     static let aggregationService = AggregationService(eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo)
     static let ingestionService = IngestionService(eventRepo: eventRepo, aggregationService: aggregationService)
-    static let syncEngine = SyncEngine(eventRepo: eventRepo, accountRepo: accountRepo, ingestionService: ingestionService)
+    static let apiClient = InstagramAPIClient()
+    static let tokenProvider = TokenProvider()
+    static let syncEngine = SyncEngine(
+        eventRepo: eventRepo, accountRepo: accountRepo,
+        ingestionService: ingestionService,
+        apiClient: apiClient, tokenProvider: tokenProvider
+    )
 }
 #endif

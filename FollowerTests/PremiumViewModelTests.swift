@@ -48,6 +48,9 @@ final class MockSyncEngine: SyncEngineProtocol {
     func syncStatus(accountId: Int64) async -> SyncStatus {
         SyncStatus(state: .idle, accountId: accountId)
     }
+    func fetchRecentMedia(accountId: Int64, limit: Int) async throws -> [MediaPost] {
+        []
+    }
 }
 
 /// Mock MockEventRepository — 可预设事件列表，用于隔离数据库依赖

@@ -14,10 +14,7 @@ struct PredictionDetailView: View {
     /// 预测下月粉丝数
     let predicted: Int
 
-    /// 90 天 Mock 历史数据（缓慢增长 + 随机波动）
-    private var historical: [Double] {
-        (0..<90).map { Double(10000 + Int.random(in: -50...100) + $0 * 15) }
-    }
+    let historical: [Double]
 
     /// 预测数值卡片 + 历史趋势曲线 + 说明文字 UI
     var body: some View {

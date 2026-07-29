@@ -11,7 +11,7 @@ struct UnfollowListView: View {
     @Environment(\.theme) private var theme
 
     /// 取关用户数据列表
-    let followers: [MockFollower]
+    let followers: [UnfollowEntry]
 
     /// 取关用户列表：头像圆圈 + 用户名 + 取关日期
     var body: some View {
@@ -26,7 +26,7 @@ struct UnfollowListView: View {
                 HStack {
                     // 头像圆圈（首字母 + 背景色）
                     ZStack {
-                        Circle().fill(Color(hex: f.avatarColor) ?? .gray).frame(width: 44, height: 44)
+                        Circle().fill(Color.gray.opacity(0.3)).frame(width: 44, height: 44)
                         Text(String(f.displayName.prefix(1))).font(.headline).foregroundColor(.white)
                     }
                     // 用户名

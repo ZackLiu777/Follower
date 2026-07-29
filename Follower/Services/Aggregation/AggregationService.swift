@@ -120,7 +120,7 @@ final class AggregationService: AggregationServiceProtocol {
                     cur.followers = point.followersCount
                     cur.following = point.followingCount
                     cur.media = point.mediaCount
-                    // likes/comments/shares/views NOT touched — only profileSnapshot sets these
+                    cur.views = point.totalViews
                     cur.engagementRate = point.engagementRate
                 }
             default:

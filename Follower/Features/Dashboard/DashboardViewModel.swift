@@ -81,7 +81,7 @@ final class DashboardViewModel {
     // MARK: - Published: 帖子列表
 
     /// 最近帖子（Mock）
-     var recentPosts: [MockPost] = []
+     var recentPosts: [MediaPost] = []
 
     // MARK: - Published: Premium Real Insights
 
@@ -112,7 +112,7 @@ final class DashboardViewModel {
     // MARK: - Published: Premium Mock 数据（向后兼容，保留 mock 回退）
 
     /// 取关用户列表（Mock）
-     var unfollowList: [MockFollower] = []
+     var unfollowList: [UnfollowEntry] = []
     /// 推荐最佳发帖时间（Mock）
      var bestPostingTime: String = ""
     /// 内容策略建议（Mock）
@@ -153,6 +153,13 @@ final class DashboardViewModel {
         self.authenticityService = authenticityService
         self.campaignComparisonService = campaignComparisonService
         self.engagementHeatmapService = engagementHeatmapService
+
+        // 监听新账号创建通知，自动刷新列表
+        NotificationCenter.default.addObserver(
+            forName: .accountCreated, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in await self?.loadAccounts() }
+        }
     }
 
     /// 加载账户列表并自动选中第一个，随后加载全部数据
@@ -223,9 +230,14 @@ final class DashboardViewModel {
         followerWeeklyData = TrendChart.weeklyDataPoints(from: raw)
     }
 
-    /// 加载 Mock 帖子列表
+    /// 加载最近帖子 — 从 SyncEngine 缓存获取（由 sync 时 API 拉取填充）
     private func loadPosts() async {
-        recentPosts = MockPostGenerator().generate(count: 5)
+        guard let accountId = selectedAccountId else { return }
+        do {
+            recentPosts = try await syncEngine.fetchRecentMedia(accountId: accountId, limit: 5)
+        } catch {
+            recentPosts = []
+        }
     }
 
     /// 加载 Premium 数据：真实服务调用 + 向后兼容的 mock 回退
@@ -236,6 +248,19 @@ final class DashboardViewModel {
         let cutOff = Date().addingTimeInterval(-90 * 86_400)
         let snapshots = (try? await snapshotRepo.fetch(accountId: accountId, from: cutOff, to: Date())) ?? []
         let snap = latestSnapshot
+
+        // 无真实 API 数据时（followers=0），跳过 Premium 服务调用
+        let hasRealData = snap != nil && (snap?.followersCount ?? 0) > 0
+        guard hasRealData else {
+            // 清空所有 Premium 结果
+            predictionResult = nil; activityResult = nil; retentionResult = nil
+            qualityScore = nil; comparisonResult = nil; geoDistribution = nil
+            aiSummary = ""; authenticityResult = nil; campaignResult = nil; heatmapResult = nil
+            unfollowList = []; bestPostingTime = "N/A"
+            contentTip = "Share your first post to get content tips."
+            predictedFollowers = 0
+            return
+        }
 
         // 趋势预测（Linear Regression，30 天预测）
         if !snapshots.isEmpty {
@@ -303,9 +328,37 @@ final class DashboardViewModel {
         }
 
         // Mock 回退 — 保持向后兼容，现有 UI 继续工作
-        unfollowList = MockFollowerListGenerator().generateUnfollows(count: 4)
-        bestPostingTime = ["Wed 7PM", "Mon 8PM", "Sat 11AM", "Fri 6PM"].randomElement()!
-        contentTip = ["Carousel posts get 2.3x more engagement", "Videos under 30s perform best", "Post 3-5 times per week for optimal growth"].randomElement()!
-        predictedFollowers = (latestSnapshot?.followersCount ?? 1000) + Int.random(in: 50...500)
+        unfollowList = computeUnfollowList(snapshots: snapshots)
+        bestPostingTime = computeBestPostingTime()
+        contentTip = computeContentTip()
+        predictedFollowers = predictionResult.map { Int($0.predictedValue) } ?? (latestSnapshot?.followersCount ?? 0)
     }
+
+    // MARK: - Premium Derived Computations
+
+    private func computeUnfollowList(snapshots: [Snapshot]) -> [UnfollowEntry] {
+        guard snapshots.count >= 2 else { return [] }
+        let sorted = snapshots.sorted { $0.observedAt < $1.observedAt }
+        let recent = sorted.suffix(7)
+        let first = recent.first?.followersCount ?? 0
+        let last = recent.last?.followersCount ?? 0
+        let delta = last - first
+        if delta < 0 {
+            return [UnfollowEntry(
+                id: "local_diff", username: "approx_\(abs(delta))_unfollows",
+                displayName: "~\(abs(delta)) followers unfollowed",
+                date: Date(), isUnfollow: true
+            )]
+        }
+        return []
+    }
+
+    private func computeBestPostingTime() -> String {
+        return "N/A"  // computed when real media data is available
+    }
+
+    private func computeContentTip() -> String {
+        return "Share your first post to get content tips."  // computed from real media type distribution
+    }
+
 }

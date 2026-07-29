@@ -22,7 +22,7 @@ struct BestTimeView: View {
     /// 从真实结果构建 7×24 密度矩阵，无数据时回退到随机 mock
     private var heatmap: [[Double]] {
         guard let result = heatmapResult, !result.cells.isEmpty else {
-            return Self.generateHeatmap()
+            return Array(repeating: Array(repeating: 0.0, count: 24), count: 7)
         }
         // Calendar weekday: 1=Sun...7=Sat → 映射到 days[0]=Mon
         // 重排为 Mon=0, Tue=1, ..., Sun=6
@@ -98,8 +98,5 @@ struct BestTimeView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    /// 生成 7×24 Mock 热力图数据，值域 [0, 1]（无真实数据时回退使用）
-    static func generateHeatmap() -> [[Double]] {
-        (0..<7).map { _ in (0..<24).map { _ in Double.random(in: 0...1) } }
-    }
+
 }

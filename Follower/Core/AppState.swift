@@ -78,4 +78,5 @@ final class AppState {
 // 全局通知名称扩展
 extension Notification.Name {
     static let premiumUnlocked = Notification.Name("com.follower.premiumUnlocked")
+    static let accountCreated = Notification.Name("com.follower.accountCreated")
 }

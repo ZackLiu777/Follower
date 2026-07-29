@@ -117,7 +117,7 @@ struct DashboardView: View {
                         }
                         .scrollContentBackground(.hidden)
                     }
-                } else if viewModel.isLoading {
+                } else if viewModel.isLoading || viewModel.isSyncing {
                     ZStack {
                         LinearGradient(
                             colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
@@ -296,7 +296,7 @@ private struct KeyMetricsSection: View {
 // ═══════════════════════════════════════════════════════
 
 private struct RecentPostsSection: View {
-    let posts: [MockPost]
+    let posts: [MediaPost]
 
     @Environment(\.theme) private var theme
 
@@ -310,7 +310,7 @@ private struct RecentPostsSection: View {
                 Spacer()
                 if !posts.isEmpty {
                     NavigationLink(loc(L10n.Dashboard.viewAll)) {
-                        PostListView(posts: MockPostGenerator().generate(count: 20))
+                        PostListView(posts: posts)
                     }
                     .font(.system(size: 13, weight: .medium))
                 }
@@ -608,7 +608,7 @@ private struct PremiumInsightsSection: View {
     @ViewBuilder
     private func destinationFor(index: Int) -> some View {
         switch index {
-        case 0: PredictionDetailView(predicted: viewModel.predictedFollowers)
+        case 0: PredictionDetailView(predicted: viewModel.predictedFollowers, historical: viewModel.sparklineData)
         case 1: ActivityDetailView(result: viewModel.activityResult)
         case 2: QualityDetailView(result: viewModel.qualityScore)
         case 3: RetentionDetailView(result: viewModel.retentionResult)
@@ -624,7 +624,7 @@ private struct PremiumInsightsSection: View {
         case 12: CampaignDetailView(result: viewModel.campaignResult)
         case 13: HeatmapDetailView(result: viewModel.heatmapResult)
         case 14: ContentSchedulingDetailView(activityResult: viewModel.activityResult)
-        case 15: CommentManagementDetailView()
+        case 15: CommentManagementDetailView(comments: [])
         default: EmptyView()
         }
     }

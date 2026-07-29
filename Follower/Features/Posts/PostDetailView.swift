@@ -8,7 +8,7 @@ import SwiftUI
 
 /// 帖子详情页 — Mock 大图 + 互动数据（赞/评/曝光/收藏）
 struct PostDetailView: View {
-    let post: MockPost
+    let post: MediaPost
 
     var body: some View {
         ScrollView {
@@ -19,7 +19,7 @@ struct PostDetailView: View {
                         .fill(Color(hex: post.colorHex) ?? .gray)
                         .frame(height: 260)
                     VStack(spacing: 8) {
-                        Image(systemName: post.type.rawValue)
+                        Image(systemName: post.typeIconName)
                             .font(.largeTitle).foregroundColor(.white)
                         Text("Mock Content").font(.caption).foregroundColor(.white.opacity(0.7))
                     }
@@ -30,8 +30,8 @@ struct PostDetailView: View {
                 VStack(spacing: 12) {
                     detailRow(icon: "heart.fill", color: .pink, label: "Likes", value: post.formattedLikes)
                     detailRow(icon: "text.bubble.fill", color: .blue, label: "Comments", value: "\(post.comments)")
-                    detailRow(icon: "eye.fill", color: .gray, label: "Reach", value: post.formattedReach)
-                    detailRow(icon: "bookmark.fill", color: .green, label: "Saves", value: "\(post.saves)")
+                    detailRow(icon: "eye.fill", color: .gray, label: "Reach", value: "N/A")
+                    detailRow(icon: "bookmark.fill", color: .green, label: "Saves", value: "N/A")
                 }
                 .padding()
                 .background(.regularMaterial)
