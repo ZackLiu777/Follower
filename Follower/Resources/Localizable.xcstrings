@@ -4526,6 +4526,15 @@
         }
       }
     },
+    "premium.themeSwitching" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Theme Switching" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "テーマ切り替え" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "主题切换" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "主題切換" } }
+      }
+    },
     "premium.commentManagement" : {
       "extractionState" : "manual",
       "localizations" : {

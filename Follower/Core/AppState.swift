@@ -44,10 +44,15 @@ final class AppState {
     /// 全局当前选中账户 ID — Dashboard 切换后，Trends / Decisions 等 Tab 自动响应
     var selectedAccountId: Int64?
 
-    /// 从数据库刷新所有 Premium Feature 的启用状态
+    /// 从数据库刷新所有 Premium Feature 的启用状态（缺失 key 自动补建）
     func refreshPremiumFlags() {
         let repo = container.premiumFeatureRepository
         Task {
+            // 确保所有 PremiumFeatureKey 在数据库中存在（新增 key 补齐）
+            for key in PremiumFeatureKey.allCases {
+                let enabled = (try? await repo.isEnabled(key: key)) ?? false
+                try? await repo.setEnabled(enabled, for: key) // setEnabled 内部做 upsert
+            }
             var flags: [String: Bool] = [:]
             for key in PremiumFeatureKey.allCases {
                 flags[key.rawValue] = (try? await repo.isEnabled(key: key)) ?? false
