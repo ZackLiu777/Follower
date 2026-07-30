@@ -162,11 +162,13 @@ final class DashboardViewModel {
         }
     }
 
-    /// 加载账户列表并自动选中第一个，随后加载全部数据
+    /// 加载账户列表，自动选中第一个有效账号，随后加载全部数据
     func loadAccounts() async {
         do {
             accounts = try await accountRepo.fetchAll()
-            if selectedAccountId == nil { selectedAccountId = accounts.first?.id }
+            if selectedAccountId == nil || !accounts.contains(where: { $0.id == selectedAccountId }) {
+                selectedAccountId = accounts.first?.id
+            }
             await loadAllData()
         } catch { errorMessage = error.localizedDescription }
     }

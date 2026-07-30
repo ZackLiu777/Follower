@@ -129,6 +129,9 @@ final class SettingsViewModel {
         do {
             try await accountRepo.delete(id: accountId)
             accounts = try await accountRepo.fetchAll()
+            if selectedAccountId == accountId {
+                selectedAccountId = accounts.first?.id
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

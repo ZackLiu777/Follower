@@ -67,6 +67,12 @@ final actor SyncEngine: SyncEngineProtocol {
     func sync(accountId: Int64) async throws -> SyncResult {
         statusCache[accountId] = .syncing
 
+        // 账号已删除 → 静默跳过
+        guard (try? await accountRepo.fetch(id: accountId)) != nil else {
+            statusCache[accountId] = .success(lastSync: Date())
+            return SyncResult(accountId: accountId, eventsCreated: 0, snapshotsUpdated: 0, metricsUpdated: 0, errors: [])
+        }
+
         // 尝试获取 token
         let token: String?
         do {
@@ -75,12 +81,15 @@ final actor SyncEngine: SyncEngineProtocol {
             token = nil
         }
 
-        // 无 token：用 Account 数据库记录创建最小 Snapshot，使 Dashboard 进入 dataReady
+        // 无 token：用 Account 数据库记录创建最小 Snapshot（账号已在入口校验过）
         guard let token else {
-            let account = try? await accountRepo.fetch(id: accountId)
+            let account = (try? await accountRepo.fetch(id: accountId)) ?? Account(
+                platform: .instagram, username: "unknown", displayName: "Unknown",
+                authState: .revoked, createdAt: Date(), updatedAt: Date()
+            )
             let profileDTO = APIProfileResponse(
-                username: account?.username ?? "unknown",
-                displayName: account?.displayName ?? "Unknown",
+                username: account.username,
+                displayName: account.displayName,
                 followersCount: 0, followingCount: 0, mediaCount: 0,
                 totalLikes: 0, totalComments: 0, totalShares: 0, totalViews: 0,
                 engagementRate: 0, fetchedAt: Date()
