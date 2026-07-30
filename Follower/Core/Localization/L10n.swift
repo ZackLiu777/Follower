@@ -428,6 +428,7 @@ enum L10n {
         static let engagementHeatmap = "premium.engagementHeatmap"
         static let contentScheduling = "premium.contentScheduling"
         static let commentManagement = "premium.commentManagement"
+        static let themeSwitching = "premium.themeSwitching"
 
         // MARK: - Phi: Detail view labels
         static let competitorGrowth = "premium.competitorGrowth"

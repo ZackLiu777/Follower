@@ -96,6 +96,7 @@ private struct ContentViewInner: View {
         .tint(appState.currentTheme.theme.accentPrimary)
         .withTheme(appState.currentTheme.theme)
         .toolbarBackground(.hidden, for: .tabBar)  // 隐藏 TabBar 背景，让渐变透出
+        .sensoryFeedback(.selection, trigger: selectedTab)
     }
 }
 

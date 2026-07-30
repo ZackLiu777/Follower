@@ -165,7 +165,7 @@ struct ModelsTests {
     /// PremiumFeatureKey allCases → 共 13 个功能键
     @Test
     func testPremiumFeatureKeyAllCases() {
-        #expect(PremiumFeatureKey.allCases.count == 21)
+        #expect(PremiumFeatureKey.allCases.count == 22)
     }
 
     /// AppLanguage allCases → 共 4 种语言，包含 japanese
@@ -208,7 +208,7 @@ struct ModelsTests {
     @Test
     func testPremiumFeatureKey_AllCases_NotEmpty() {
         #expect(!PremiumFeatureKey.allCases.isEmpty)
-        #expect(PremiumFeatureKey.allCases.count == 21)
+        #expect(PremiumFeatureKey.allCases.count == 22)
     }
 
     /// 每个 PremiumFeatureKey 都应有非空的 displayName

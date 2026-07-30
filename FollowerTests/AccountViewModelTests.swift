@@ -115,4 +115,59 @@ struct AccountViewModelTests {
         #expect(emptyUsername.isEmpty)
         #expect(emptyDisplayName.isEmpty)
     }
+
+    // MARK: - createAccountAndSync logic
+
+    /// 新账号 insert 后应从数据库回查到 ID（GRDB didInsert 可能不触发）
+    @Test
+    func testCreateAccountAndSyncInsertsAndFetchesBack() async throws {
+        let username = "new_user_\(UUID().uuidString.prefix(8))"
+        // 先确认账号不存在
+        let before = try await accountRepo.fetchAll()
+        let existsBefore = before.contains { $0.username == username }
+        #expect(!existsBefore, "Account should not exist before test")
+
+        // 模拟 createAccountAndSync 逻辑：insert → fetchAll → find by username
+        let account = Account(
+            platform: .instagram, username: username, displayName: username,
+            authState: .authorized, createdAt: Date(), updatedAt: Date()
+        )
+        _ = try await accountRepo.insert(account)
+
+        let refreshed = try await accountRepo.fetchAll()
+        let found = refreshed.first(where: { $0.username == username })
+        #expect(found != nil, "Account must be found in fetchAll after insert")
+        #expect(found?.id != nil, "Account ID must be populated after re-fetch")
+        #expect(found?.username == username)
+    }
+
+    /// 已存在账号应按 update + 重新查询路径处理
+    @Test
+    func testCreateAccountAndSyncUpdatesExisting() async throws {
+        let username = "dup_user_\(UUID().uuidString.prefix(8))"
+        // 第一次插入
+        let a1 = Account(
+            platform: .instagram, username: username, displayName: username,
+            authState: .authorized, createdAt: Date(), updatedAt: Date()
+        )
+        let saved1 = try await accountRepo.insert(a1)
+        let id1 = try #require(saved1.id)
+
+        // 模拟重复连接：先查重 → 找到已存在 → update
+        let all = try await accountRepo.fetchAll()
+        if let existing = all.first(where: { $0.platform == .instagram && $0.username == username }),
+           let existingId = existing.id {
+            var updated = existing
+            updated.authState = .authorized
+            updated.updatedAt = Date()
+            try await accountRepo.update(updated)
+
+            // 验证 update 后 id 不变且 authState 正确
+            let fetched = try await accountRepo.fetch(id: existingId)
+            #expect(fetched?.authState == .authorized)
+            #expect(fetched?.id == existingId)
+        } else {
+            #expect(Bool(false), "Should have found existing account")
+        }
+    }
 }

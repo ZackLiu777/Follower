@@ -1,14 +1,15 @@
 //
-//  AccountView.swift
-//  Follower
+// AccountView.swift
+// Follower
 //
-//  账号管理页面 — Instagram Token 连接 / 手动创建 / 撤销 / 删除。
+// 账号管理页面 — Instagram Token 连接 / 手动创建 / 撤销 / 删除。
 //
 
 import SwiftUI
 
 struct AccountView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.theme) private var theme
     @Bindable var viewModel: AccountViewModel
 
     @State private var accessToken: String = ""
@@ -71,13 +72,13 @@ struct AccountView: View {
                             Button {
                                 Task { await viewModel.connectWithToken(accessToken) }
                             } label: {
-                                if viewModel.isConnecting {
-                                    ProgressView()
-                                } else {
-                                    Text(loc(L10n.Account.connect)).fontWeight(.semibold)
-                                }
+                                if viewModel.isConnecting { ProgressView() }
+                                else { Text(loc(L10n.Account.connect)).fontWeight(.semibold) }
                             }
                             .disabled(accessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isConnecting)
+                        } else if viewModel.addMode == .oauth {
+                            // OAuth button is inside the form
+                            EmptyView()
                         } else {
                             Button {
                                 Task { await viewModel.addAccount() }
@@ -103,25 +104,54 @@ struct AccountView: View {
     }
 
     // MARK: - Add Account Form
-
     private var addAccountForm: some View {
         Group {
             // 模式切换
             Picker("Mode", selection: $viewModel.addMode) {
-                Text("Instagram API").tag(AccountViewModel.AddMode.token)
-                Text("Quick Test").tag(AccountViewModel.AddMode.manual)
+                Text("OAuth").tag(AccountViewModel.AddMode.oauth)
+                Text("Token").tag(AccountViewModel.AddMode.token)
+                Text("Test").tag(AccountViewModel.AddMode.manual)
             }
             .pickerStyle(.segmented)
 
-            if viewModel.addMode == .token {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Paste your Instagram Graph API access token.")
+            if viewModel.addMode == .oauth {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Login with your Instagram account via Meta OAuth.")
+                        .font(.caption).foregroundColor(.secondary)
+                    TextField("Client ID (App ID)", text: $viewModel.clientId)
+                        .font(.caption).autocapitalization(.none)
+                    SecureField("Client Secret", text: $viewModel.clientSecret)
+                        .font(.caption)
+                    TextField("Redirect URI", text: $viewModel.redirectURI)
+                        .font(.caption).autocapitalization(.none)
+                        .disableAutocorrection(true)
+                    Button {
+                        Task {
+                            await viewModel.connectWithInstagram(
+                                clientId: viewModel.clientId,
+                                clientSecret: viewModel.clientSecret,
+                                redirectURI: viewModel.redirectURI
+                            )
+                        }
+                    } label: {
+                        HStack {
+                            if viewModel.isConnecting { ProgressView() }
+                            Text(viewModel.isConnecting ? "Connecting..." : "Login with Instagram")
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(theme.accentPrimary)
+                    .disabled(viewModel.clientId.isEmpty || viewModel.clientSecret.isEmpty || viewModel.redirectURI.isEmpty || viewModel.isConnecting)
+                }
+            } else if viewModel.addMode == .token {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Paste your Instagram access token directly.")
                         .font(.caption).foregroundColor(.secondary)
                     SecureField("Access Token (IGAA...)", text: $accessToken)
-                        .textContentType(.password)
                         .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                        .font(.caption)
+                        .disableAutocorrection(true).font(.caption)
                 }
             } else {
                 Group {
@@ -135,7 +165,6 @@ struct AccountView: View {
     }
 
     // MARK: - Account Row
-
     @ViewBuilder
     private func accountRow(_ account: Account) -> some View {
         HStack {

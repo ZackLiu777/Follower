@@ -34,6 +34,7 @@ enum PremiumFeatureKey: String, Codable, DatabaseValueConvertible, CaseIterable 
     case contentScheduling          // 内容排期推荐（KOL + 中小企业）
     case commentManagement          // 评论管理（中小企业）
     case growthDecisions            // 增长决策引擎（Premium 专属 Tab）
+    case themeSwitching             // 主题切换（Premium）
 
     /// 用户可见的功能名称
     var displayName: String {
@@ -59,6 +60,7 @@ enum PremiumFeatureKey: String, Codable, DatabaseValueConvertible, CaseIterable 
         case .contentScheduling: return loc(L10n.Premium.contentScheduling)
         case .commentManagement: return loc(L10n.Premium.commentManagement)
         case .growthDecisions: return "Growth Decisions"
+        case .themeSwitching: return loc(L10n.Premium.themeSwitching)
         }
     }
 }

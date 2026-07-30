@@ -75,15 +75,20 @@ final class PremiumFeatureRepository: PremiumFeatureRepositoryProtocol {
         try await setEnabled(enabled, expiresAt: nil, for: key)
     }
 
-    /// 设置功能开关，支持过期时间（用于试用期控制）
+    /// 设置功能开关，支持过期时间（用于试用期控制）。key 不存在时自动插入。
     func setEnabled(_ enabled: Bool, expiresAt: Date?, for key: PremiumFeatureKey) async throws {
         try await db.write { db in
-            _ = try PremiumFeature
-                .filter(PremiumFeature.Columns.key == key)
-                .updateAll(db, [
-                    PremiumFeature.Columns.enabled.set(to: enabled),
-                    PremiumFeature.Columns.expiresAt.set(to: expiresAt),
-                ])
+            if try PremiumFeature.filter(PremiumFeature.Columns.key == key).fetchCount(db) > 0 {
+                _ = try PremiumFeature
+                    .filter(PremiumFeature.Columns.key == key)
+                    .updateAll(db, [
+                        PremiumFeature.Columns.enabled.set(to: enabled),
+                        PremiumFeature.Columns.expiresAt.set(to: expiresAt),
+                    ])
+            } else {
+                var record = PremiumFeature(key: key, enabled: enabled, expiresAt: expiresAt, createdAt: Date())
+                try record.insert(db)
+            }
         }
     }
 }

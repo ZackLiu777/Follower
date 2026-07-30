@@ -99,7 +99,7 @@ final actor SyncEngine: SyncEngineProtocol {
             async let igUser = apiClient.fetchProfile(accessToken: token)
             async let igInsights = apiClient.fetchInsights(
                 accessToken: token,
-                metrics: ["follower_count", "reach", "impressions"],
+                metrics: ["follower_count", "reach", "views"],
                 period: "day"
             )
             async let igMedia = apiClient.fetchMedia(accessToken: token, limit: 25)
@@ -220,7 +220,7 @@ private func buildTrend(from insights: [IGInsightValue], username: String) -> AP
 
     let fSeries = parse("follower_count")
     let rSeries = parse("reach")
-    let iSeries = parse("impressions")
+    let iSeries = parse("views")
 
     var allDays = Set(fSeries.keys)
     allDays.formUnion(rSeries.keys)

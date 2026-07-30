@@ -2,12 +2,11 @@
 //  SettingsView.swift
 //  Follower
 //
-//  Lambda-2: 移除颜色方案Picker（isDark 自动驱动）。减少卡片线条。
+//  设置页面 — Premium 锁定主题/导出 + 所有行 SF Symbols。
 //
 
 import SwiftUI
 
-/// 设置页面 — 试用状态、账号管理、外观、导出、存储、隐私、Premium
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
     @Bindable var viewModel: SettingsViewModel
@@ -19,29 +18,28 @@ struct SettingsView: View {
             ZStack {
                 LinearGradient(colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
                 Form {
-                Section { trialSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.trialStatus)) }
-                // 添加新账号卡片
-                Section {
-                    Button { showAccountSheet = true } label: {
-                        Label(loc(L10n.Account.connectNew), systemImage: "person.badge.plus")
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 4)
-                    }
-                    .listRowBackground(theme.cardSurface)
-                } header: { Text(loc(L10n.Settings.accounts)) }
-                Section { accountSection.listRowBackground(theme.cardSurface) }
-                Section {
-                    languageSection.listRowBackground(theme.cardSurface)
-                    themeSection.listRowBackground(theme.cardSurface)
-                } header: { Text(loc(L10n.Settings.appearance)) }
-                Section {
-                    exportSection.listRowBackground(theme.cardSurface)
-                } header: { Text(loc(L10n.Settings.dataExport)) } footer: { Text(loc(L10n.Settings.exportFooter)) }
-                Section { storageInfoSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.storage)) }
-                Section { privacySection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.privacy)) }
-                Section { premiumFeaturesSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.premiumFeatures)) }
-            }
-            .scrollContentBackground(.hidden)
+                    Section { trialSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.trialStatus)) }
+                    Section {
+                        Button { showAccountSheet = true } label: {
+                            Label(loc(L10n.Account.connectNew), systemImage: "person.badge.plus")
+                                .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4)
+                        }.listRowBackground(theme.cardSurface)
+                    } header: { Text(loc(L10n.Settings.accounts)) }
+                    Section { accountSection.listRowBackground(theme.cardSurface) }
+                    // 外观（主题切换 = Premium）
+                    Section {
+                        languageRow.listRowBackground(theme.cardSurface)
+                        themeRow.listRowBackground(theme.cardSurface)
+                    } header: { Text(loc(L10n.Settings.appearance)) }
+                    // 数据导出（= Premium）
+                    Section {
+                        exportRow.listRowBackground(theme.cardSurface)
+                    } header: { Text(loc(L10n.Settings.dataExport)) } footer: { Text(loc(L10n.Settings.exportFooter)) }
+                    Section { storageInfoSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.storage)) }
+                    Section { privacySection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.privacy)) }
+                    Section { premiumFeaturesSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.premiumFeatures)) }
+                }
+                .scrollContentBackground(.hidden)
             }
             .navigationTitle(loc(L10n.Settings.title))
             .navigationBarTitleDisplayMode(.inline)
@@ -58,20 +56,16 @@ struct SettingsView: View {
     }
 
     // MARK: - Trial
-
-    /// 试用状态行 — 显示剩余时间
     private var trialSection: some View {
         HStack {
-            Label(title: { Text(viewModel.isTrialActive ? loc(L10n.Settings.trialActive) : loc(L10n.Settings.trialEnded)) },
-                  icon: { Image(systemName: viewModel.isTrialActive ? "timer" : "timer.circle") })
+            Label(viewModel.isTrialActive ? loc(L10n.Settings.trialActive) : loc(L10n.Settings.trialEnded),
+                  systemImage: viewModel.isTrialActive ? "timer" : "timer.circle")
             Spacer()
             Text(viewModel.trialRemainingTime).foregroundColor(.secondary).font(.subheadline)
         }
     }
 
     // MARK: - Account
-
-    /// 已连接账号列表 + 删除操作
     private var accountSection: some View {
         Group {
             ForEach(viewModel.accounts, id: \.id) { account in
@@ -100,68 +94,86 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Language
-
-    /// 应用语言选择 Picker
-    private var languageSection: some View {
+    // MARK: - Language (free)
+    private var languageRow: some View {
         Picker(loc(L10n.Settings.language), selection: Binding(get: { appState.currentLanguage }, set: { appState.setLanguage($0) })) {
             ForEach(AppLanguage.allCases, id: \.self) { lang in Text(lang.displayName).tag(lang) }
         }
     }
 
-    // MARK: - Theme
-
-    /// 主题风格选择 — Apple Native / Instagram
-    private var themeSection: some View {
-        Picker(loc(L10n.Settings.theme), selection: Binding(
-            get: { viewModel.currentTheme },
-            set: { viewModel.updateTheme($0); appState.currentTheme = $0 }
-        )) {
-            ForEach(AppTheme.allCases, id: \.self) { t in Text(t.displayName).tag(t) }
+    // MARK: - Theme (Premium)
+    private var themeRow: some View {
+        HStack {
+            Image(systemName: "paintpalette.fill")
+                .foregroundColor(theme.accentPrimary)
+            Text(loc(L10n.Settings.theme)).font(.subheadline)
+            Spacer()
+            if appState.premiumEnabledFlags[PremiumFeatureKey.themeSwitching.rawValue] == true {
+                Picker("", selection: Binding(get: { viewModel.currentTheme }, set: { viewModel.updateTheme($0); appState.currentTheme = $0 })) {
+                    ForEach(AppTheme.allCases, id: \.self) { t in Text(t.displayName).tag(t) }
+                }.pickerStyle(.menu).labelsHidden()
+            } else {
+                Image(systemName: "lock.fill").foregroundColor(.secondary).font(.caption)
+                Image(systemName: "chevron.right").foregroundColor(.secondary).font(.caption)
+            }
         }
-        .pickerStyle(.menu)
     }
 
-    // MARK: - Export
-
-    /// 数据导出 — JSON / CSV 格式 + 分享
-    private var exportSection: some View {
+    // MARK: - Export (Premium: csvExport key)
+    private var exportRow: some View {
         Group {
-            Picker(loc(L10n.Settings.format), selection: $viewModel.exportFormat) {
-                ForEach(ExportFormat.allCases, id: \.self) { f in Text(f.displayName).tag(f) }
-            }
-            Button { Task { await viewModel.exportData() } } label: {
-                HStack {
-                    Label(loc(L10n.Settings.exportData), systemImage: "square.and.arrow.up")
-                    Spacer()
-                    if viewModel.isExporting { ProgressView() }
+            HStack {
+                Image(systemName: "doc.text.fill").foregroundColor(theme.accentPrimary)
+                Text(loc(L10n.Settings.format)).font(.subheadline)
+                Spacer()
+                if appState.premiumEnabledFlags[PremiumFeatureKey.csvExport.rawValue] == true {
+                    Picker("", selection: $viewModel.exportFormat) {
+                        ForEach(ExportFormat.allCases, id: \.self) { f in Text(f.displayName).tag(f) }
+                    }.pickerStyle(.menu).labelsHidden()
+                } else {
+                    Image(systemName: "lock.fill").foregroundColor(.secondary).font(.caption)
                 }
             }
-            .disabled(viewModel.selectedAccountId == nil || viewModel.isExporting)
+            HStack {
+                Image(systemName: "square.and.arrow.up.fill").foregroundColor(theme.accentPrimary)
+                Text(loc(L10n.Settings.exportData)).font(.subheadline)
+                Spacer()
+                if appState.premiumEnabledFlags[PremiumFeatureKey.csvExport.rawValue] == true {
+                    Button { Task { await viewModel.exportData() } } label: { Text(loc(L10n.Settings.exportData)) }
+                        .disabled(viewModel.selectedAccountId == nil || viewModel.isExporting)
+                } else {
+                    Image(systemName: "lock.fill").foregroundColor(.secondary).font(.caption)
+                }
+            }
             if let url = viewModel.exportURL {
-                ShareLink(item: url) { Label(loc(L10n.Settings.shareExport), systemImage: "square.and.arrow.up.fill") }
+                ShareLink(item: url) {
+                    Label(loc(L10n.Settings.shareExport), systemImage: "square.and.arrow.up.fill")
+                }
             }
         }
     }
 
     // MARK: - Storage
-
-    /// 存储说明 — 本地优先 + 数据库描述
     private var storageInfoSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label(loc(L10n.Settings.localOnly), systemImage: "lock.shield").font(.subheadline)
+            Label(loc(L10n.Settings.localOnly), systemImage: "lock.shield.fill").font(.subheadline)
             Text(loc(L10n.Settings.storageDescription)).font(.caption).foregroundColor(.secondary)
         }
     }
 
     // MARK: - Privacy
-
-    /// 隐私 — 隐私政策 + 删除全部数据
     private var privacySection: some View {
         Group {
-            Button { } label: { Label(loc(L10n.Settings.privacyPolicy), systemImage: "hand.raised") }
-            Button(role: .destructive) { viewModel.showDeleteConfirmation = true } label: {
-                Label(loc(L10n.Settings.deleteAllData), systemImage: "trash")
+            HStack {
+                Image(systemName: "hand.raised.fill").foregroundColor(theme.accentPrimary)
+                Text(loc(L10n.Settings.privacyPolicy)).font(.subheadline)
+                Spacer()
+                Image(systemName: "chevron.right").foregroundColor(.secondary).font(.caption)
+            }
+            Button(role: .destructive) {
+                viewModel.showDeleteConfirmation = true
+            } label: {
+                Label(loc(L10n.Settings.deleteAllData), systemImage: "trash.fill")
             }
             .confirmationDialog(loc(L10n.Settings.deleteConfirmationTitle), isPresented: $viewModel.showDeleteConfirmation, titleVisibility: .visible) {
                 Button(loc(L10n.Common.delete), role: .destructive) {
@@ -172,35 +184,53 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Premium
-
-    /// Premium 功能开关列表 + 一键解锁
+    // MARK: - Premium Features
     private var premiumFeaturesSection: some View {
         Group {
             Button { Task { await viewModel.unlockAllPremium() } } label: {
                 HStack {
                     Label(loc(L10n.Premium.unlockAll), systemImage: "crown.fill").foregroundColor(.orange)
                     Spacer()
-                    Image(systemName: "chevron.right").font(.caption).foregroundColor(.secondary)
+                    Image(systemName: "chevron.right").foregroundColor(.secondary).font(.caption)
                 }
             }
             ForEach(viewModel.premiumFeatures, id: \.id) { feature in
                 HStack {
+                    Image(systemName: premiumIcon(for: feature.key))
+                        .foregroundColor(feature.enabled ? theme.positiveGreen : theme.textSecondary)
+                        .frame(width: 24)
                     Text(feature.key.displayName).font(.subheadline)
                     Spacer()
                     Image(systemName: feature.enabled ? "checkmark.seal.fill" : "lock.fill")
-                        .foregroundColor(feature.enabled ? .green : .secondary)
+                        .foregroundColor(feature.enabled ? theme.positiveGreen : theme.textSecondary)
                 }
             }
         }
     }
-}
 
-#Preview {
-    SettingsView(viewModel: SettingsViewModel(
-        trialManager: PreviewMocks.trialManager, exportService: PreviewMocks.exportService,
-        accountRepo: PreviewMocks.accountRepo, premiumFeatureRepo: PreviewMocks.premiumRepo
-    )).environment(AppState(databaseManager: DatabaseManager.shared))
+    private func premiumIcon(for key: PremiumFeatureKey) -> String {
+        switch key {
+        case .trendPrediction, .followerGrowthPrediction: return "chart.line.uptrend.xyaxis"
+        case .activityAnalysis: return "bolt.fill"
+        case .retentionAnalysis, .churnAnalysis: return "person.2.fill"
+        case .geoDistribution: return "globe.asia.australia.fill"
+        case .engagementQualityScore: return "star.fill"
+        case .longTermTrendComparison: return "arrow.left.arrow.right"
+        case .csvExport, .excelExport: return "doc.text.fill"
+        case .localAIAnalysis: return "brain.head.profile"
+        case .advancedEncryption: return "lock.shield.fill"
+        case .multiDeviceSync: return "icloud.fill"
+        case .competitorComparison: return "chart.bar.fill"
+        case .authenticityAssessment: return "checkmark.shield.fill"
+        case .mediaKitExport: return "doc.richtext.fill"
+        case .campaignTracking: return "flag.fill"
+        case .engagementHeatmap: return "calendar.badge.clock"
+        case .contentScheduling: return "clock.fill"
+        case .commentManagement: return "bubble.left.and.bubble.right.fill"
+        case .growthDecisions: return "sparkle.magnifyingglass"
+        case .themeSwitching: return "paintpalette.fill"
+        }
+    }
 }
 
 #if DEBUG
