@@ -137,6 +137,22 @@ final class SettingsViewModel {
         }
     }
 
+    /// 一次性删除所有账号及其关联数据
+    func deleteAllAccounts() async {
+        do {
+            let all = try await accountRepo.fetchAll()
+            for account in all {
+                if let id = account.id {
+                    try await accountRepo.delete(id: id)
+                }
+            }
+            accounts = []
+            selectedAccountId = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     // MARK: - Private
 
     /// 将 TimeInterval 格式化为 "X 分 Y 秒" 的剩余时间字符串
