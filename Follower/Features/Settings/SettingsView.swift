@@ -177,7 +177,7 @@ struct SettingsView: View {
             }
             .confirmationDialog(loc(L10n.Settings.deleteConfirmationTitle), isPresented: $viewModel.showDeleteConfirmation, titleVisibility: .visible) {
                 Button(loc(L10n.Common.delete), role: .destructive) {
-                    if let id = viewModel.selectedAccountId { Task { await viewModel.deleteLocalData(accountId: id) } }
+                    Task { await viewModel.deleteAllAccounts() }
                 }
                 Button(loc(L10n.Common.cancel), role: .cancel) {}
             } message: { Text(loc(L10n.Settings.deleteConfirmationMessage)) }

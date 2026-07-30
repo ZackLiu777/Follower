@@ -129,6 +129,25 @@ final class SettingsViewModel {
         do {
             try await accountRepo.delete(id: accountId)
             accounts = try await accountRepo.fetchAll()
+            if selectedAccountId == accountId {
+                selectedAccountId = accounts.first?.id
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// 一次性删除所有账号及其关联数据
+    func deleteAllAccounts() async {
+        do {
+            let all = try await accountRepo.fetchAll()
+            for account in all {
+                if let id = account.id {
+                    try await accountRepo.delete(id: id)
+                }
+            }
+            accounts = []
+            selectedAccountId = nil
         } catch {
             errorMessage = error.localizedDescription
         }
