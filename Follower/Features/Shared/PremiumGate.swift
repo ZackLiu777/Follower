@@ -93,7 +93,9 @@ struct UpgradePromptView: View {
     let featureKey: PremiumFeatureKey
     @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var appState
-    @Environment(\.theme) private var theme
+
+    /// 单一状态源 — 统一从 AppState 读取主题（避免双状态源半刷新）
+    private var currentTheme: Theme { appState.currentTheme.theme }
 
     /// 当前 Premium 功能列表
     private let premiumFeatures: [(icon: String, name: String)] = [
@@ -116,7 +118,7 @@ struct UpgradePromptView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [theme.chartBarGradientStart, theme.chartBarGradientEnd],
+                        colors: [currentTheme.chartBarGradientStart, currentTheme.chartBarGradientEnd],
                         startPoint: .leading, endPoint: .trailing
                     )
                 )
@@ -125,12 +127,12 @@ struct UpgradePromptView: View {
             // 标题
             Text(loc(L10n.Premium.premiumFeature))
                 .font(.title2).fontWeight(.bold)
-                .foregroundColor(theme.textPrimary)
+                .foregroundColor(currentTheme.textPrimary)
                 .padding(.bottom, 4)
 
             Text(featureKey.displayName)
                 .font(.subheadline)
-                .foregroundColor(theme.accentPrimary)
+                .foregroundColor(currentTheme.accentPrimary)
                 .padding(.bottom, 24)
 
             // Premium 功能卡片列表
@@ -143,16 +145,16 @@ struct UpgradePromptView: View {
                         VStack(spacing: 8) {
                             Image(systemName: feature.icon)
                                 .font(.title3)
-                                .foregroundColor(theme.accentPrimary)
+                                .foregroundColor(currentTheme.accentPrimary)
                             Text(feature.name)
                                 .font(.system(size: 10))
-                                .foregroundColor(theme.textSecondary)
+                                .foregroundColor(currentTheme.textSecondary)
                                 .multilineTextAlignment(.center)
                                 .lineLimit(2)
                         }
                         .padding(10)
                         .frame(maxWidth: .infinity, minHeight: 72)
-                        .background(theme.cardSurface)
+                        .background(currentTheme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }
@@ -178,7 +180,7 @@ struct UpgradePromptView: View {
                             .padding(.vertical, 14)
                             .background(
                                 LinearGradient(
-                                    colors: [theme.chartBarGradientStart, theme.chartBarGradientEnd],
+                                    colors: [currentTheme.chartBarGradientStart, currentTheme.chartBarGradientEnd],
                                     startPoint: .leading, endPoint: .trailing
                                 )
                             )
@@ -194,7 +196,9 @@ struct UpgradePromptView: View {
             .padding(.bottom, 30)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(theme.backgroundGradientStart)
+        .background(appState.currentTheme.theme.backgroundGradientStart)
+        // 主题同步状态机：从 AppState 实时注入 + 监听 themeChanged 通知
+        .themeSynced()
     }
 }
 

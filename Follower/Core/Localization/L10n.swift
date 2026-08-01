@@ -107,6 +107,7 @@ enum L10n {
         static let accounts = "settings.accounts"
         static let appearance = "settings.appearance"
         static let theme = "settings.theme"
+        static let darkMode = "settings.darkMode"
         static let language = "settings.language"
         static let appleNative = "settings.appleNative"
         static let instagram = "settings.instagram"

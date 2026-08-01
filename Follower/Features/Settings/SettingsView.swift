@@ -11,25 +11,33 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
     @Bindable var viewModel: SettingsViewModel
-    @Environment(\.theme) private var theme
+
+    /// 确定性主题读取 — 直接从 AppState 观察（@Observable），
+    /// 不依赖 @Environment(\.theme) 传播（sheet 内环境更新不可靠 → 背景残留旧主题）
+    private var currentTheme: Theme { appState.currentTheme.theme }
 
     var body: some View {
+        #if DEBUG
+        // 调试：打印 Settings body 每次重算时读到的主题（验证切换后是否同步）
+        let _ = print("[ThemeDebug] SettingsView body — currentTheme: \(appState.currentTheme.rawValue), isDark: \(currentTheme.isDark), bg: \(currentTheme.backgroundGradientColors)")
+        #endif
         ZStack {
-            LinearGradient(colors: theme.backgroundGradientColors, startPoint: .top, endPoint: .bottom).ignoresSafeArea()
+            LinearGradient(colors: currentTheme.backgroundGradientColors, startPoint: .top, endPoint: .bottom).ignoresSafeArea()
             Form {
-                Section { trialSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.trialStatus)) }
+                Section { trialSection.listRowBackground(currentTheme.cardSurface) } header: { Text(loc(L10n.Settings.trialStatus)) }
                 // 外观（主题切换 = Premium）
                 Section {
-                    languageRow.listRowBackground(theme.cardSurface)
-                    themeRow.listRowBackground(theme.cardSurface)
+                    languageRow.listRowBackground(currentTheme.cardSurface)
+                    darkModeRow.listRowBackground(currentTheme.cardSurface)
+                    themeRow.listRowBackground(currentTheme.cardSurface)
                 } header: { Text(loc(L10n.Settings.appearance)) }
                 // 数据导出（= Premium）
                 Section {
-                    exportRow.listRowBackground(theme.cardSurface)
+                    exportRow.listRowBackground(currentTheme.cardSurface)
                 } header: { Text(loc(L10n.Settings.dataExport)) } footer: { Text(loc(L10n.Settings.exportFooter)) }
-                Section { storageInfoSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.storage)) }
-                Section { privacySection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.privacy)) }
-                Section { premiumFeaturesSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.premiumFeatures)) }
+                Section { storageInfoSection.listRowBackground(currentTheme.cardSurface) } header: { Text(loc(L10n.Settings.storage)) }
+                Section { privacySection.listRowBackground(currentTheme.cardSurface) } header: { Text(loc(L10n.Settings.privacy)) }
+                Section { premiumFeaturesSection.listRowBackground(currentTheme.cardSurface) } header: { Text(loc(L10n.Settings.premiumFeatures)) }
             }
             .scrollContentBackground(.hidden)
             // 删除确认弹窗 — 挂在 Form 层级（附着在 Button 上 iOS 17+ 有 bug 不弹出）
@@ -51,7 +59,7 @@ struct SettingsView: View {
             Label(viewModel.isTrialActive ? loc(L10n.Settings.trialActive) : loc(L10n.Settings.trialEnded),
                   systemImage: viewModel.isTrialActive ? "timer" : "timer.circle")
                 .font(.subheadline)
-                .foregroundColor(theme.textPrimary)
+                .foregroundColor(currentTheme.textPrimary)
             Spacer()
             Text(viewModel.trialRemainingTime).font(.subheadline).foregroundColor(.secondary)
         }
@@ -61,7 +69,7 @@ struct SettingsView: View {
     private var languageRow: some View {
         HStack {
             Image(systemName: "globe")
-                .foregroundColor(theme.accentPrimary)
+                .foregroundColor(currentTheme.accentPrimary)
             Text(loc(L10n.Settings.language)).font(.subheadline)
             Spacer()
             Picker("", selection: Binding(get: { appState.currentLanguage }, set: { appState.setLanguage($0) })) {
@@ -72,15 +80,36 @@ struct SettingsView: View {
         }
     }
 
+    // MARK: - Dark Mode（深色开关）
+    /// 深色模式开关 — 关闭 = 浅色主题，开启 = 深色主题（Apple Dark）。
+    /// 直接读写 AppState（确定性同步，不经环境传播）。
+    private var darkModeRow: some View {
+        Toggle(isOn: Binding(
+            get: { appState.currentTheme.theme.isDark },
+            set: { isDark in
+                if isDark {
+                    appState.currentTheme = .appleDark
+                } else {
+                    appState.currentTheme = appState.lightThemePreference
+                }
+            }
+        )) {
+            Label(loc(L10n.Settings.darkMode), systemImage: "moon.fill")
+                .font(.subheadline)
+                .foregroundColor(currentTheme.textPrimary)
+        }
+        .tint(currentTheme.accentPrimary)
+    }
+
     // MARK: - Theme (Premium)
     private var themeRow: some View {
         HStack {
             Image(systemName: "paintpalette.fill")
-                .foregroundColor(theme.accentPrimary)
+                .foregroundColor(currentTheme.accentPrimary)
             Text(loc(L10n.Settings.theme)).font(.subheadline)
             Spacer()
             if appState.premiumEnabledFlags[PremiumFeatureKey.themeSwitching.rawValue] == true {
-                Picker("", selection: Binding(get: { viewModel.currentTheme }, set: { viewModel.updateTheme($0); appState.currentTheme = $0 })) {
+                Picker("", selection: Binding(get: { viewModel.currentTheme }, set: { viewModel.updateTheme($0); appState.currentTheme = $0; appState.rememberLightTheme($0) })) {
                     ForEach(AppTheme.allCases, id: \.self) { t in Text(t.displayName).tag(t) }
                 }.pickerStyle(.menu).labelsHidden()
             } else {
@@ -94,7 +123,7 @@ struct SettingsView: View {
     private var exportRow: some View {
         Group {
             HStack {
-                Image(systemName: "doc.text.fill").foregroundColor(theme.accentPrimary)
+                Image(systemName: "doc.text.fill").foregroundColor(currentTheme.accentPrimary)
                 Text(loc(L10n.Settings.format)).font(.subheadline)
                 Spacer()
                 if appState.premiumEnabledFlags[PremiumFeatureKey.csvExport.rawValue] == true {
@@ -106,7 +135,7 @@ struct SettingsView: View {
                 }
             }
             HStack {
-                Image(systemName: "square.and.arrow.up.fill").foregroundColor(theme.accentPrimary)
+                Image(systemName: "square.and.arrow.up.fill").foregroundColor(currentTheme.accentPrimary)
                 Text(loc(L10n.Settings.exportData)).font(.subheadline)
                 Spacer()
                 if appState.premiumEnabledFlags[PremiumFeatureKey.csvExport.rawValue] == true {
@@ -129,7 +158,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 4) {
             Label(loc(L10n.Settings.localOnly), systemImage: "lock.shield.fill")
                 .font(.subheadline)
-                .foregroundColor(theme.textPrimary)
+                .foregroundColor(currentTheme.textPrimary)
             Text(loc(L10n.Settings.storageDescription)).font(.caption).foregroundColor(.secondary)
         }
     }
@@ -138,7 +167,7 @@ struct SettingsView: View {
     private var privacySection: some View {
         Group {
             HStack {
-                Image(systemName: "hand.raised.fill").foregroundColor(theme.accentPrimary)
+                Image(systemName: "hand.raised.fill").foregroundColor(currentTheme.accentPrimary)
                 Text(loc(L10n.Settings.privacyPolicy)).font(.subheadline)
                 Spacer()
                 Image(systemName: "chevron.right").foregroundColor(.secondary).font(.caption)
@@ -163,7 +192,7 @@ struct SettingsView: View {
                 .font(.subheadline)
                 .foregroundColor(.orange)
         }
-        .tint(theme.positiveGreen)
+        .tint(currentTheme.positiveGreen)
     }
 }
 

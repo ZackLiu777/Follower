@@ -8,16 +8,19 @@
 import SwiftUI
 
 struct AccountView: View {
+    @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.theme) private var theme
     @Bindable var viewModel: AccountViewModel
 
     @State private var accessToken: String = ""
 
+    /// 单一状态源 — 统一从 AppState 读取主题（避免双状态源半刷新）
+    private var currentTheme: Theme { appState.currentTheme.theme }
+
     var body: some View {
         ZStack {
             // 主题渐变背景
-            LinearGradient(colors: theme.backgroundGradientColors, startPoint: .top, endPoint: .bottom).ignoresSafeArea()
+            LinearGradient(colors: appState.currentTheme.theme.backgroundGradientColors, startPoint: .top, endPoint: .bottom).ignoresSafeArea()
             NavigationStack {
                 Form {
                     // MARK: 已连接账号列表
@@ -33,7 +36,7 @@ struct AccountView: View {
                                     }
                                 }
                             }
-                            .listRowBackground(theme.cardSurface)
+                            .listRowBackground(currentTheme.cardSurface)
                         } header: {
                             Text(loc(L10n.Account.connectedAccounts))
                         }
@@ -52,12 +55,12 @@ struct AccountView: View {
                         Text(viewModel.isAddingAccount ? loc(L10n.Account.addAccount) : loc(L10n.Account.connectNew))
                     } footer: {
                         if let error = viewModel.errorMessage {
-                            Text(error).foregroundColor(theme.negativeRed).font(.caption)
+                            Text(error).foregroundColor(currentTheme.negativeRed).font(.caption)
                         } else {
                             Text(loc(L10n.Account.footerHint))
                         }
                     }
-                    .listRowBackground(theme.cardSurface)
+                    .listRowBackground(currentTheme.cardSurface)
                 }
                 .scrollContentBackground(.hidden)
                 .navigationTitle(loc(L10n.Account.title))
@@ -104,6 +107,8 @@ struct AccountView: View {
                 }
             }
         }
+        // 主题同步状态机：从 AppState 实时注入 + 监听 themeChanged 通知
+        .themeSynced()
         .task { await viewModel.loadAccounts() }
         .onChange(of: viewModel.shouldDismiss) { _, dismiss in
             if dismiss { self.dismiss() }
@@ -149,7 +154,7 @@ struct AccountView: View {
                         .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(theme.accentPrimary)
+                    .tint(currentTheme.accentPrimary)
                     .disabled(viewModel.clientId.isEmpty || viewModel.clientSecret.isEmpty || viewModel.redirectURI.isEmpty || viewModel.isConnecting)
                 }
             } else if viewModel.addMode == .token {
@@ -184,8 +189,8 @@ struct AccountView: View {
             Spacer()
             Text(loc(L10n.Account.instagram) + " · " + authDisplayName(account.authState))
                 .font(.caption2).padding(.horizontal, 8).padding(.vertical, 4)
-                .background(account.authState == .authorized ? theme.positiveGreen.opacity(0.15) : theme.negativeRed.opacity(0.15))
-                .foregroundColor(account.authState == .authorized ? theme.positiveGreen : theme.negativeRed)
+                .background(account.authState == .authorized ? currentTheme.positiveGreen.opacity(0.15) : currentTheme.negativeRed.opacity(0.15))
+                .foregroundColor(account.authState == .authorized ? currentTheme.positiveGreen : currentTheme.negativeRed)
                 .clipShape(Capsule())
         }
         .swipeActions(edge: .trailing) {

@@ -87,8 +87,8 @@ private struct ContentViewInner: View {
                 }
                 .tag(2).accessibilityIdentifier("tab_decisions")
         }
-        .tint(appState.currentTheme.theme.accentPrimary)
-        .withTheme(appState.currentTheme.theme)
+        // 主题同步状态机：实时注入 theme + tint（含 themeChanged 通知强制重绘）
+        .themeSynced()
         .toolbarBackground(.hidden, for: .tabBar)  // 隐藏 TabBar 背景，让渐变透出
         .sensoryFeedback(.selection, trigger: selectedTab)
     }

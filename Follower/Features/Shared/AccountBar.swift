@@ -14,7 +14,10 @@ import SwiftUI
 struct AccountBar: View {
     let onAvatarTap: () -> Void
 
-    @Environment(\.theme) private var theme
+    @Environment(AppState.self) private var appState
+
+    /// 单一状态源 — 统一从 AppState 读取主题
+    private var currentTheme: Theme { appState.currentTheme.theme }
 
     var body: some View {
         Button(action: onAvatarTap) {
@@ -24,13 +27,12 @@ struct AccountBar: View {
         .accessibilityIdentifier("account_avatar_button")
     }
 
-    /// Liquid Glass 头像 — Material 毛玻璃 + theme.cardSurface 半透明色叠层
-    /// 整体 32×32（toolbar 标准图标尺寸），无 padding / offset
+    /// 头像图标 — 32×32（toolbar 标准图标尺寸），无 padding / offset
     private var avatarView: some View {
         ZStack {
             Image(systemName: "person.fill")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(theme.accentPrimary)
+                .foregroundColor(currentTheme.accentPrimary)
         }
         .frame(width: 32, height: 32)
     }

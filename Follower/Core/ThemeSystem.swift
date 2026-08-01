@@ -374,3 +374,31 @@ extension View {
     /// 应用 Liquid Glass 毛玻璃卡片样式
     func liquidGlassCard() -> some View { modifier(LiquidGlassCard()) }
 }
+
+// MARK: - Theme Sync Modifier（主题同步状态机客户端）
+
+/// 主题同步修饰符 — 从 AppState 实时注入当前 theme + tint + colorScheme。
+/// 解决 sheet 内容环境快照问题（呈现时捕获、主树更新不传播）：
+/// 1) 直接观察 appState.currentTheme（@Observable）→ 变化即重新注入
+/// 2) 监听 .themeChanged 通知强制重绘（environment 传播边界的双保险）
+/// 3) 显式绑定 \.colorScheme — 让 .secondary/.primary/系统控件随主题 isDark 同步
+///    （仅改自定义颜色不会驱动 SwiftUI 系统色，这是深色模式不同步的根源）
+struct ThemeSyncModifier: ViewModifier {
+    @Environment(AppState.self) private var appState
+    @State private var syncTick = 0
+
+    func body(content: Content) -> some View {
+        content
+            .onReceive(NotificationCenter.default.publisher(for: .themeChanged)) { _ in
+                syncTick += 1   // 强制 body 重算 → 用最新 theme 重新注入
+            }
+            .withTheme(appState.currentTheme.theme)
+            .tint(appState.currentTheme.theme.accentPrimary)
+            .environment(\.colorScheme, appState.currentTheme.theme.isDark ? .dark : .light)
+    }
+}
+
+extension View {
+    /// 应用主题同步 — sheet / 弹窗内容必须使用，切换主题时实时跟随 AppState
+    func themeSynced() -> some View { modifier(ThemeSyncModifier()) }
+}
