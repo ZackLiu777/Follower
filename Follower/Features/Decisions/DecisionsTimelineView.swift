@@ -106,7 +106,6 @@ struct DecisionsTimelineView: View {
             .padding(.bottom, 24)
         }
         .scrollContentBackground(.hidden)
-        .background(theme.backgroundGradientStart)
     }
 
     // MARK: - Header

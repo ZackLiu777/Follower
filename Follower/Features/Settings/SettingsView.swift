@@ -16,7 +16,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                LinearGradient(colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
+                LinearGradient(colors: theme.backgroundGradientColors, startPoint: .top, endPoint: .bottom).ignoresSafeArea()
                 Form {
                     Section { trialSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.trialStatus)) }
                     Section {

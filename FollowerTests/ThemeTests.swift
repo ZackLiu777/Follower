@@ -29,6 +29,18 @@ struct ThemeTests {
         }
     }
 
+    /// 每个主题的背景渐变数组 → 至少 3 色，且首尾色与双色 token 一致（保证与旧背景观感衔接）
+    @Test func testBackgroundGradientColors() {
+        for t in Self.allThemes {
+            #expect(t.backgroundGradientColors.count >= 3,
+                    "\(t.displayName) should have at least 3 gradient colors")
+            #expect(t.backgroundGradientColors.first == t.backgroundGradientStart,
+                    "\(t.displayName) gradient start should match backgroundGradientStart")
+            #expect(t.backgroundGradientColors.last == t.backgroundGradientEnd,
+                    "\(t.displayName) gradient end should match backgroundGradientEnd")
+        }
+    }
+
     /// 检查 isDark 属性 → 仅 appleDark 为 true，其余为 false
     @Test func testIsDarkCorrect() {
         #expect(!Theme.appleNative.isDark)

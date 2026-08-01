@@ -66,7 +66,7 @@ struct DashboardView: View {
                 } else if viewModel.latestSnapshot != nil {
                     ZStack {
                         LinearGradient(
-                            colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                            colors: theme.backgroundGradientColors,
                             startPoint: .top, endPoint: .bottom
                         ).ignoresSafeArea()
                         ScrollView {
@@ -120,7 +120,7 @@ struct DashboardView: View {
                 } else if viewModel.isLoading || viewModel.isSyncing {
                     ZStack {
                         LinearGradient(
-                            colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                            colors: theme.backgroundGradientColors,
                             startPoint: .top, endPoint: .bottom
                         ).ignoresSafeArea()
                         ProgressView(loc(L10n.Common.loading))
@@ -129,7 +129,7 @@ struct DashboardView: View {
                 } else {
                     ZStack {
                         LinearGradient(
-                            colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                            colors: theme.backgroundGradientColors,
                             startPoint: .top, endPoint: .bottom
                         ).ignoresSafeArea()
                         EmptyStateView(
@@ -156,7 +156,7 @@ struct DashboardView: View {
     private var emptyOrErrorView: some View {
         ZStack {
             LinearGradient(
-                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                colors: theme.backgroundGradientColors,
                 startPoint: .top, endPoint: .bottom
             ).ignoresSafeArea()
             EmptyStateView(
@@ -172,7 +172,7 @@ struct DashboardView: View {
     private func errorView(error: String) -> some View {
         ZStack {
             LinearGradient(
-                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                colors: theme.backgroundGradientColors,
                 startPoint: .top, endPoint: .bottom
             ).ignoresSafeArea()
             ScrollView {

@@ -24,8 +24,7 @@ struct FollowerApp: App {
         WindowGroup {
             ZStack {
                 LinearGradient(
-                    colors: [appState.currentTheme.theme.backgroundGradientStart,
-                             appState.currentTheme.theme.backgroundGradientEnd],
+                    colors: appState.currentTheme.theme.backgroundGradientColors,
                     startPoint: .top, endPoint: .bottom
                 ).ignoresSafeArea()
 
