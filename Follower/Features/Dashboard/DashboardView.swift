@@ -132,6 +132,8 @@ struct DashboardView: View {
                 settingsViewModel: settingsViewModel,
                 onSelect: { id in viewModel.selectAccount(id) }
             )
+            // sheet presentation root：显式同步系统模式（sheet 不继承父层 colorScheme）
+            .preferredColorScheme(appState.currentTheme.theme.isDark ? .dark : .light)
         }
         .task { await viewModel.loadAccounts() }
         .onChange(of: viewModel.selectedAccountId) { _, newId in

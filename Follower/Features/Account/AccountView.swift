@@ -107,8 +107,8 @@ struct AccountView: View {
                 }
             }
         }
-        // 主题同步状态机：从 AppState 实时注入 + 监听 themeChanged 通知
-        .themeSynced()
+        // sheet presentation root：显式同步 colorScheme（系统色随主题明暗）
+        .environment(\.colorScheme, currentTheme.isDark ? .dark : .light)
         .task { await viewModel.loadAccounts() }
         .onChange(of: viewModel.shouldDismiss) { _, dismiss in
             if dismiss { self.dismiss() }

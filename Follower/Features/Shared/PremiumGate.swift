@@ -38,6 +38,8 @@ struct PremiumGateModifier: ViewModifier {
         .sheet(isPresented: $showUpgradePrompt) {
             UpgradePromptView(featureKey: featureKey)
                 .presentationDetents([.fraction(0.75)])
+                // sheet presentation root：显式同步系统模式
+                .preferredColorScheme(appState.currentTheme.theme.isDark ? .dark : .light)
         }
     }
 
@@ -197,8 +199,8 @@ struct UpgradePromptView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(appState.currentTheme.theme.backgroundGradientStart)
-        // 主题同步状态机：从 AppState 实时注入 + 监听 themeChanged 通知
-        .themeSynced()
+        // sheet presentation root：显式同步 colorScheme（系统色随主题明暗）
+        .environment(\.colorScheme, currentTheme.isDark ? .dark : .light)
     }
 }
 

@@ -36,6 +36,8 @@ struct AccountProfileSheet: View {
                     .tint(currentTheme.accentPrimary)   // 所有默认图标/Label 同步主题色
                     .navigationTitle(loc(L10n.Account.profileTitle))
                     .navigationBarTitleDisplayMode(.inline)
+                    // sheet presentation root：显式同步 colorScheme（系统色随主题明暗）
+                    .environment(\.colorScheme, currentTheme.isDark ? .dark : .light)
                     // 设置页 — 系统 push/pop 左右滑动动画
                     .navigationDestination(isPresented: $showSettings) {
                         SettingsView(viewModel: settingsViewModel)
@@ -72,9 +74,6 @@ struct AccountProfileSheet: View {
                     }
             }
         }
-        // 主题同步状态机：sheet 内容环境在呈现时捕获，主树 withTheme 更新不传播 —
-        // themeSynced() 从 AppState 实时注入 + 监听 themeChanged 通知强制重绘
-        .themeSynced()
         .presentationDetents([.large])
         .presentationDragIndicator(.hidden)   // 删除小横条
         .presentationCornerRadius(24)
@@ -85,6 +84,8 @@ struct AccountProfileSheet: View {
                 apiClient: appState.container.apiClient,
                 tokenProvider: appState.container.tokenProvider
             ))
+            // sheet presentation root：显式同步系统模式
+            .preferredColorScheme(currentTheme.isDark ? .dark : .light)
         }
     }
 
