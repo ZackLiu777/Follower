@@ -15,84 +15,91 @@ struct AccountView: View {
     @State private var accessToken: String = ""
 
     var body: some View {
-        NavigationStack {
-            Form {
-                // MARK: 已连接账号列表
-                if !viewModel.accounts.isEmpty {
-                    Section {
-                        ForEach(viewModel.accounts, id: \.id) { account in
-                            accountRow(account)
-                        }
-                        .onDelete { indexSet in
-                            for index in indexSet {
-                                if let id = viewModel.accounts[index].id {
-                                    Task { await viewModel.deleteAccount(id) }
+        ZStack {
+            // 主题渐变背景
+            LinearGradient(colors: theme.backgroundGradientColors, startPoint: .top, endPoint: .bottom).ignoresSafeArea()
+            NavigationStack {
+                Form {
+                    // MARK: 已连接账号列表
+                    if !viewModel.accounts.isEmpty {
+                        Section {
+                            ForEach(viewModel.accounts, id: \.id) { account in
+                                accountRow(account)
+                            }
+                            .onDelete { indexSet in
+                                for index in indexSet {
+                                    if let id = viewModel.accounts[index].id {
+                                        Task { await viewModel.deleteAccount(id) }
+                                    }
                                 }
+                            }
+                            .listRowBackground(theme.cardSurface)
+                        } header: {
+                            Text(loc(L10n.Account.connectedAccounts))
+                        }
+                    }
+
+                    // MARK: 添加新账号
+                    Section {
+                        if viewModel.isAddingAccount {
+                            addAccountForm
+                        } else {
+                            Button { viewModel.isAddingAccount = true } label: {
+                                Label(loc(L10n.Account.connectNew), systemImage: "plus.circle.fill")
                             }
                         }
                     } header: {
-                        Text(loc(L10n.Account.connectedAccounts))
-                    }
-                }
-
-                // MARK: 添加新账号
-                Section {
-                    if viewModel.isAddingAccount {
-                        addAccountForm
-                    } else {
-                        Button { viewModel.isAddingAccount = true } label: {
-                            Label(loc(L10n.Account.connectNew), systemImage: "plus.circle.fill")
-                        }
-                    }
-                } header: {
-                    Text(viewModel.isAddingAccount ? loc(L10n.Account.addAccount) : loc(L10n.Account.connectNew))
-                } footer: {
-                    if let error = viewModel.errorMessage {
-                        Text(error).foregroundColor(.red).font(.caption)
-                    } else {
-                        Text(loc(L10n.Account.footerHint))
-                    }
-                }
-            }
-            .navigationTitle(loc(L10n.Account.title))
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    if viewModel.isAddingAccount {
-                        Button(loc(L10n.Account.cancel)) {
-                            viewModel.isAddingAccount = false
-                            viewModel.username = ""
-                            viewModel.displayName = ""
-                            viewModel.addMode = .manual
-                        }
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if viewModel.isAddingAccount {
-                        if viewModel.addMode == .token {
-                            Button {
-                                Task { await viewModel.connectWithToken(accessToken) }
-                            } label: {
-                                if viewModel.isConnecting { ProgressView() }
-                                else { Text(loc(L10n.Account.connect)).fontWeight(.semibold) }
-                            }
-                            .disabled(accessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isConnecting)
-                        } else if viewModel.addMode == .oauth {
-                            // OAuth button is inside the form
-                            EmptyView()
+                        Text(viewModel.isAddingAccount ? loc(L10n.Account.addAccount) : loc(L10n.Account.connectNew))
+                    } footer: {
+                        if let error = viewModel.errorMessage {
+                            Text(error).foregroundColor(.red).font(.caption)
                         } else {
-                            Button {
-                                Task { await viewModel.addAccount() }
-                            } label: {
-                                if viewModel.isLoading {
-                                    ProgressView()
-                                } else {
-                                    Text(loc(L10n.Account.connect)).fontWeight(.semibold)
-                                }
-                            }
-                            .disabled(viewModel.username.isEmpty || viewModel.displayName.isEmpty || viewModel.isLoading)
+                            Text(loc(L10n.Account.footerHint))
                         }
-                    } else {
-                        Button(loc(L10n.Common.done)) { dismiss() }
+                    }
+                    .listRowBackground(theme.cardSurface)
+                }
+                .scrollContentBackground(.hidden)
+                .navigationTitle(loc(L10n.Account.title))
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        if viewModel.isAddingAccount {
+                            Button(loc(L10n.Account.cancel)) {
+                                viewModel.isAddingAccount = false
+                                viewModel.username = ""
+                                viewModel.displayName = ""
+                                viewModel.addMode = .manual
+                            }
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        if viewModel.isAddingAccount {
+                            if viewModel.addMode == .token {
+                                Button {
+                                    Task { await viewModel.connectWithToken(accessToken) }
+                                } label: {
+                                    if viewModel.isConnecting { ProgressView() }
+                                    else { Text(loc(L10n.Account.connect)).fontWeight(.semibold) }
+                                }
+                                .disabled(accessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isConnecting)
+                            } else if viewModel.addMode == .oauth {
+                                // OAuth button is inside the form
+                                EmptyView()
+                            } else {
+                                Button {
+                                    Task { await viewModel.addAccount() }
+                                } label: {
+                                    if viewModel.isLoading {
+                                        ProgressView()
+                                    } else {
+                                        Text(loc(L10n.Account.connect)).fontWeight(.semibold)
+                                    }
+                                }
+                                .disabled(viewModel.username.isEmpty || viewModel.displayName.isEmpty || viewModel.isLoading)
+                            }
+                        } else {
+                            Button(loc(L10n.Common.done)) { dismiss() }
+                        }
                     }
                 }
             }

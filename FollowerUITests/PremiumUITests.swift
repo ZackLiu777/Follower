@@ -20,19 +20,24 @@ final class PremiumUITests: XCTestCase {
 
     // MARK: - Unlock button in navigation bar
 
-    /// Premium 解锁按钮 → 导航栏中的 crown 按钮应存在
+    /// Premium 解锁按钮 → 设置页导航栏应存在按钮
     func testPremiumUnlockButtonExistsInToolbar() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
-        // Navigate to Settings (last tab)
-        let tabs = app.tabBars.buttons
-        tabs.element(boundBy: tabs.count - 1).tap()
+        // Dashboard avatar → profile sheet → settings
+        let avatar = app.buttons["account_avatar_button"]
+        XCTAssertTrue(avatar.waitForExistence(timeout: 10), "Avatar button should exist on dashboard")
+        avatar.tap()
+        sleep(2)
+        let settingsLink = app.buttons["profile_settings_link"]
+        XCTAssertTrue(settingsLink.waitForExistence(timeout: 10), "Profile sheet settings link should exist")
+        settingsLink.tap()
         sleep(3)
 
-        // Crown button is in navigation bar leading position
+        // Settings navigation bar should exist with back button
         let navBar = app.navigationBars.firstMatch
         XCTAssertTrue(navBar.waitForExistence(timeout: 10), "Navigation bar should exist")
         let crownButton = navBar.buttons["crown.fill"]  // SF Symbol accessibility identifier
-        // Fallback: any navigation bar button
+        // Fallback: any navigation bar button (back)
         let hasButton = crownButton.exists || navBar.buttons.count >= 1
         XCTAssertTrue(hasButton, "Settings nav bar should have buttons")
     }
@@ -40,9 +45,15 @@ final class PremiumUITests: XCTestCase {
     /// 解锁按钮 → 可点击且不崩溃
     func testUnlockButtonIsTappable() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
-        let tabs = app.tabBars.buttons
-        tabs.element(boundBy: tabs.count - 1).tap()
-        sleep(3)
+        let avatar = app.buttons["account_avatar_button"]
+        XCTAssertTrue(avatar.waitForExistence(timeout: 10))
+        avatar.tap()
+        sleep(2)
+        let settingsLink = app.buttons["profile_settings_link"]
+        if settingsLink.waitForExistence(timeout: 5) {
+            settingsLink.tap()
+            sleep(3)
+        }
 
         // Tap first nav bar button if exists
         let navBar = app.navigationBars.firstMatch

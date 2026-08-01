@@ -11,47 +11,14 @@
 import SwiftUI
 
 // ═══════════════════════════════════════════════════════
-//  MARK: - DashboardCard Modifier
-//  白色圆角卡片 + 细微阴影（匹配参考图）
-// ═══════════════════════════════════════════════════════
-
-private struct DashboardCard: ViewModifier {
-    @Environment(\.theme) private var theme
-    @Environment(\.useLiquidGlass) private var useLiquidGlass
-
-    func body(content: Content) -> some View {
-        if useLiquidGlass {
-            // Liquid Glass 模式: Material 毛玻璃 + theme.cardSurface 半透明色叠层
-            content
-                .background(
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 16).fill(.regularMaterial)
-                        RoundedRectangle(cornerRadius: 16).fill(theme.cardSurface)
-                    }
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .shadow(color: .black.opacity(theme.isDark ? 0.10 : 0.05), radius: 8, y: 2)
-        } else {
-            // 非 Liquid Glass (如 Mono Stone): 直接用 cardSurface
-            content
-                .background(theme.cardSurface)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .shadow(color: .black.opacity(0.04), radius: 6, y: 2)
-        }
-    }
-}
-
-extension View {
-    fileprivate func dashboardCard() -> some View { modifier(DashboardCard()) }
-}
-
-// ═══════════════════════════════════════════════════════
 //  MARK: - DashboardView (Root)
+//  （DashboardCard 已移至 Shared/DashboardCard.swift 供 Settings 共用）
 // ═══════════════════════════════════════════════════════
 
 struct DashboardView: View {
     @Environment(AppState.self) private var appState
     @Bindable var viewModel: DashboardViewModel
+    @Bindable var settingsViewModel: SettingsViewModel
     @Environment(\.theme) private var theme
 
     var body: some View {
@@ -69,53 +36,38 @@ struct DashboardView: View {
                             colors: theme.backgroundGradientColors,
                             startPoint: .top, endPoint: .bottom
                         ).ignoresSafeArea()
-                        ScrollView {
-                            VStack(spacing: 12) {
-                                AccountBar(
-                                    accounts: viewModel.accounts,
-                                    selectedAccountId: viewModel.selectedAccountId,
-                                    onSelect: { id in viewModel.selectAccount(id) }
-                                )
-                                // 粉丝周线统计图表 — 与 Trends 页共用同一 TrendChart 组件 + 同一数据源
-                                NavigationLink {
-                                    TrendDetailView(
-                                        metricType: .followerGrowth,
-                                        dataPoints: viewModel.followerWeeklyData,
-                                        timeWindow: .week,
-                                        barGradientStart: theme.chartBarGradientStart,
-                                        barGradientEnd: theme.chartBarGradientEnd
-                                    )
-                                } label: {
-                                    TrendChart(
-                                        dataPoints: viewModel.followerWeeklyData,
-                                        barGradientStart: theme.chartBarGradientStart,
-                                        barGradientEnd: theme.chartBarGradientEnd,
-                                        title: loc(L10n.Trends.followers),
-                                        timeWindow: .week,
-                                        compact: true
-                                    )
-                                    .dashboardCard()
-                                }
-                                .buttonStyle(.plain)
-                                .padding(.horizontal, 4)
-                                KeyMetricsSection(
-                                    engagementRate: viewModel.latestSnapshot?.engagementRate ?? 0,
-                                    reach: viewModel.latestSnapshot?.totalViews ?? 0,
-                                    posts: viewModel.latestSnapshot?.mediaCount ?? 0,
-                                    engagementDelta: viewModel.engagementDelta,
-                                    reachDelta: viewModel.reachDelta,
-                                    postsDelta: viewModel.postsDelta
-                                )
-                                RecentPostsSection(posts: viewModel.recentPosts)
-                                PremiumInsightsSection(
-                                    viewModel: viewModel
-                                )
-                            }
+                        // 固定顶栏（吸顶，不随滚动消失）+ 下方滚动内容
+                        VStack(spacing: 0) {
+                            AccountBar(
+                                accounts: viewModel.accounts,
+                                selectedAccountId: viewModel.selectedAccountId,
+                                settingsViewModel: settingsViewModel,
+                                onSelect: { id in viewModel.selectAccount(id) }
+                            )
                             .padding(.horizontal, 16)
                             .padding(.top, 8)
-                            .padding(.bottom, 24)
+                            .padding(.bottom, 4)
+
+                            ScrollView {
+                                VStack(spacing: 12) {
+                                    // 最近内容 — 上移至原折线图位置
+                                    RecentPostsSection(posts: viewModel.recentPosts)
+                                    // 指标卡片 — 互动率 / 帖子数（竖向堆叠，Liquid Glass）
+                                    KeyMetricsSection(
+                                        snapshot: viewModel.latestSnapshot,
+                                        engagementDelta: viewModel.engagementDelta,
+                                        postsDelta: viewModel.postsDelta
+                                    )
+                                    PremiumInsightsSection(
+                                        viewModel: viewModel
+                                    )
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.top, 4)
+                                .padding(.bottom, 24)
+                            }
+                            .scrollContentBackground(.hidden)
                         }
-                        .scrollContentBackground(.hidden)
                     }
                 } else if viewModel.isLoading || viewModel.isSyncing {
                     ZStack {
@@ -205,71 +157,124 @@ struct DashboardView: View {
 
 // ═══════════════════════════════════════════════════════
 //  MARK: - 2. KeyMetricsSection
-//  参考图: 白色卡片 — 3 列指标（互动率 / 覆盖人数 / 帖子数）
-//  每列: 图标 + 标签 + 大数字 + delta
+//  指标卡片 — 互动率 / 帖子数两张卡片，竖向堆叠，Liquid Glass 背景。
+//  每张卡片含主指标 + 3 个附加指标。
 // ═══════════════════════════════════════════════════════
 
 private struct KeyMetricsSection: View {
-    let engagementRate: Double
-    let reach: Int
-    let posts: Int
+    let snapshot: Snapshot?
     let engagementDelta: Double
-    let reachDelta: Int
     let postsDelta: Int
 
     @Environment(\.theme) private var theme
 
     var body: some View {
-        HStack(spacing: 0) {
-            metricColumn(
-                icon: "heart.fill",
-                label: loc(L10n.Dashboard.engagementRate),
-                value: String(format: "%.1f%%", engagementRate),
-                deltaText: deltaText(engagementDelta, unit: "%", isPercent: true),
-                isPositive: engagementDelta >= 0
-            )
+        VStack(spacing: 12) {
+            engagementCard
+            postsCard
+        }
+    }
 
-            Divider().padding(.vertical, 8)
+    // MARK: 互动率卡片
 
-            metricColumn(
-                icon: "eye.fill",
-                label: loc(L10n.Dashboard.reach),
-                value: formatCompact(reach),
-                deltaText: deltaText(Double(reachDelta), unit: "", isPercent: false),
-                isPositive: reachDelta >= 0
-            )
+    /// 互动率卡片 — 互动率(主) + 总赞 + 总评论 + 总分享
+    private var engagementCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label(loc(L10n.Dashboard.engagementRate), systemImage: "heart.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(theme.textPrimary)
+                Spacer()
+                Text(deltaText(engagementDelta, unit: "%", isPercent: true))
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(engagementDelta >= 0 ? theme.accentPrimary : theme.negativeRed)
+            }
+            .padding(.bottom, 2)
 
-            Divider().padding(.vertical, 8)
+            Text(String(format: "%.1f%%", snapshot?.engagementRate ?? 0))
+                .font(.system(size: 32, weight: .bold))
+                .foregroundColor(theme.textPrimary)
 
-            metricColumn(
-                icon: "doc.text.fill",
-                label: loc(L10n.Dashboard.posts),
-                value: "\(posts)",
-                deltaText: deltaText(Double(postsDelta), unit: "", isPercent: false),
-                isPositive: postsDelta >= 0
-            )
+            HStack(spacing: 0) {
+                miniMetric(icon: "hand.thumbsup.fill",
+                           label: loc(L10n.Dashboard.likes),
+                           value: formatCompact(snapshot?.totalLikes ?? 0))
+                Divider().padding(.vertical, 6)
+                miniMetric(icon: "bubble.left.fill",
+                           label: loc(L10n.Dashboard.comments),
+                           value: formatCompact(snapshot?.totalComments ?? 0))
+                Divider().padding(.vertical, 6)
+                miniMetric(icon: "arrowshape.turn.up.right.fill",
+                           label: loc(L10n.Dashboard.shares),
+                           value: formatCompact(snapshot?.totalShares ?? 0))
+            }
         }
         .padding(16)
         .dashboardCard()
     }
 
-    private func metricColumn(icon: String, label: String, value: String, deltaText: String, isPositive: Bool) -> some View {
-        VStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.system(size: 12))
-                .foregroundColor(theme.accentPrimary)
+    // MARK: 帖子数卡片
 
-            Text(label)
-                .font(.system(size: 12))
-                .foregroundColor(theme.textSecondary)
+    /// 帖子数卡片 — 帖子数(主) + 总曝光 + 平均赞/帖 + 平均评论/帖
+    private var postsCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label(loc(L10n.Dashboard.posts), systemImage: "doc.text.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(theme.textPrimary)
+                Spacer()
+                Text(deltaText(Double(postsDelta), unit: "", isPercent: false))
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(postsDelta >= 0 ? theme.accentPrimary : theme.negativeRed)
+            }
+            .padding(.bottom, 2)
 
-            Text(value)
-                .font(.system(size: 24, weight: .bold))
+            Text("\(snapshot?.mediaCount ?? 0)")
+                .font(.system(size: 32, weight: .bold))
                 .foregroundColor(theme.textPrimary)
 
-            Text(deltaText)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(isPositive ? theme.accentPrimary : theme.negativeRed)
+            HStack(spacing: 0) {
+                miniMetric(icon: "eye.fill",
+                           label: loc(L10n.Dashboard.views),
+                           value: formatCompact(snapshot?.totalViews ?? 0))
+                Divider().padding(.vertical, 6)
+                miniMetric(icon: "heart.circle.fill",
+                           label: loc(L10n.Dashboard.avgLikes),
+                           value: formatCompact(avgLikes))
+                Divider().padding(.vertical, 6)
+                miniMetric(icon: "bubble.left.and.bubble.right.fill",
+                           label: loc(L10n.Dashboard.avgComments),
+                           value: formatCompact(avgComments))
+            }
+        }
+        .padding(16)
+        .dashboardCard()
+    }
+
+    /// 平均赞/帖（媒体数为 0 时返回 0）
+    private var avgLikes: Int {
+        guard let s = snapshot, s.mediaCount > 0 else { return 0 }
+        return s.totalLikes / s.mediaCount
+    }
+
+    /// 平均评论/帖（媒体数为 0 时返回 0）
+    private var avgComments: Int {
+        guard let s = snapshot, s.mediaCount > 0 else { return 0 }
+        return s.totalComments / s.mediaCount
+    }
+
+    /// 小指标列：图标 + 标签 + 数值
+    private func miniMetric(icon: String, label: String, value: String) -> some View {
+        VStack(spacing: 3) {
+            Image(systemName: icon)
+                .font(.system(size: 11))
+                .foregroundColor(theme.accentPrimary)
+            Text(value)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(theme.textPrimary)
+            Text(label)
+                .font(.system(size: 11))
+                .foregroundColor(theme.textSecondary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -678,6 +683,12 @@ private struct PremiumTileItem {
         campaignComparisonService: container.campaignComparisonService,
         engagementHeatmapService: container.engagementHeatmapService
     )
-    DashboardView(viewModel: viewModel)
+    let settingsViewModel = SettingsViewModel(
+        trialManager: container.trialManager,
+        exportService: container.exportService,
+        accountRepo: container.accountRepository,
+        premiumFeatureRepo: container.premiumFeatureRepository
+    )
+    DashboardView(viewModel: viewModel, settingsViewModel: settingsViewModel)
         .environment(appState)
 }

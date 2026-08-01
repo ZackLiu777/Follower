@@ -56,6 +56,8 @@ enum L10n {
         static let comments = "dashboard.comments"
         static let shares = "dashboard.shares"
         static let views = "dashboard.views"
+        static let avgLikes = "dashboard.avgLikes"
+        static let avgComments = "dashboard.avgComments"
         static let recentContent = "dashboard.recentContent"
         static let viewAll = "dashboard.viewAll"
         static let noPostsHint = "dashboard.noPostsHint"
@@ -96,6 +98,8 @@ enum L10n {
     
     // MARK: Settings
     enum Settings {
+        static let activityStatus = "settings.activityStatus"
+        static let personalization = "settings.personalization"
         static let title = "settings.title"
         static let trialStatus = "settings.trialStatus"
         static let trialActive = "settings.trialActive"

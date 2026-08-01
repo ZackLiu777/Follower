@@ -2,7 +2,8 @@
 //  SettingsView.swift
 //  Follower
 //
-//  设置页面 — Premium 锁定主题/导出 + 所有行 SF Symbols。
+//  设置页（完整内容）— 从个人资料弹窗的「设置」入口进入。
+//  Form 多 Section：Trial / 账号 / 语言 / 主题 / 导出 / 存储 / 隐私 / Premium。
 //
 
 import SwiftUI
@@ -11,47 +12,36 @@ struct SettingsView: View {
     @Environment(AppState.self) private var appState
     @Bindable var viewModel: SettingsViewModel
     @Environment(\.theme) private var theme
-    @State private var showAccountSheet: Bool = false
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                LinearGradient(colors: theme.backgroundGradientColors, startPoint: .top, endPoint: .bottom).ignoresSafeArea()
-                Form {
-                    Section { trialSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.trialStatus)) }
-                    Section {
-                        Button { showAccountSheet = true } label: {
-                            Label(loc(L10n.Account.connectNew), systemImage: "person.badge.plus")
-                                .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4)
-                        }.listRowBackground(theme.cardSurface)
-                    } header: { Text(loc(L10n.Settings.accounts)) }
-                    Section { accountSection.listRowBackground(theme.cardSurface) }
-                    // 外观（主题切换 = Premium）
-                    Section {
-                        languageRow.listRowBackground(theme.cardSurface)
-                        themeRow.listRowBackground(theme.cardSurface)
-                    } header: { Text(loc(L10n.Settings.appearance)) }
-                    // 数据导出（= Premium）
-                    Section {
-                        exportRow.listRowBackground(theme.cardSurface)
-                    } header: { Text(loc(L10n.Settings.dataExport)) } footer: { Text(loc(L10n.Settings.exportFooter)) }
-                    Section { storageInfoSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.storage)) }
-                    Section { privacySection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.privacy)) }
-                    Section { premiumFeaturesSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.premiumFeatures)) }
+        ZStack {
+            LinearGradient(colors: theme.backgroundGradientColors, startPoint: .top, endPoint: .bottom).ignoresSafeArea()
+            Form {
+                Section { trialSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.trialStatus)) }
+                // 外观（主题切换 = Premium）
+                Section {
+                    languageRow.listRowBackground(theme.cardSurface)
+                    themeRow.listRowBackground(theme.cardSurface)
+                } header: { Text(loc(L10n.Settings.appearance)) }
+                // 数据导出（= Premium）
+                Section {
+                    exportRow.listRowBackground(theme.cardSurface)
+                } header: { Text(loc(L10n.Settings.dataExport)) } footer: { Text(loc(L10n.Settings.exportFooter)) }
+                Section { storageInfoSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.storage)) }
+                Section { privacySection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.privacy)) }
+                Section { premiumFeaturesSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.premiumFeatures)) }
+            }
+            .scrollContentBackground(.hidden)
+            // 删除确认弹窗 — 挂在 Form 层级（附着在 Button 上 iOS 17+ 有 bug 不弹出）
+            .confirmationDialog(loc(L10n.Settings.deleteConfirmationTitle), isPresented: $viewModel.showDeleteConfirmation, titleVisibility: .visible) {
+                Button(loc(L10n.Common.delete), role: .destructive) {
+                    Task { await viewModel.deleteAllAccounts() }
                 }
-                .scrollContentBackground(.hidden)
-            }
-            .navigationTitle(loc(L10n.Settings.title))
-            .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showAccountSheet) {
-                AccountView(viewModel: AccountViewModel(
-                    accountRepo: appState.container.accountRepository,
-                    syncEngine: appState.container.syncEngine,
-                    apiClient: appState.container.apiClient,
-                    tokenProvider: appState.container.tokenProvider
-                ))
-            }
+                Button(loc(L10n.Common.cancel), role: .cancel) {}
+            } message: { Text(loc(L10n.Settings.deleteConfirmationMessage)) }
         }
+        .navigationTitle(loc(L10n.Settings.title))
+        .navigationBarTitleDisplayMode(.inline)
         .task { await viewModel.loadSettings() }
     }
 
@@ -60,44 +50,25 @@ struct SettingsView: View {
         HStack {
             Label(viewModel.isTrialActive ? loc(L10n.Settings.trialActive) : loc(L10n.Settings.trialEnded),
                   systemImage: viewModel.isTrialActive ? "timer" : "timer.circle")
+                .font(.subheadline)
+                .foregroundColor(theme.textPrimary)
             Spacer()
-            Text(viewModel.trialRemainingTime).foregroundColor(.secondary).font(.subheadline)
-        }
-    }
-
-    // MARK: - Account
-    private var accountSection: some View {
-        Group {
-            ForEach(viewModel.accounts, id: \.id) { account in
-                HStack {
-                    Image(systemName: "camera.fill")
-                    VStack(alignment: .leading) {
-                        Text(account.username).font(.subheadline)
-                        Text(loc(L10n.Account.instagram)).font(.caption).foregroundColor(.secondary)
-                    }
-                    Spacer()
-                    Text(account.authState.rawValue.capitalized).font(.caption)
-                        .foregroundColor(account.authState == .authorized ? .green : .red)
-                }
-            }
-            .onDelete { indexSet in
-                for index in indexSet {
-                    if let id = viewModel.accounts[index].id {
-                        Task { await viewModel.deleteLocalData(accountId: id) }
-                    }
-                }
-            }
-            if viewModel.accounts.isEmpty {
-                Label(loc(L10n.Dashboard.connectAccount), systemImage: "person.crop.circle.badge.plus")
-                    .foregroundColor(.secondary)
-            }
+            Text(viewModel.trialRemainingTime).font(.subheadline).foregroundColor(.secondary)
         }
     }
 
     // MARK: - Language (free)
     private var languageRow: some View {
-        Picker(loc(L10n.Settings.language), selection: Binding(get: { appState.currentLanguage }, set: { appState.setLanguage($0) })) {
-            ForEach(AppLanguage.allCases, id: \.self) { lang in Text(lang.displayName).tag(lang) }
+        HStack {
+            Image(systemName: "globe")
+                .foregroundColor(theme.accentPrimary)
+            Text(loc(L10n.Settings.language)).font(.subheadline)
+            Spacer()
+            Picker("", selection: Binding(get: { appState.currentLanguage }, set: { appState.setLanguage($0) })) {
+                ForEach(AppLanguage.allCases, id: \.self) { lang in Text(lang.displayName).tag(lang) }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
         }
     }
 
@@ -156,7 +127,9 @@ struct SettingsView: View {
     // MARK: - Storage
     private var storageInfoSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label(loc(L10n.Settings.localOnly), systemImage: "lock.shield.fill").font(.subheadline)
+            Label(loc(L10n.Settings.localOnly), systemImage: "lock.shield.fill")
+                .font(.subheadline)
+                .foregroundColor(theme.textPrimary)
             Text(loc(L10n.Settings.storageDescription)).font(.caption).foregroundColor(.secondary)
         }
     }
@@ -174,61 +147,21 @@ struct SettingsView: View {
                 viewModel.showDeleteConfirmation = true
             } label: {
                 Label(loc(L10n.Settings.deleteAllData), systemImage: "trash.fill")
+                    .font(.subheadline)
             }
-            .confirmationDialog(loc(L10n.Settings.deleteConfirmationTitle), isPresented: $viewModel.showDeleteConfirmation, titleVisibility: .visible) {
-                Button(loc(L10n.Common.delete), role: .destructive) {
-                    Task { await viewModel.deleteAllAccounts() }
-                }
-                Button(loc(L10n.Common.cancel), role: .cancel) {}
-            } message: { Text(loc(L10n.Settings.deleteConfirmationMessage)) }
         }
     }
 
-    // MARK: - Premium Features
+    // MARK: - Premium Features（仅保留解锁入口，卡片列表已移除）
     private var premiumFeaturesSection: some View {
-        Group {
-            Button { Task { await viewModel.unlockAllPremium() } } label: {
-                HStack {
-                    Label(loc(L10n.Premium.unlockAll), systemImage: "crown.fill").foregroundColor(.orange)
-                    Spacer()
-                    Image(systemName: "chevron.right").foregroundColor(.secondary).font(.caption)
-                }
+        Button { Task { await viewModel.unlockAllPremium() } } label: {
+            HStack {
+                Label(loc(L10n.Premium.unlockAll), systemImage: "crown.fill")
+                    .font(.subheadline)
+                    .foregroundColor(.orange)
+                Spacer()
+                Image(systemName: "chevron.right").foregroundColor(.secondary).font(.caption)
             }
-            ForEach(viewModel.premiumFeatures, id: \.id) { feature in
-                HStack {
-                    Image(systemName: premiumIcon(for: feature.key))
-                        .foregroundColor(feature.enabled ? theme.positiveGreen : theme.textSecondary)
-                        .frame(width: 24)
-                    Text(feature.key.displayName).font(.subheadline)
-                    Spacer()
-                    Image(systemName: feature.enabled ? "checkmark.seal.fill" : "lock.fill")
-                        .foregroundColor(feature.enabled ? theme.positiveGreen : theme.textSecondary)
-                }
-            }
-        }
-    }
-
-    private func premiumIcon(for key: PremiumFeatureKey) -> String {
-        switch key {
-        case .trendPrediction, .followerGrowthPrediction: return "chart.line.uptrend.xyaxis"
-        case .activityAnalysis: return "bolt.fill"
-        case .retentionAnalysis, .churnAnalysis: return "person.2.fill"
-        case .geoDistribution: return "globe.asia.australia.fill"
-        case .engagementQualityScore: return "star.fill"
-        case .longTermTrendComparison: return "arrow.left.arrow.right"
-        case .csvExport, .excelExport: return "doc.text.fill"
-        case .localAIAnalysis: return "brain.head.profile"
-        case .advancedEncryption: return "lock.shield.fill"
-        case .multiDeviceSync: return "icloud.fill"
-        case .competitorComparison: return "chart.bar.fill"
-        case .authenticityAssessment: return "checkmark.shield.fill"
-        case .mediaKitExport: return "doc.richtext.fill"
-        case .campaignTracking: return "flag.fill"
-        case .engagementHeatmap: return "calendar.badge.clock"
-        case .contentScheduling: return "clock.fill"
-        case .commentManagement: return "bubble.left.and.bubble.right.fill"
-        case .growthDecisions: return "sparkle.magnifyingglass"
-        case .themeSwitching: return "paintpalette.fill"
         }
     }
 }

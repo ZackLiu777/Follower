@@ -68,7 +68,7 @@ private struct ContentViewInner: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            DashboardView(viewModel: dashboardVM)
+            DashboardView(viewModel: dashboardVM, settingsViewModel: settingsVM)
                 .tabItem {
                     Label(loc(L10n.Tab.dashboard),
                         systemImage: selectedTab == 0 ? "square.grid.2x2.fill" : "square.grid.2x2")
@@ -86,12 +86,6 @@ private struct ContentViewInner: View {
                         systemImage: selectedTab == 2 ? "sparkle.magnifyingglass" : "magnifyingglass")
                 }
                 .tag(2).accessibilityIdentifier("tab_decisions")
-            SettingsView(viewModel: settingsVM)
-                .tabItem {
-                    Label(loc(L10n.Tab.settings),
-                        systemImage: selectedTab == 3 ? "gearshape.fill" : "gearshape")
-                }
-                .tag(3).accessibilityIdentifier("tab_settings")
         }
         .tint(appState.currentTheme.theme.accentPrimary)
         .withTheme(appState.currentTheme.theme)
