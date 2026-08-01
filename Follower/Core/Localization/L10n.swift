@@ -133,6 +133,7 @@ enum L10n {
     // MARK: Account
     enum Account {
         static let title = "account.title"
+        static let profileTitle = "account.profileTitle"
         static let connectedAccounts = "account.connectedAccounts"
         static let addAccount = "account.addAccount"
         static let connectNew = "account.connectNew"

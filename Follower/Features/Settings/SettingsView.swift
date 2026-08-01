@@ -152,17 +152,18 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Premium Features（仅保留解锁入口，卡片列表已移除）
+    // MARK: - Premium Master Toggle
+    /// Master 开关 — ON 解锁全部，OFF 锁定全部（状态机聚合所有 key）
     private var premiumFeaturesSection: some View {
-        Button { Task { await viewModel.unlockAllPremium() } } label: {
-            HStack {
-                Label(loc(L10n.Premium.unlockAll), systemImage: "crown.fill")
-                    .font(.subheadline)
-                    .foregroundColor(.orange)
-                Spacer()
-                Image(systemName: "chevron.right").foregroundColor(.secondary).font(.caption)
-            }
+        Toggle(isOn: Binding(
+            get: { viewModel.masterUnlocked },
+            set: { newValue in Task { await viewModel.setMasterUnlocked(newValue) } }
+        )) {
+            Label(loc(L10n.Premium.unlockAll), systemImage: "crown.fill")
+                .font(.subheadline)
+                .foregroundColor(.orange)
         }
+        .tint(theme.positiveGreen)
     }
 }
 

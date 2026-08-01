@@ -20,6 +20,7 @@ struct DashboardView: View {
     @Bindable var viewModel: DashboardViewModel
     @Bindable var settingsViewModel: SettingsViewModel
     @Environment(\.theme) private var theme
+    @State private var showProfileSheet = false
 
     var body: some View {
         let _ = updateSyncState()
@@ -36,38 +37,55 @@ struct DashboardView: View {
                             colors: theme.backgroundGradientColors,
                             startPoint: .top, endPoint: .bottom
                         ).ignoresSafeArea()
-                        // 固定顶栏（吸顶，不随滚动消失）+ 下方滚动内容
-                        VStack(spacing: 0) {
-                            AccountBar(
-                                accounts: viewModel.accounts,
-                                selectedAccountId: viewModel.selectedAccountId,
-                                settingsViewModel: settingsViewModel,
-                                onSelect: { id in viewModel.selectAccount(id) }
-                            )
-                            .padding(.horizontal, 16)
-                            .padding(.top, 8)
-                            .padding(.bottom, 4)
-
-                            ScrollView {
-                                VStack(spacing: 12) {
-                                    // 最近内容 — 上移至原折线图位置
-                                    RecentPostsSection(posts: viewModel.recentPosts)
-                                    // 指标卡片 — 互动率 / 帖子数（竖向堆叠，Liquid Glass）
-                                    KeyMetricsSection(
-                                        snapshot: viewModel.latestSnapshot,
-                                        engagementDelta: viewModel.engagementDelta,
-                                        postsDelta: viewModel.postsDelta
-                                    )
-                                    PremiumInsightsSection(
-                                        viewModel: viewModel
-                                    )
+                        // 滚动内容（头像在导航栏 toolbar，与标题同一水平线）
+                        ScrollView {
+                            VStack(spacing: 12) {
+                                // 多账户快速切换（仅 >1 个账号时显示，Menu 留在内容区不进工具栏）
+                                if viewModel.accounts.count > 1 {
+                                    HStack {
+                                        Menu {
+                                            ForEach(viewModel.accounts, id: \.id) { account in
+                                                Button {
+                                                    if let id = account.id { viewModel.selectAccount(id) }
+                                                } label: {
+                                                    HStack {
+                                                        Text("@\(account.username)")
+                                                        if account.id == viewModel.selectedAccountId {
+                                                            Image(systemName: "checkmark")
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        } label: {
+                                            Label(
+                                                viewModel.accounts.first(where: { $0.id == viewModel.selectedAccountId })?.username ?? "",
+                                                systemImage: "chevron.up.chevron.down"
+                                            )
+                                            .font(.caption)
+                                            .foregroundColor(theme.textSecondary)
+                                        }
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 16)
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.top, 4)
-                                .padding(.bottom, 24)
+
+                                // 最近内容 — 上移至原折线图位置
+                                RecentPostsSection(posts: viewModel.recentPosts)
+                                // 指标卡片 — 互动率 / 帖子数（竖向堆叠，Liquid Glass）
+                                KeyMetricsSection(
+                                    snapshot: viewModel.latestSnapshot,
+                                    engagementDelta: viewModel.engagementDelta,
+                                    postsDelta: viewModel.postsDelta
+                                )
+                                PremiumInsightsSection(
+                                    viewModel: viewModel
+                                )
                             }
-                            .scrollContentBackground(.hidden)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 60)
+                            .padding(.bottom, 24)
                         }
+                        .scrollContentBackground(.hidden)
                     }
                 } else if viewModel.isLoading || viewModel.isSyncing {
                     ZStack {
@@ -94,8 +112,26 @@ struct DashboardView: View {
                     }
                 }
             }
+            .navigationTitle(loc(L10n.Dashboard.title))
             .navigationBarTitleDisplayMode(.inline)
+            // 头像按钮置于 toolbar trailing — 与「仪表盘」标题同一水平线
+            // （纯简单视图：无 Spacer/Menu/sheet，避免 toolbar 布局 bug）
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    AccountBar { showProfileSheet = true }
+                        .frame(width: 32, height: 32)
+                }
+            }
             .refreshable { await viewModel.loadAccounts() }
+        }
+        // 个人资料弹窗由 Dashboard 根层级呈现（不挂 toolbar 内视图）
+        .sheet(isPresented: $showProfileSheet) {
+            AccountProfileSheet(
+                accounts: viewModel.accounts,
+                selectedAccountId: viewModel.selectedAccountId,
+                settingsViewModel: settingsViewModel,
+                onSelect: { id in viewModel.selectAccount(id) }
+            )
         }
         .task { await viewModel.loadAccounts() }
         .onChange(of: viewModel.selectedAccountId) { _, newId in

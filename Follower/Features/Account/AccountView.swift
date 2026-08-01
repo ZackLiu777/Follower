@@ -52,7 +52,7 @@ struct AccountView: View {
                         Text(viewModel.isAddingAccount ? loc(L10n.Account.addAccount) : loc(L10n.Account.connectNew))
                     } footer: {
                         if let error = viewModel.errorMessage {
-                            Text(error).foregroundColor(.red).font(.caption)
+                            Text(error).foregroundColor(theme.negativeRed).font(.caption)
                         } else {
                             Text(loc(L10n.Account.footerHint))
                         }
@@ -184,8 +184,8 @@ struct AccountView: View {
             Spacer()
             Text(loc(L10n.Account.instagram) + " · " + authDisplayName(account.authState))
                 .font(.caption2).padding(.horizontal, 8).padding(.vertical, 4)
-                .background(account.authState == .authorized ? Color.green.opacity(0.15) : Color.red.opacity(0.15))
-                .foregroundColor(account.authState == .authorized ? .green : .red)
+                .background(account.authState == .authorized ? theme.positiveGreen.opacity(0.15) : theme.negativeRed.opacity(0.15))
+                .foregroundColor(account.authState == .authorized ? theme.positiveGreen : theme.negativeRed)
                 .clipShape(Capsule())
         }
         .swipeActions(edge: .trailing) {

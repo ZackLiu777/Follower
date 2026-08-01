@@ -111,13 +111,6 @@ struct UpgradePromptView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // 下滑指示条
-            RoundedRectangle(cornerRadius: 2.5)
-                .fill(theme.divider)
-                .frame(width: 36, height: 5)
-                .padding(.top, 12)
-                .padding(.bottom, 20)
-
             // 皇冠图标
             Image(systemName: "crown.fill")
                 .font(.system(size: 48))

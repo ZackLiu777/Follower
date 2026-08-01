@@ -31,6 +31,8 @@ struct AccountProfileSheet: View {
             NavigationStack {
                 profileForm
                     .tint(theme.accentPrimary)   // 所有默认图标/Label 同步主题色
+                    .navigationTitle(loc(L10n.Account.profileTitle))
+                    .navigationBarTitleDisplayMode(.inline)
                     // 设置页 — 系统 push/pop 左右滑动动画
                     .navigationDestination(isPresented: $showSettings) {
                         SettingsView(viewModel: settingsViewModel)
@@ -86,23 +88,41 @@ struct AccountProfileSheet: View {
         Form {
             // 个人资料 — 头像 + 用户名 + 状态徽章
             Section { profileHeaderSection.listRowBackground(theme.cardSurface) }
+                .listRowInsets(rowInsets)
 
             // 活动状态
             Section { statusSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.activityStatus)) }
+                .listRowInsets(rowInsets)
 
             // 账号（与 SettingsView 原账号区块同款写法）
             Section {
                 Button { showAccountSheet = true } label: {
-                    Label(loc(L10n.Account.connectNew), systemImage: "person.badge.plus")
-                        .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4)
+                    HStack(spacing: 12) {
+                        Image(systemName: "person.badge.plus")
+                            .font(.system(size: 20))
+                            .foregroundStyle(theme.accentPrimary)
+                        Text(loc(L10n.Account.connectNew))
+                            .font(.subheadline)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 64)   // 统一卡片行高度
                 }.listRowBackground(theme.cardSurface)
             } header: { Text(loc(L10n.Settings.accounts)) }
+                .listRowInsets(rowInsets)
+
             Section { accountSection.listRowBackground(theme.cardSurface) }
+                .listRowInsets(rowInsets)
 
             // 个性化入口
             Section { personalizationSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.personalization)) }
+                .listRowInsets(rowInsets)
         }
         .scrollContentBackground(.hidden)
+    }
+
+    /// 统一行内边距 — 顶部/底部 0，左右 16（消除 Form 默认 padding 差异）
+    private var rowInsets: EdgeInsets {
+        EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
     }
 
     // MARK: - 个人资料
@@ -110,20 +130,21 @@ struct AccountProfileSheet: View {
     /// 个人资料头部 — Liquid Glass 头像 + 用户名 + 平台 + 状态徽章
     private var profileHeaderSection: some View {
         HStack(spacing: 14) {
-            // Liquid Glass 头像
-            ZStack {
-                Circle().fill(.ultraThinMaterial)
-                Circle().fill(theme.cardSurface)
-                Circle().stroke(theme.divider, lineWidth: 0.5)
-                Image(systemName: "person.fill")
-                    .font(.system(size: 22))
-                    .foregroundColor(theme.accentPrimary)
-            }
-            .frame(width: 52, height: 52)
+            // iOS 26 Liquid Glass 头像 — 纯 icon + Material 圆底 + 白色描边（与 Dashboard 一致）
+            Image(systemName: "person.fill")
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(theme.accentPrimary)
+                .frame(width: 44, height: 44)
+                .background {
+                    Circle().fill(.ultraThinMaterial)
+                }
+                .overlay {
+                    Circle().stroke(Color.white.opacity(0.4), lineWidth: 0.5)
+                }
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("@\(selectedAccount?.username ?? "")")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(theme.textPrimary)
                 Text(loc(L10n.Account.instagram))
                     .font(.system(size: 13))
@@ -137,7 +158,7 @@ struct AccountProfileSheet: View {
                 .font(.caption)
                 .foregroundColor(isAuthorized ? theme.positiveGreen : theme.negativeRed)
         }
-        .padding(.vertical, 4)
+        .frame(height: 64)   // 统一卡片行高度
     }
 
     // MARK: - 活动状态
@@ -152,6 +173,7 @@ struct AccountProfileSheet: View {
                 .font(.subheadline)
                 .foregroundColor(isAuthorized ? theme.positiveGreen : theme.negativeRed)
         }
+        .frame(height: 64)   // 统一卡片行高度
     }
 
     // MARK: - 账号（与设置页原账号区块同款）
@@ -168,8 +190,9 @@ struct AccountProfileSheet: View {
                 } label: {
                     HStack {
                         Image(systemName: "camera.fill")
-                            .foregroundColor(account.id == selectedAccountId ? theme.accentPrimary : theme.textSecondary)
-                        VStack(alignment: .leading) {
+                            .font(.system(size: 20))
+                            .foregroundStyle(account.id == selectedAccountId ? theme.accentPrimary : theme.accentPrimary.opacity(0.6))
+                        VStack(alignment: .leading, spacing: 4) {
                             Text(account.username).font(.subheadline)
                             Text(loc(L10n.Account.instagram)).font(.caption).foregroundColor(.secondary)
                         }
@@ -179,8 +202,9 @@ struct AccountProfileSheet: View {
                                 .foregroundColor(theme.accentPrimary)
                         }
                         Text(account.authState.rawValue.capitalized).font(.caption)
-                            .foregroundColor(account.authState == .authorized ? .green : .red)
+                            .foregroundColor(account.authState == .authorized ? theme.positiveGreen : theme.negativeRed)
                     }
+                    .frame(height: 64)   // 统一卡片行高度
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -206,13 +230,17 @@ struct AccountProfileSheet: View {
         Button {
             showSettings = true
         } label: {
-            HStack {
-                Label(loc(L10n.Settings.title), systemImage: "gearshape.fill")
+            HStack(spacing: 12) {
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(theme.accentPrimary)
+                Text(loc(L10n.Settings.title))
                     .font(.subheadline)
                     .foregroundColor(theme.textPrimary)
                 Spacer()
                 Image(systemName: "chevron.right").foregroundColor(.secondary).font(.caption)
             }
+            .frame(height: 64)   // 统一卡片行高度
         }
         .accessibilityIdentifier("profile_settings_link")
     }
