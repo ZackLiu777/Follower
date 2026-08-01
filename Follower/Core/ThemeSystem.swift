@@ -56,7 +56,7 @@ struct Theme: Sendable {
     // MARK: - Apple Native（明亮天蓝 → 浅蓝渐变，玻璃卡片）
 
     static let appleNative = Theme(
-        // 背景渐变（三色）：明亮天蓝 → 浅青 → 近白
+        // 背景渐变（三色）：明亮天蓝 → 白 → 浅青
         backgroundGradientColors: [
             .blue.opacity(0.25),
             .white,
@@ -66,7 +66,7 @@ struct Theme: Sendable {
         backgroundSecondary: Color(.secondarySystemBackground),
         backgroundGrouped: Color(.systemGroupedBackground),
         backgroundGradientStart: .blue.opacity(0.25),
-        backgroundGradientEnd: .white,
+        backgroundGradientEnd: .cyan.opacity(0.15),
         // 同色系玻璃：用渐变起始色的低不透明度，与背景完美融合
         cardSurface: .blue.opacity(0.10),
         // elevated 稍实，但依然是同色系
