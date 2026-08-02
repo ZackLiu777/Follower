@@ -148,9 +148,8 @@ struct DecisionsTimelineView: View {
             .font(.system(size: 16, weight: .medium))
             .foregroundColor(theme.textSecondary)
             .frame(width: 36, height: 36)
-            .background(.regularMaterial)
-            .clipShape(Circle())
-            .shadow(color: Color.black.opacity(0.06), radius: 2, x: 0, y: 1)
+            // Liquid Glass 玻璃按钮（36pt 圆角 18 ≈ 圆形）
+            .followerGlassEffect(cornerRadius: 18)
             .rotationEffect(.degrees(isRefreshing ? 360 : 0))
     }
 
@@ -373,16 +372,8 @@ private struct TimelineCardRow: View {
             .padding(.leading, 42)
         }
         .padding(16)
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(theme.divider, lineWidth: 0.5)
-        )
-        .shadow(
-            color: Color.black.opacity(0.04),
-            radius: 2, x: 0, y: 1
-        )
+        // Liquid Glass 玻璃卡片（与 Dashboard 相同实现/参数）
+        .followerGlassEffect(cornerRadius: 8)
     }
 
     // MARK: Helpers
