@@ -21,6 +21,10 @@ struct TrendChart: View {
     let title: String
     var timeWindow: TimeWindow = .day
     var compact: Bool = true   // true=卡片模式(140px+数字)  false=详情模式(全尺寸)
+    /// 总览页增减徽章（+10 / -5），nil 时不显示；颜色随 theme
+    var delta: Int? = nil
+    /// 是否显示标题行（详情页由外部渲染标题时设为 false）
+    var showTitle: Bool = true
 
     /// 图表锚点日期，用于计算时间窗起止
     private var referenceDate: Date { Date() }
@@ -60,21 +64,26 @@ struct TrendChart: View {
 
     // ── Body ──
 
+    @Environment(\.theme) private var theme
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.subheadline).foregroundColor(.secondary).padding(.leading, 4)
+            // 标题在上、增减数字在下（比文字大几号，颜色随 theme）
+            if showTitle {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.subheadline).foregroundColor(theme.textSecondary)
+                    if let delta {
+                        Text("\(delta >= 0 ? "+" : "")\(delta)")
+                            .font(.system(size: 30, weight: .bold, design: .rounded))
+                            .foregroundColor(theme.accentPrimary)
+                    }
+                }
+                .padding(.leading, 4)
+            }
 
             if dataPoints.isEmpty { emptyState }
             else {
-                // 详情模式显示统计总数
-                if !compact {
-                    let total = dataPoints.map(\.value).reduce(0, +)
-                    Text(formatInt(total))
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundColor(total >= 0 ? .primary : .red)
-                        .padding(.leading, 4)
-                }
                 switch timeWindow {
                 case .day:   dayChart
                 case .week:  weekChart

@@ -10243,6 +10243,35 @@
         }
       }
     },
+    "trends.thisWeek" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Week"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今週"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本周"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本週"
+          }
+        }
+      }
+    },
     "trends.title" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -10268,6 +10297,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "趨勢"
+          }
+        }
+      }
+    },
+    "trends.today" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天"
           }
         }
       }
@@ -10432,6 +10490,9 @@
     "x%@" : {
 
     },
+    "和弦练习与指法分析表" : {
+
+    },
     "家" : {
 
     },
@@ -10441,7 +10502,16 @@
     "探索和弦包" : {
 
     },
+    "播放示范音效" : {
+
+    },
     "第一个和弦" : {
+
+    },
+    "系统原生 Zoom 缩放转场能够完美接管卡片层次，支持天然手势侧滑与拖拽返回。" : {
+
+    },
+    "音符构成：%@" : {
 
     }
   },

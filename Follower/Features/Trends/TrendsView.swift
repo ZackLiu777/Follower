@@ -36,9 +36,8 @@ struct TrendsView: View {
                             let points = viewModel.chartData(for: metricType)
                             NavigationLink {
                                 TrendDetailView(
+                                    viewModel: viewModel,
                                     metricType: metricType,
-                                    dataPoints: points,
-                                    timeWindow: viewModel.selectedWindow,
                                     barGradientStart: theme.chartBarGradientStart,
                                     barGradientEnd: theme.chartBarGradientEnd
                                 )
@@ -48,7 +47,8 @@ struct TrendsView: View {
                                     barGradientStart: theme.chartBarGradientStart,
                                     barGradientEnd: theme.chartBarGradientEnd,
                                     title: metricType.localizedName,
-                                    timeWindow: viewModel.selectedWindow
+                                    timeWindow: viewModel.selectedWindow,
+                                    delta: viewModel.delta(for: metricType)
                                 )
                             }
                             .buttonStyle(.plain)

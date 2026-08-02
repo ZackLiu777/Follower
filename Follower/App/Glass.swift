@@ -6,14 +6,14 @@
 import SwiftUI
 
 // MARK: - 数据模型
-struct Chord: Identifiable {
+struct Chord: Identifiable, Hashable {
     let id = UUID()
     let name: String
     let notes: String
     let isMajor: Bool
 }
 
-struct ExplorePackage: Identifiable {
+struct ExplorePackage: Identifiable, Hashable {
     let id = UUID()
     let name: String
     let iconName: String
@@ -87,7 +87,7 @@ extension View {
     }
 }
 
-// MARK: - 和弦卡片
+// MARK: - 和弦列表卡片 (作为 NavigationLink 的 Label)
 struct ChordCardView: View {
     let chord: Chord
 
@@ -156,8 +156,103 @@ struct ExploreCardView: View {
     }
 }
 
-// MARK: - 主视图
+// MARK: - 详情页 (iOS 18 目标视图)
+struct ChordDetailView: View {
+    let chord: Chord
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack {
+            // 背景深色
+            Color(red: 0.04, green: 0.04, blue: 0.07)
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 20) {
+                // Header (关闭按钮)
+                HStack {
+                    Spacer()
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white.opacity(0.8))
+                            .padding(10)
+                            .liquidGlassEffect(cornerRadius: 20)
+                    }
+                }
+
+                // 标题信息
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(chord.name)
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                    
+                    Text("音符构成：\(chord.notes)")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                
+                Divider()
+                    .background(Color.white.opacity(0.2))
+
+                // 展示主体图表/图标区域
+                VStack(spacing: 16) {
+                    Spacer()
+                    
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.08))
+                            .frame(width: 120, height: 120)
+                            .blur(radius: 10)
+                        
+                        Image(systemName: chord.isMajor ? "guitars.fill" : "guitars")
+                            .font(.system(size: 56))
+                            .foregroundStyle(chord.isMajor ? .pink : .cyan)
+                    }
+                    
+                    Text("和弦练习与指法分析表")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.9))
+                    
+                    Text("系统原生 Zoom 缩放转场能够完美接管卡片层次，支持天然手势侧滑与拖拽返回。")
+                        .font(.system(size: 13))
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.white.opacity(0.6))
+                        .padding(.horizontal, 20)
+                    
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+                .liquidGlassEffect(cornerRadius: 20)
+
+                // 底部播放操作按钮
+                Button(action: {}) {
+                    HStack {
+                        Image(systemName: "play.fill")
+                        Text("播放示范音效")
+                    }
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(chord.isMajor ? Color.pink.opacity(0.8) : Color.cyan.opacity(0.8))
+                    .cornerRadius(16)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            .padding(.bottom, 20)
+        }
+        .navigationBarBackButtonHidden(true) // 隐藏系统默认 Back 按钮，使用自定义玻璃关闭按钮
+    }
+}
+
+// MARK: - 主视图 (iOS 18+ 原生 Zoom 架构)
 struct ChordListView: View {
+    // 1. 定义 iOS 18+ Transition 命名空间
+    @Namespace private var heroZoomNamespace
+
     let columns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12)
@@ -182,89 +277,102 @@ struct ChordListView: View {
     ]
 
     var body: some View {
-        ZStack {
-            // 背景深色
-            Color(red: 0.04, green: 0.04, blue: 0.07)
-                .ignoresSafeArea()
+        // 2. 必须包裹在 NavigationStack 中
+        NavigationStack {
+            ZStack {
+                Color(red: 0.04, green: 0.04, blue: 0.07)
+                    .ignoresSafeArea()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    
-                    // 顶部 Header
-                    HStack {
-                        Spacer()
-                        Text("家")
-                            .font(.system(size: 17, weight: .bold))
-                            .foregroundColor(.white)
-                        Spacer()
-                    }
-                    .overlay(
-                        HStack(spacing: 12) {
-                            Spacer()
-                            Button {} label: {
-                                Image(systemName: "gearshape.fill")
-                                    .font(.system(size: 15))
-                                    .padding(9)
-                                    .liquidGlassEffect(cornerRadius: 20)
-                            }
-                            Button {} label: {
-                                Image(systemName: "ellipsis")
-                                    .font(.system(size: 15))
-                                    .padding(9)
-                                    .liquidGlassEffect(cornerRadius: 20)
-                            }
-                        }
-                        .foregroundColor(.white)
-                    )
-                    .padding(.top, 8)
-
-                    // 第一部分：第一个和弦
-                    VStack(alignment: .leading, spacing: 14) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        
+                        // 顶部 Header
                         HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("第一个和弦")
-                                    .font(.system(size: 22, weight: .bold))
-                                    .foregroundColor(.white)
-                                
-                                Text("对于刚开始学习吉他和弦的人来说")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.white.opacity(0.5))
-                            }
-                            
                             Spacer()
-                            
-                            Button {} label: {
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundColor(.white.opacity(0.8))
-                                    .padding(10)
-                                    .liquidGlassEffect(cornerRadius: 20)
-                            }
+                            Text("家")
+                                .font(.system(size: 17, weight: .bold))
+                                .foregroundColor(.white)
+                            Spacer()
                         }
-
-                        // 双列网格
-                        LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(firstChords) { chord in
-                                ChordCardView(chord: chord)
+                        .overlay(
+                            HStack(spacing: 12) {
+                                Spacer()
+                                Button {} label: {
+                                    Image(systemName: "gearshape.fill")
+                                        .font(.system(size: 15))
+                                        .padding(9)
+                                        .liquidGlassEffect(cornerRadius: 20)
+                                }
+                                Button {} label: {
+                                    Image(systemName: "ellipsis")
+                                        .font(.system(size: 15))
+                                        .padding(9)
+                                        .liquidGlassEffect(cornerRadius: 20)
+                                }
                             }
-                        }
-                    }
-
-                    // 第二部分：探索和弦包
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text("探索和弦包")
-                            .font(.system(size: 22, weight: .bold))
                             .foregroundColor(.white)
+                        )
+                        .padding(.top, 8)
 
-                        LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(explorePackages) { package in
-                                ExploreCardView(package: package)
+                        // 第一部分：第一个和弦
+                        VStack(alignment: .leading, spacing: 14) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("第一个和弦")
+                                        .font(.system(size: 22, weight: .bold))
+                                        .foregroundColor(.white)
+                                    
+                                    Text("对于刚开始学习吉他和弦的人来说")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.white.opacity(0.5))
+                                }
+                                
+                                Spacer()
+                                
+                                Button {} label: {
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 13, weight: .bold))
+                                        .foregroundColor(.white.opacity(0.8))
+                                        .padding(10)
+                                        .liquidGlassEffect(cornerRadius: 20)
+                                }
+                            }
+
+                            // 双列网格 (结合 NavigationLink & zoom 动画)
+                            LazyVGrid(columns: columns, spacing: 12) {
+                                ForEach(firstChords) { chord in
+                                    NavigationLink {
+                                        ChordDetailView(chord: chord)
+                                            // 关键配置 1：给目标页面指定 .zoom 转场，并关联 sourceID
+                                            .navigationTransition(
+                                                .zoom(sourceID: chord.id, in: heroZoomNamespace)
+                                            )
+                                    } label: {
+                                        ChordCardView(chord: chord)
+                                    }
+                                    .buttonStyle(PlainButtonStyle()) // 保持原本样式，防止被 NavigationLink 蓝字化
+                                    // 关键配置 2：标记当前卡片为动画触发的源 (Source Tag)
+                                    .matchedTransitionSource(id: chord.id, in: heroZoomNamespace)
+                                }
+                            }
+                        }
+
+                        // 第二部分：探索和弦包
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("探索和弦包")
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundColor(.white)
+
+                            LazyVGrid(columns: columns, spacing: 12) {
+                                ForEach(explorePackages) { package in
+                                    ExploreCardView(package: package)
+                                }
                             }
                         }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 30)
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 30)
             }
         }
         .preferredColorScheme(.dark)
