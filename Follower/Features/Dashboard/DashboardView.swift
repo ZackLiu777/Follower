@@ -82,7 +82,7 @@ struct DashboardView: View {
                                 )
                             }
                             .padding(.horizontal, 16)
-                            .padding(.top, 60)
+                            .padding(.top, 12)
                             .padding(.bottom, 24)
                         }
                         .scrollContentBackground(.hidden)
@@ -407,18 +407,8 @@ private struct PremiumInsightsSection: View {
 
     let viewModel: DashboardViewModel
 
-    @State private var currentPage: Int = 0
-
     private var isUnlocked: Bool {
         appState.premiumEnabledFlags[PremiumFeatureKey.trendPrediction.rawValue] == true
-    }
-
-    /// 每页 4 格
-    private let itemsPerPage = 4
-    /// 总页数
-    private var totalPages: Int {
-        let all = allPremiumItems
-        return (all.count + itemsPerPage - 1) / itemsPerPage
     }
 
     // MARK: - 数据源: 全部 9 项
@@ -497,10 +487,10 @@ private struct PremiumInsightsSection: View {
         }
     }
 
-    // MARK: - Body
+    // MARK: - Body（Glass.swift 滚动式：连续双列网格，无分页）
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 12) {
             // ── 标题行 ──
             HStack(spacing: 4) {
                 Image(systemName: "crown.fill")
@@ -512,58 +502,18 @@ private struct PremiumInsightsSection: View {
             .foregroundColor(theme.accentPrimary)
             .padding(.horizontal, 16)
 
-            // ── 分页 2×2 网格 ──
-            TabView(selection: $currentPage) {
-                ForEach(0..<totalPages, id: \.self) { pageIndex in
-                    let items = Array(allPremiumItems[itemsPerPage * pageIndex..<min(itemsPerPage * (pageIndex + 1), allPremiumItems.count)])
-                    gridPage(items: items, pageIndex: pageIndex)
-                        .tag(pageIndex)
+            // ── 连续双列 Liquid Glass 网格（随页面滚动，无分页）──
+            LazyVGrid(
+                columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+                spacing: 10
+            ) {
+                ForEach(Array(allPremiumItems.enumerated()), id: \.offset) { index, item in
+                    tileCard(item: item, globalIndex: index)
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: gridHeight)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-
-            // ── 页面指示器小点 ──
-            if totalPages > 1 {
-                HStack(spacing: 6) {
-                    ForEach(0..<totalPages, id: \.self) { index in
-                        Circle()
-                            .fill(index == currentPage
-                                  ? theme.accentPrimary
-                                  : theme.textTertiary.opacity(0.35))
-                            .frame(width: index == currentPage ? 7 : 5,
-                                   height: index == currentPage ? 7 : 5)
-                            .animation(.easeInOut(duration: 0.2), value: currentPage)
-                    }
-                }
-                .padding(.top, 2)
-            }
+            .padding(.horizontal, 16)
         }
         .premiumGate(feature: .trendPrediction)
-    }
-
-    // MARK: - 2×2 Grid Page
-
-    private func gridPage(items: [PremiumTileItem], pageIndex: Int) -> some View {
-        let columns = [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)]
-
-        return VStack(spacing: 10) {
-            LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(Array(items.enumerated()), id: \.offset) { localIndex, item in
-                    tileCard(item: item, globalIndex: itemsPerPage * pageIndex + localIndex)
-                }
-
-                // 最后一页不足 4 格时，用占位补齐保持 2×2
-                if items.count < itemsPerPage {
-                    ForEach(items.count..<itemsPerPage, id: \.self) { _ in
-                        Color.clear
-                    }
-                }
-            }
-        }
-        .padding(12)
-        .background(cardBackground)
     }
 
     // MARK: - 单个 Tile 卡片
@@ -607,8 +557,7 @@ private struct PremiumInsightsSection: View {
             }
             .padding(10)
             .frame(maxWidth: .infinity, minHeight: 110)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .followerGlassEffect(cornerRadius: 12)
         }
         .buttonStyle(.plain)
     }
@@ -643,8 +592,7 @@ private struct PremiumInsightsSection: View {
         }
         .padding(10)
         .frame(maxWidth: .infinity, minHeight: 110)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .followerGlassEffect(cornerRadius: 12)
     }
 
     /// 根据全局 index 返回对应跳转页面
@@ -669,22 +617,6 @@ private struct PremiumInsightsSection: View {
         case 14: ContentSchedulingDetailView(activityResult: viewModel.activityResult)
         case 15: CommentManagementDetailView(comments: [])
         default: EmptyView()
-        }
-    }
-
-    /// 2×2 网格高度: padding(12) * 2 + tile(110) * 2 + spacing(10)
-    private var gridHeight: CGFloat { 264 }
-
-    /// 卡片背景: Liquid Glass / 不透明
-    @ViewBuilder
-    private var cardBackground: some View {
-        if useLiquidGlass {
-            ZStack {
-                RoundedRectangle(cornerRadius: 16).fill(.regularMaterial)
-                RoundedRectangle(cornerRadius: 16).fill(theme.cardSurface)
-            }
-        } else {
-            theme.cardSurface
         }
     }
 }

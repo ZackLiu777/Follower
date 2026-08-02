@@ -11,7 +11,7 @@ import Testing
 /// Unit tests for Theme system — covers color tokens, dark mode, liquid glass, and AppTheme mapping
 struct ThemeTests {
 
-    static let allThemes: [Theme] = [.appleNative, .instagram, .appleDark, .forest, .roseGold, .monoStone]
+    static let allThemes: [Theme] = [.appleNative, .instagram, .appleDark, .forest, .roseGold, .monoStone, .purple, .instagramDark]
 
     /// 遍历所有 6 个主题 → 每个颜色 token 和 displayName 均非空
     @Test func testAllColorTokensNonNil() {
@@ -62,9 +62,9 @@ struct ThemeTests {
         #expect(!Theme.monoStone.liquidGlassEnabled)
     }
 
-    /// AppTheme 枚举计数 → allCases.count == 6
+    /// AppTheme 枚举计数 → allCases.count == 8
     @Test func testAppThemeCount() {
-        #expect(AppTheme.allCases.count == 6)
+        #expect(AppTheme.allCases.count == 8)
     }
 
     /// 每个 AppTheme 映射到 Theme → displayName 均非空
