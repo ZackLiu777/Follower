@@ -533,7 +533,8 @@ private struct PremiumInsightsSection: View {
     private func unlockedTile(icon: String, label: String, value: String, globalIndex: Int) -> some View {
         let destination = destinationFor(index: globalIndex)
         NavigationLink(destination: destination) {
-            VStack(alignment: .leading, spacing: 8) {
+            // 统一居中布局：图标居中，文字与图标对齐（水平居中）
+            VStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 16))
                     .foregroundColor(theme.accentPrimary)
@@ -544,17 +545,20 @@ private struct PremiumInsightsSection: View {
                 Text(label)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(theme.textPrimary)
+                    .multilineTextAlignment(.center)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
 
                 Text(value.isEmpty ? "—" : value)
                     .font(.system(size: 11))
                     .foregroundColor(theme.textSecondary)
+                    .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Spacer(minLength: 0)
             }
+            .frame(maxWidth: .infinity)
             .padding(10)
             .frame(maxWidth: .infinity, minHeight: 110)
             .followerGlassEffect(cornerRadius: 12)
@@ -564,34 +568,38 @@ private struct PremiumInsightsSection: View {
 
     /// 锁定态 Tile
     private func lockedTile(icon: String, label: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(theme.textTertiary)
-                    .frame(width: 32, height: 32)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                Spacer()
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(theme.textTertiary)
-            }
+        // 统一居中布局：图标居中（与解锁态一致），lock 徽章覆盖右上角
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(theme.textTertiary)
+                .frame(width: 32, height: 32)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
 
             Text(label)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(theme.textTertiary)
+                .multilineTextAlignment(.center)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
 
             Text("—")
                 .font(.system(size: 11))
                 .foregroundColor(theme.textTertiary.opacity(0.5))
+                .multilineTextAlignment(.center)
 
             Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity)
         .padding(10)
         .frame(maxWidth: .infinity, minHeight: 110)
+        .overlay(alignment: .topTrailing) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 10))
+                .foregroundColor(theme.textTertiary)
+                .padding(8)
+        }
         .followerGlassEffect(cornerRadius: 12)
     }
 
