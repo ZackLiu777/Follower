@@ -37,7 +37,7 @@ final class AppState {
     // MARK: - Published
 
     /// 当前主题 — didSet 触发状态机转移：transitioning → 广播 themeChanged → synced
-     var currentTheme: AppTheme = .instagram {
+     var currentTheme: AppTheme = .instagramDark {
         didSet {
             #if DEBUG
             print("[ThemeDebug] currentTheme changed: \(oldValue.rawValue) → \(currentTheme.rawValue)")

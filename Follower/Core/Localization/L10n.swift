@@ -94,6 +94,8 @@ enum L10n {
         static let growth = "trends.growth"
         static let noData = "trends.noData"
         static let noDataHint = "trends.noDataHint"
+        static let today = "trends.today"
+        static let thisWeek = "trends.thisWeek"
     }
     
     // MARK: Settings
@@ -115,6 +117,8 @@ enum L10n {
         static let forest = "settings.forest"
         static let roseGold = "settings.roseGold"
         static let monoStone = "settings.monoStone"
+        static let purple = "settings.purple"
+        static let instagramDark = "settings.instagramDark"
         static let dataExport = "settings.dataExport"
         static let format = "settings.format"
         static let exportData = "settings.exportData"

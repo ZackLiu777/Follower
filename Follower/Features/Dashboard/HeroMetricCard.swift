@@ -68,8 +68,7 @@ struct HeroMetricCard: View {
             }
         }
         .padding()
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .followerGlassEffect(cornerRadius: 20)
     }
 }
 

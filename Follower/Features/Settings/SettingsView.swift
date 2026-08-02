@@ -192,7 +192,7 @@ struct SettingsView: View {
                 .font(.subheadline)
                 .foregroundColor(.orange)
         }
-        .tint(currentTheme.positiveGreen)
+        .tint(currentTheme.accentPrimary)
     }
 }
 

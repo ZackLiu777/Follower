@@ -40,6 +40,29 @@ final class TrendsViewModel {
      var isLoading: Bool = false
      var errorMessage: String?
 
+    // ── 年份维度（详情页 year 模式）──
+    /// 当前选中年份（详情页 year 窗口切换）
+     var selectedYear: Int = Calendar.current.component(.year, from: Date())
+    /// 可选年份 — 账号创建年到当前年
+     var availableYears: [Int] = []
+
+    // MARK: - 年份范围
+
+    /// 计算可选年份：账号创建年 → 当前年（升序）
+    func computeAvailableYears(account: Account?) {
+        let nowYear = Calendar.current.component(.year, from: Date())
+        guard let account else {
+            availableYears = [nowYear]
+            selectedYear = nowYear
+            return
+        }
+        let startYear = Calendar.current.component(.year, from: account.createdAt)
+        availableYears = Array(startYear...nowYear)
+        if !availableYears.contains(selectedYear) {
+            selectedYear = nowYear
+        }
+    }
+
     /// 依赖注入 Repository，建立数据访问通道
     init(snapshotRepo: SnapshotRepositoryProtocol, metricRepo: MetricRepositoryProtocol, accountRepo: AccountRepositoryProtocol) {
         self.snapshotRepo = snapshotRepo; self.metricRepo = metricRepo; self.accountRepo = accountRepo
@@ -60,6 +83,9 @@ final class TrendsViewModel {
             dailyMetrics = [:]; weeklyMetrics = [:]; monthlyMetrics = [:]; yearlyMetrics = [:]; hourlyData = [:]
         }
         selectedAccountId = accountId
+        // 计算年份范围（账号创建年 → 当前年）
+        let account = try? await accountRepo.fetch(id: accountId)
+        computeAvailableYears(account: account)
         isLoading = true; defer { isLoading = false }
         do {
             var dayDict: [MetricType: [Metric]] = [:]
@@ -85,11 +111,16 @@ final class TrendsViewModel {
 
     /// 根据当前时间窗返回指定指标的 TrendDataPoint 数组，供图表渲染
     func chartData(for metricType: MetricType) -> [TrendDataPoint] {
+        chartData(for: metricType, in: selectedWindow)
+    }
+
+    /// 参数化窗口版 — 详情页独立切换窗口时使用；year 窗口按 selectedYear 过滤
+    func chartData(for metricType: MetricType, in window: TimeWindow) -> [TrendDataPoint] {
         let calendar = Calendar.current
         let now = Date()
 
         let result: [TrendDataPoint]
-        switch selectedWindow {
+        switch window {
         case .day:
             result = hourlyData[metricType] ?? []
 
@@ -104,9 +135,42 @@ final class TrendsViewModel {
 
         case .year:
             result = (yearlyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
+                .filter { Calendar.current.component(.year, from: $0.observedAt) == selectedYear }
                 .map { TrendDataPoint(date: $0.observedAt, value: $0.value) }
         }
         return result
+    }
+
+    // MARK: - 总计 / 增减 / 周期标签
+
+    /// 总览页增减：窗口内末值 − 首值
+    /// day 窗口用日粒度相邻两天（今天 vs 昨天），其余窗口用窗口内首末差
+    func delta(for metricType: MetricType) -> Int {
+        switch selectedWindow {
+        case .day:
+            let daily = (dailyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
+            guard daily.count >= 2 else { return 0 }
+            return Int(daily[daily.count - 1].value - daily[daily.count - 2].value)
+        default:
+            let points = chartData(for: metricType)
+            guard points.count >= 2 else { return 0 }
+            return Int(points.last!.value - points.first!.value)
+        }
+    }
+
+    /// 详情页总计：窗口内直接求和
+    func totalValue(for metricType: MetricType, in window: TimeWindow) -> Int {
+        chartData(for: metricType, in: window).reduce(0) { $0 + Int($1.value) }
+    }
+
+    /// 周期标签（详情页总计下方）：今天 / 本周 / 2026年7月 / 2026
+    func periodLabel(for window: TimeWindow) -> String {
+        switch window {
+        case .day: return loc(L10n.Trends.today)
+        case .week: return loc(L10n.Trends.thisWeek)
+        case .month: return Date().formatted(.dateTime.year().month())
+        case .year: return "\(selectedYear)"
+        }
     }
 
     /// 日视图：基于最新 Snapshot 按 24 小时均分
