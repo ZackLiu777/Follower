@@ -85,7 +85,7 @@ struct TrendsView: View {
 
     private var backgroundView: some View {
         LinearGradient(
-            colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+            colors: theme.backgroundGradientColors,
             startPoint: .top, endPoint: .bottom
         ).ignoresSafeArea()
     }

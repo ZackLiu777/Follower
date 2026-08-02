@@ -40,7 +40,7 @@ struct BestTimeView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                colors: theme.backgroundGradientColors,
                 startPoint: .top, endPoint: .bottom
             ).ignoresSafeArea()
 

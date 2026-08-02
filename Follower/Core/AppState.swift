@@ -18,6 +18,15 @@ enum AppSyncState: Sendable {
     case dataReady      // 数据就绪 → 展示内容
 }
 
+// MARK: - Theme Sync State（主题同步状态机）
+
+/// 主题切换同步阶段 — 管理 currentTheme 更新后各注入点（主树 / sheet 内容）的同步
+enum ThemeSyncPhase: Equatable, Sendable {
+    case idle           // 初始：未发生切换
+    case transitioning  // 切换中：currentTheme 已更新，正在向所有注入点同步
+    case synced         // 同步完成：所有 UI 已使用新主题
+}
+
 // 全局应用状态管理器 — 持有主题、语言、试用状态和 Premium 标志位
 @MainActor
 @Observable
@@ -27,7 +36,25 @@ final class AppState {
 
     // MARK: - Published
 
-     var currentTheme: AppTheme = .instagram
+    /// 当前主题 — didSet 触发状态机转移：transitioning → 广播 themeChanged → synced
+     var currentTheme: AppTheme = .instagram {
+        didSet {
+            #if DEBUG
+            print("[ThemeDebug] currentTheme changed: \(oldValue.rawValue) → \(currentTheme.rawValue)")
+            #endif
+            guard oldValue != currentTheme else { return }
+            // 状态机转移：进入切换中
+            themeSyncPhase = .transitioning
+            // 广播给所有注入点（sheet 内容等无法靠 environment 传播的视图）
+            NotificationCenter.default.post(name: .themeChanged, object: currentTheme)
+            // 同步完成
+            themeSyncPhase = .synced
+        }
+    }
+    /// 主题同步阶段（状态机当前状态）
+    var themeSyncPhase: ThemeSyncPhase = .synced
+    /// 用户最后选择的浅色主题 — 「深色模式」开关关闭时恢复
+    var lightThemePreference: AppTheme = .instagram
      var currentLanguage: AppLanguage = LanguageStore.shared.current
      var isTrialActive: Bool = false
      var trialStartDate: Date?
@@ -78,10 +105,18 @@ final class AppState {
         LanguageStore.shared.current = language
         currentLanguage = language
     }
+
+    /// 记录浅色主题偏好 — 主题选择器选择浅色主题时调用，「深色模式」开关关闭时恢复
+    func rememberLightTheme(_ theme: AppTheme) {
+        if !theme.theme.isDark {
+            lightThemePreference = theme
+        }
+    }
 }
 
 // 全局通知名称扩展
 extension Notification.Name {
     static let premiumUnlocked = Notification.Name("com.follower.premiumUnlocked")
     static let accountCreated = Notification.Name("com.follower.accountCreated")
+    static let themeChanged = Notification.Name("com.follower.themeChanged")
 }

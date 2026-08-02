@@ -8,95 +8,107 @@
 import SwiftUI
 
 struct AccountView: View {
+    @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.theme) private var theme
     @Bindable var viewModel: AccountViewModel
 
     @State private var accessToken: String = ""
 
+    /// 单一状态源 — 统一从 AppState 读取主题（避免双状态源半刷新）
+    private var currentTheme: Theme { appState.currentTheme.theme }
+
     var body: some View {
-        NavigationStack {
-            Form {
-                // MARK: 已连接账号列表
-                if !viewModel.accounts.isEmpty {
-                    Section {
-                        ForEach(viewModel.accounts, id: \.id) { account in
-                            accountRow(account)
-                        }
-                        .onDelete { indexSet in
-                            for index in indexSet {
-                                if let id = viewModel.accounts[index].id {
-                                    Task { await viewModel.deleteAccount(id) }
+        ZStack {
+            // 主题渐变背景
+            LinearGradient(colors: appState.currentTheme.theme.backgroundGradientColors, startPoint: .top, endPoint: .bottom).ignoresSafeArea()
+            NavigationStack {
+                Form {
+                    // MARK: 已连接账号列表
+                    if !viewModel.accounts.isEmpty {
+                        Section {
+                            ForEach(viewModel.accounts, id: \.id) { account in
+                                accountRow(account)
+                            }
+                            .onDelete { indexSet in
+                                for index in indexSet {
+                                    if let id = viewModel.accounts[index].id {
+                                        Task { await viewModel.deleteAccount(id) }
+                                    }
                                 }
+                            }
+                            .listRowBackground(currentTheme.cardSurface)
+                        } header: {
+                            Text(loc(L10n.Account.connectedAccounts))
+                        }
+                    }
+
+                    // MARK: 添加新账号
+                    Section {
+                        if viewModel.isAddingAccount {
+                            addAccountForm
+                        } else {
+                            Button { viewModel.isAddingAccount = true } label: {
+                                Label(loc(L10n.Account.connectNew), systemImage: "plus.circle.fill")
                             }
                         }
                     } header: {
-                        Text(loc(L10n.Account.connectedAccounts))
-                    }
-                }
-
-                // MARK: 添加新账号
-                Section {
-                    if viewModel.isAddingAccount {
-                        addAccountForm
-                    } else {
-                        Button { viewModel.isAddingAccount = true } label: {
-                            Label(loc(L10n.Account.connectNew), systemImage: "plus.circle.fill")
-                        }
-                    }
-                } header: {
-                    Text(viewModel.isAddingAccount ? loc(L10n.Account.addAccount) : loc(L10n.Account.connectNew))
-                } footer: {
-                    if let error = viewModel.errorMessage {
-                        Text(error).foregroundColor(.red).font(.caption)
-                    } else {
-                        Text(loc(L10n.Account.footerHint))
-                    }
-                }
-            }
-            .navigationTitle(loc(L10n.Account.title))
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    if viewModel.isAddingAccount {
-                        Button(loc(L10n.Account.cancel)) {
-                            viewModel.isAddingAccount = false
-                            viewModel.username = ""
-                            viewModel.displayName = ""
-                            viewModel.addMode = .manual
-                        }
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if viewModel.isAddingAccount {
-                        if viewModel.addMode == .token {
-                            Button {
-                                Task { await viewModel.connectWithToken(accessToken) }
-                            } label: {
-                                if viewModel.isConnecting { ProgressView() }
-                                else { Text(loc(L10n.Account.connect)).fontWeight(.semibold) }
-                            }
-                            .disabled(accessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isConnecting)
-                        } else if viewModel.addMode == .oauth {
-                            // OAuth button is inside the form
-                            EmptyView()
+                        Text(viewModel.isAddingAccount ? loc(L10n.Account.addAccount) : loc(L10n.Account.connectNew))
+                    } footer: {
+                        if let error = viewModel.errorMessage {
+                            Text(error).foregroundColor(currentTheme.negativeRed).font(.caption)
                         } else {
-                            Button {
-                                Task { await viewModel.addAccount() }
-                            } label: {
-                                if viewModel.isLoading {
-                                    ProgressView()
-                                } else {
-                                    Text(loc(L10n.Account.connect)).fontWeight(.semibold)
-                                }
-                            }
-                            .disabled(viewModel.username.isEmpty || viewModel.displayName.isEmpty || viewModel.isLoading)
+                            Text(loc(L10n.Account.footerHint))
                         }
-                    } else {
-                        Button(loc(L10n.Common.done)) { dismiss() }
+                    }
+                    .listRowBackground(currentTheme.cardSurface)
+                }
+                .scrollContentBackground(.hidden)
+                .navigationTitle(loc(L10n.Account.title))
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        if viewModel.isAddingAccount {
+                            Button(loc(L10n.Account.cancel)) {
+                                viewModel.isAddingAccount = false
+                                viewModel.username = ""
+                                viewModel.displayName = ""
+                                viewModel.addMode = .manual
+                            }
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        if viewModel.isAddingAccount {
+                            if viewModel.addMode == .token {
+                                Button {
+                                    Task { await viewModel.connectWithToken(accessToken) }
+                                } label: {
+                                    if viewModel.isConnecting { ProgressView() }
+                                    else { Text(loc(L10n.Account.connect)).fontWeight(.semibold) }
+                                }
+                                .disabled(accessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isConnecting)
+                            } else if viewModel.addMode == .oauth {
+                                // OAuth button is inside the form
+                                EmptyView()
+                            } else {
+                                Button {
+                                    Task { await viewModel.addAccount() }
+                                } label: {
+                                    if viewModel.isLoading {
+                                        ProgressView()
+                                    } else {
+                                        Text(loc(L10n.Account.connect)).fontWeight(.semibold)
+                                    }
+                                }
+                                .disabled(viewModel.username.isEmpty || viewModel.displayName.isEmpty || viewModel.isLoading)
+                            }
+                        } else {
+                            Button(loc(L10n.Common.done)) { dismiss() }
+                        }
                     }
                 }
             }
         }
+        // sheet presentation root：显式同步 colorScheme（系统色随主题明暗）
+        .environment(\.colorScheme, currentTheme.isDark ? .dark : .light)
         .task { await viewModel.loadAccounts() }
         .onChange(of: viewModel.shouldDismiss) { _, dismiss in
             if dismiss { self.dismiss() }
@@ -142,7 +154,7 @@ struct AccountView: View {
                         .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(theme.accentPrimary)
+                    .tint(currentTheme.accentPrimary)
                     .disabled(viewModel.clientId.isEmpty || viewModel.clientSecret.isEmpty || viewModel.redirectURI.isEmpty || viewModel.isConnecting)
                 }
             } else if viewModel.addMode == .token {
@@ -177,8 +189,8 @@ struct AccountView: View {
             Spacer()
             Text(loc(L10n.Account.instagram) + " · " + authDisplayName(account.authState))
                 .font(.caption2).padding(.horizontal, 8).padding(.vertical, 4)
-                .background(account.authState == .authorized ? Color.green.opacity(0.15) : Color.red.opacity(0.15))
-                .foregroundColor(account.authState == .authorized ? .green : .red)
+                .background(account.authState == .authorized ? currentTheme.positiveGreen.opacity(0.15) : currentTheme.negativeRed.opacity(0.15))
+                .foregroundColor(account.authState == .authorized ? currentTheme.positiveGreen : currentTheme.negativeRed)
                 .clipShape(Capsule())
         }
         .swipeActions(edge: .trailing) {

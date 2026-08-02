@@ -4,7 +4,7 @@
 
 import XCTest
 
-/// UI tests for Settings — covers tab existence and cross-tab navigation stability
+/// UI tests for Settings (via profile sheet) — covers avatar entry and cross-tab navigation stability
 final class SettingsUITests: XCTestCase {
     var app: XCUIApplication!
 
@@ -16,18 +16,41 @@ final class SettingsUITests: XCTestCase {
         app.launch()
     }
 
-    /// Settings Tab 存在 → 点击最后一个 Tab 应渲染内容
-    func testSettingsTabExists() {
+    /// 底栏应包含 3 个 Tab（设置已迁移到账号弹窗）
+    func testTabCountIsThree() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
         let tabs = app.tabBars.buttons
-        XCTAssertGreaterThanOrEqual(tabs.count, 3)
-        // 验证最后一个 tab 存在即可，不深入点击（避免 toolbar 干扰）
-        let lastTab = tabs.element(boundBy: tabs.count - 1)
-        XCTAssertTrue(lastTab.exists)
-        lastTab.tap()
+        XCTAssertEqual(tabs.count, 3)
+    }
+
+    /// 仪表盘右上角账号头像 → 点击弹出个人资料弹窗
+    func testAvatarOpensProfileSheet() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
+        let avatar = app.buttons["account_avatar_button"]
+        XCTAssertTrue(avatar.waitForExistence(timeout: 10), "Avatar button should exist on dashboard")
+        avatar.tap()
         sleep(2)
-        // 页面应有内容（Form 或 scrollView 或 table）
-        XCTAssertTrue(app.tables.firstMatch.exists || app.scrollViews.firstMatch.exists || app.tabBars.firstMatch.exists)
+        // 弹窗应有透明关闭按钮（✕）
+        XCTAssertTrue(app.buttons["profile_close_button"].waitForExistence(timeout: 10),
+                      "Profile sheet close button should exist")
+        // 弹窗应有「设置」入口
+        XCTAssertTrue(app.buttons["profile_settings_link"].exists,
+                      "Profile sheet should have settings entry")
+    }
+
+    /// 头像 → 弹窗 → 点「设置」→ 进入完整设置页
+    func testProfileSettingsLinkOpensSettings() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
+        let avatar = app.buttons["account_avatar_button"]
+        XCTAssertTrue(avatar.waitForExistence(timeout: 10))
+        avatar.tap()
+        sleep(2)
+        let settingsLink = app.buttons["profile_settings_link"]
+        XCTAssertTrue(settingsLink.waitForExistence(timeout: 10))
+        settingsLink.tap()
+        sleep(2)
+        // 设置页应有内容（Form）
+        XCTAssertTrue(app.tables.firstMatch.exists || app.navigationBars.firstMatch.exists)
     }
 
     /// 遍历所有 Tab → 切换后 App 不崩溃

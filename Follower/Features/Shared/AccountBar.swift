@@ -2,79 +2,38 @@
 //  AccountBar.swift
 //  Follower
 //
-//  Shared: 多页面共用的账户选择栏 — 头像 + 用户名 + 多账户切换 Menu。
-//  用于 Dashboard 和 Trends 页面顶部。
+//  仪表盘导航栏头像按钮 — 置于 toolbar trailing，与「仪表盘」标题同一水平线。
+//  约束：toolbar 安全尺寸（32pt，不超 toolbar 高度，避免与 Dynamic Island 重叠）、
+//  纯简单视图（无 Spacer / 无 Menu / 无 sheet / 无 padding / 无 offset）。
+//  点击触发 onAvatarTap，个人资料弹窗由父级 DashboardView 呈现。
 //
 
 import SwiftUI
 
-/// 账户选择栏 — 显示当前选中账户信息，多账户时提供切换菜单
+/// 导航栏头像按钮 — Liquid Glass 头像（32pt toolbar 安全尺寸），点击弹出个人资料弹窗
 struct AccountBar: View {
-    let accounts: [Account]
-    let selectedAccountId: Int64?
-    let onSelect: (Int64) -> Void
+    let onAvatarTap: () -> Void
 
-    @Environment(\.theme) private var theme
+    @Environment(AppState.self) private var appState
+
+    /// 单一状态源 — 统一从 AppState 读取主题
+    private var currentTheme: Theme { appState.currentTheme.theme }
 
     var body: some View {
-        HStack(spacing: 12) {
-            // 头像
-            Circle()
-                .fill(theme.accentPrimary.opacity(0.12))
-                .frame(width: 44, height: 44)
-                .overlay {
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(theme.accentPrimary)
-                }
-
-            // 用户名 + 账户类型
-            VStack(alignment: .leading, spacing: 2) {
-                Text("@\(selectedAccount?.username ?? "")")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(theme.textPrimary)
-
-                HStack(spacing: 4) {
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 10))
-                    Text(loc(L10n.Dashboard.accountType))
-                        .font(.system(size: 12))
-                }
-                .foregroundColor(theme.textSecondary)
-            }
-
-            Spacer()
-
-            // 多账户切换指示
-            if accounts.count > 1 {
-                Menu {
-                    ForEach(accounts, id: \.id) { account in
-                        Button {
-                            if let id = account.id { onSelect(id) }
-                        } label: {
-                            HStack {
-                                Text("@\(account.username)")
-                                if account.id == selectedAccountId {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-                    }
-                } label: {
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(theme.textSecondary)
-                        .padding(8)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Circle())
-                }
-            }
+        Button(action: onAvatarTap) {
+            avatarView
         }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 8)
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("account_avatar_button")
     }
 
-    private var selectedAccount: Account? {
-        accounts.first(where: { $0.id == selectedAccountId })
+    /// 头像图标 — 32×32（toolbar 标准图标尺寸），无 padding / offset
+    private var avatarView: some View {
+        ZStack {
+            Image(systemName: "person.fill")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(currentTheme.accentPrimary)
+        }
+        .frame(width: 32, height: 32)
     }
 }

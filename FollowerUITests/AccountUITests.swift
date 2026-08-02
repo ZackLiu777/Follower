@@ -4,7 +4,7 @@
 
 import XCTest
 
-/// UI tests for Account settings — covers navigation and toolbar button presence
+/// UI tests for Account — covers avatar profile sheet entry and settings navigation
 final class AccountUITests: XCTestCase {
     var app: XCUIApplication!
 
@@ -16,24 +16,30 @@ final class AccountUITests: XCTestCase {
         app.launch()
     }
 
-    /// 导航到 Settings Tab → 页面应正常渲染
-    func testNavigateToSettings() {
+    /// 仪表盘头像 → 点击弹出个人资料弹窗，页面应正常渲染
+    func testNavigateToProfileSheet() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
-        let tabs = app.tabBars.buttons
-        tabs.element(boundBy: tabs.count - 1).tap()
+        let avatar = app.buttons["account_avatar_button"]
+        XCTAssertTrue(avatar.waitForExistence(timeout: 10), "Avatar button should exist on dashboard")
+        avatar.tap()
         sleep(2)
-        // Settings page should render
-        XCTAssertTrue(app.tables.firstMatch.exists || app.navigationBars.firstMatch.exists)
+        // 弹窗应正常渲染（关闭按钮存在）
+        XCTAssertTrue(app.buttons["profile_close_button"].waitForExistence(timeout: 10))
     }
 
-    /// Settings 页面 → 导航栏应包含按钮
-    func testSettingsHasToolbarButton() {
+    /// 弹窗 → 点「设置」→ 设置页导航栏应包含按钮（返回按钮）
+    func testSettingsNavButtonAfterEntry() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
-        let tabs = app.tabBars.buttons
-        tabs.element(boundBy: tabs.count - 1).tap()
+        let avatar = app.buttons["account_avatar_button"]
+        XCTAssertTrue(avatar.waitForExistence(timeout: 10))
+        avatar.tap()
         sleep(2)
-        // Toolbar should have the add account button
+        let settingsLink = app.buttons["profile_settings_link"]
+        XCTAssertTrue(settingsLink.waitForExistence(timeout: 10))
+        settingsLink.tap()
+        sleep(2)
+        // Toolbar should have the back button
         let toolbarButtons = app.navigationBars.buttons
-        XCTAssertGreaterThanOrEqual(toolbarButtons.count, 1, "Settings toolbar should have buttons")
+        XCTAssertGreaterThanOrEqual(toolbarButtons.count, 1, "Settings nav bar should have buttons")
     }
 }

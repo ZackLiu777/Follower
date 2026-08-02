@@ -56,6 +56,8 @@ enum L10n {
         static let comments = "dashboard.comments"
         static let shares = "dashboard.shares"
         static let views = "dashboard.views"
+        static let avgLikes = "dashboard.avgLikes"
+        static let avgComments = "dashboard.avgComments"
         static let recentContent = "dashboard.recentContent"
         static let viewAll = "dashboard.viewAll"
         static let noPostsHint = "dashboard.noPostsHint"
@@ -96,6 +98,8 @@ enum L10n {
     
     // MARK: Settings
     enum Settings {
+        static let activityStatus = "settings.activityStatus"
+        static let personalization = "settings.personalization"
         static let title = "settings.title"
         static let trialStatus = "settings.trialStatus"
         static let trialActive = "settings.trialActive"
@@ -103,6 +107,7 @@ enum L10n {
         static let accounts = "settings.accounts"
         static let appearance = "settings.appearance"
         static let theme = "settings.theme"
+        static let darkMode = "settings.darkMode"
         static let language = "settings.language"
         static let appleNative = "settings.appleNative"
         static let instagram = "settings.instagram"
@@ -129,6 +134,7 @@ enum L10n {
     // MARK: Account
     enum Account {
         static let title = "account.title"
+        static let profileTitle = "account.profileTitle"
         static let connectedAccounts = "account.connectedAccounts"
         static let addAccount = "account.addAccount"
         static let connectNew = "account.connectNew"

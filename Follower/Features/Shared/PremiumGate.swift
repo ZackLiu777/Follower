@@ -38,6 +38,8 @@ struct PremiumGateModifier: ViewModifier {
         .sheet(isPresented: $showUpgradePrompt) {
             UpgradePromptView(featureKey: featureKey)
                 .presentationDetents([.fraction(0.75)])
+                // sheet presentation root：显式同步系统模式
+                .preferredColorScheme(appState.currentTheme.theme.isDark ? .dark : .light)
         }
     }
 
@@ -93,7 +95,9 @@ struct UpgradePromptView: View {
     let featureKey: PremiumFeatureKey
     @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var appState
-    @Environment(\.theme) private var theme
+
+    /// 单一状态源 — 统一从 AppState 读取主题（避免双状态源半刷新）
+    private var currentTheme: Theme { appState.currentTheme.theme }
 
     /// 当前 Premium 功能列表
     private let premiumFeatures: [(icon: String, name: String)] = [
@@ -111,19 +115,12 @@ struct UpgradePromptView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // 下滑指示条
-            RoundedRectangle(cornerRadius: 2.5)
-                .fill(theme.divider)
-                .frame(width: 36, height: 5)
-                .padding(.top, 12)
-                .padding(.bottom, 20)
-
             // 皇冠图标
             Image(systemName: "crown.fill")
                 .font(.system(size: 48))
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [theme.chartBarGradientStart, theme.chartBarGradientEnd],
+                        colors: [currentTheme.chartBarGradientStart, currentTheme.chartBarGradientEnd],
                         startPoint: .leading, endPoint: .trailing
                     )
                 )
@@ -132,12 +129,12 @@ struct UpgradePromptView: View {
             // 标题
             Text(loc(L10n.Premium.premiumFeature))
                 .font(.title2).fontWeight(.bold)
-                .foregroundColor(theme.textPrimary)
+                .foregroundColor(currentTheme.textPrimary)
                 .padding(.bottom, 4)
 
             Text(featureKey.displayName)
                 .font(.subheadline)
-                .foregroundColor(theme.accentPrimary)
+                .foregroundColor(currentTheme.accentPrimary)
                 .padding(.bottom, 24)
 
             // Premium 功能卡片列表
@@ -150,16 +147,16 @@ struct UpgradePromptView: View {
                         VStack(spacing: 8) {
                             Image(systemName: feature.icon)
                                 .font(.title3)
-                                .foregroundColor(theme.accentPrimary)
+                                .foregroundColor(currentTheme.accentPrimary)
                             Text(feature.name)
                                 .font(.system(size: 10))
-                                .foregroundColor(theme.textSecondary)
+                                .foregroundColor(currentTheme.textSecondary)
                                 .multilineTextAlignment(.center)
                                 .lineLimit(2)
                         }
                         .padding(10)
                         .frame(maxWidth: .infinity, minHeight: 72)
-                        .background(theme.cardSurface)
+                        .background(currentTheme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }
@@ -185,7 +182,7 @@ struct UpgradePromptView: View {
                             .padding(.vertical, 14)
                             .background(
                                 LinearGradient(
-                                    colors: [theme.chartBarGradientStart, theme.chartBarGradientEnd],
+                                    colors: [currentTheme.chartBarGradientStart, currentTheme.chartBarGradientEnd],
                                     startPoint: .leading, endPoint: .trailing
                                 )
                             )
@@ -201,7 +198,9 @@ struct UpgradePromptView: View {
             .padding(.bottom, 30)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(theme.backgroundGradientStart)
+        .background(appState.currentTheme.theme.backgroundGradientStart)
+        // sheet presentation root：显式同步 colorScheme（系统色随主题明暗）
+        .environment(\.colorScheme, currentTheme.isDark ? .dark : .light)
     }
 }
 

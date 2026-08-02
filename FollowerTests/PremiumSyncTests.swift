@@ -135,5 +135,62 @@ struct PremiumSyncTests {
             let e3 = try await premiumRepo.isEnabled(key: key); #expect(e3)
         }
     }
+
+    // MARK: - Master Toggle（SettingsViewModel 状态机）
+
+    /// Master 开关 ON → 所有 key 解锁，masterUnlocked == true
+    @Test @MainActor
+    func testMasterToggleOnUnlocksAll() async throws {
+        let vm = makeSettingsViewModel()
+        await vm.setMasterUnlocked(false)   // 先重置为全锁定
+        await vm.setMasterUnlocked(true)
+        #expect(vm.masterUnlocked)
+        #expect(vm.masterState == .allUnlocked)
+        for key in PremiumFeatureKey.allCases {
+            let enabled = try await premiumRepo.isEnabled(key: key)
+            #expect(enabled, "\(key.rawValue) should be unlocked by master toggle ON")
+        }
+    }
+
+    /// Master 开关 OFF → 所有 key 锁定，masterUnlocked == false
+    @Test @MainActor
+    func testMasterToggleOffLocksAll() async throws {
+        let vm = makeSettingsViewModel()
+        await vm.setMasterUnlocked(true)    // 先全解锁
+        await vm.setMasterUnlocked(false)
+        #expect(!vm.masterUnlocked)
+        #expect(vm.masterState == .allLocked)
+        for key in PremiumFeatureKey.allCases {
+            let enabled = try await premiumRepo.isEnabled(key: key)
+            #expect(!enabled, "\(key.rawValue) should be locked by master toggle OFF")
+        }
+    }
+
+    /// 部分解锁 → 状态机进入 partial，masterUnlocked == false
+    @Test @MainActor
+    func testMasterStatePartialWhenSomeUnlocked() async throws {
+        let vm = makeSettingsViewModel()
+        await vm.setMasterUnlocked(false)               // 全锁定
+        try await premiumRepo.setEnabled(true, for: .trendPrediction)   // 手动解锁一个
+        await vm.loadSettings()                          // 重载 → 聚合状态
+        #expect(vm.masterState == .partial)
+        #expect(!vm.masterUnlocked)
+    }
+
+    /// 构造 SettingsViewModel（共享真实 DB，与 PremiumSyncTests 一致）
+    @MainActor
+    private func makeSettingsViewModel() -> SettingsViewModel {
+        let db = DatabaseManager.shared
+        return SettingsViewModel(
+            trialManager: TrialManager(premiumFeatureRepo: premiumRepo),
+            exportService: ExportService(
+                snapshotRepo: SnapshotRepository(db: db),
+                metricRepo: MetricRepository(db: db),
+                eventRepo: EventRepository(db: db)
+            ),
+            accountRepo: AccountRepository(db: db),
+            premiumFeatureRepo: premiumRepo
+        )
+    }
 }
 

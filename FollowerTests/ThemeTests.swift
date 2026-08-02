@@ -29,6 +29,19 @@ struct ThemeTests {
         }
     }
 
+    /// 每个主题的背景渐变数组 → 至少 3 色且首尾非空。
+    /// 注：设计约定「数组首尾 == backgroundGradientStart/End」由 ThemeSystem 代码保证，
+    /// 不在测试中断言 —— SwiftUI Color 的 Equatable / UIColor 解析跨 iOS 版本不可靠
+    /// （iOS 17 / iOS 26 下 opacity 组合色解析结果不一致），断言会导致误报。
+    @Test func testBackgroundGradientColors() {
+        for t in Self.allThemes {
+            #expect(t.backgroundGradientColors.count >= 3,
+                    "\(t.displayName) should have at least 3 gradient colors")
+            #expect(!t.backgroundGradientColors.isEmpty,
+                    "\(t.displayName) gradient colors should not be empty")
+        }
+    }
+
     /// 检查 isDark 属性 → 仅 appleDark 为 true，其余为 false
     @Test func testIsDarkCorrect() {
         #expect(!Theme.appleNative.isDark)

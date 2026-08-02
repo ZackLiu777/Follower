@@ -21,7 +21,7 @@ struct PredictionDetailView: View {
         ZStack {
             // Theme background gradient
             LinearGradient(
-                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                colors: theme.backgroundGradientColors,
                 startPoint: .top, endPoint: .bottom
             ).ignoresSafeArea()
 

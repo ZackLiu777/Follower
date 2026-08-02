@@ -19,7 +19,7 @@ struct CompetitorDetailView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                colors: theme.backgroundGradientColors,
                 startPoint: .top, endPoint: .bottom
             ).ignoresSafeArea()
 
@@ -102,7 +102,7 @@ struct AuthenticityDetailView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                colors: theme.backgroundGradientColors,
                 startPoint: .top, endPoint: .bottom
             ).ignoresSafeArea()
 
@@ -196,7 +196,7 @@ struct MediaKitDetailView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                colors: theme.backgroundGradientColors,
                 startPoint: .top, endPoint: .bottom
             ).ignoresSafeArea()
 
@@ -263,7 +263,7 @@ struct CampaignDetailView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                colors: theme.backgroundGradientColors,
                 startPoint: .top, endPoint: .bottom
             ).ignoresSafeArea()
 
@@ -368,7 +368,7 @@ struct HeatmapDetailView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                colors: theme.backgroundGradientColors,
                 startPoint: .top, endPoint: .bottom
             ).ignoresSafeArea()
 
@@ -453,7 +453,7 @@ struct ContentSchedulingDetailView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                colors: theme.backgroundGradientColors,
                 startPoint: .top, endPoint: .bottom
             ).ignoresSafeArea()
 
@@ -523,7 +523,7 @@ struct CommentManagementDetailView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd],
+                colors: theme.backgroundGradientColors,
                 startPoint: .top, endPoint: .bottom
             ).ignoresSafeArea()
 

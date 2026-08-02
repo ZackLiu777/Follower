@@ -2,7 +2,8 @@
 //  SettingsView.swift
 //  Follower
 //
-//  设置页面 — Premium 锁定主题/导出 + 所有行 SF Symbols。
+//  设置页（完整内容）— 从个人资料弹窗的「设置」入口进入。
+//  Form 多 Section：Trial / 账号 / 语言 / 主题 / 导出 / 存储 / 隐私 / Premium。
 //
 
 import SwiftUI
@@ -10,48 +11,45 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
     @Bindable var viewModel: SettingsViewModel
-    @Environment(\.theme) private var theme
-    @State private var showAccountSheet: Bool = false
+
+    /// 确定性主题读取 — 直接从 AppState 观察（@Observable），
+    /// 不依赖 @Environment(\.theme) 传播（sheet 内环境更新不可靠 → 背景残留旧主题）
+    private var currentTheme: Theme { appState.currentTheme.theme }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                LinearGradient(colors: [theme.backgroundGradientStart, theme.backgroundGradientEnd], startPoint: .top, endPoint: .bottom).ignoresSafeArea()
-                Form {
-                    Section { trialSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.trialStatus)) }
-                    Section {
-                        Button { showAccountSheet = true } label: {
-                            Label(loc(L10n.Account.connectNew), systemImage: "person.badge.plus")
-                                .frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 4)
-                        }.listRowBackground(theme.cardSurface)
-                    } header: { Text(loc(L10n.Settings.accounts)) }
-                    Section { accountSection.listRowBackground(theme.cardSurface) }
-                    // 外观（主题切换 = Premium）
-                    Section {
-                        languageRow.listRowBackground(theme.cardSurface)
-                        themeRow.listRowBackground(theme.cardSurface)
-                    } header: { Text(loc(L10n.Settings.appearance)) }
-                    // 数据导出（= Premium）
-                    Section {
-                        exportRow.listRowBackground(theme.cardSurface)
-                    } header: { Text(loc(L10n.Settings.dataExport)) } footer: { Text(loc(L10n.Settings.exportFooter)) }
-                    Section { storageInfoSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.storage)) }
-                    Section { privacySection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.privacy)) }
-                    Section { premiumFeaturesSection.listRowBackground(theme.cardSurface) } header: { Text(loc(L10n.Settings.premiumFeatures)) }
+        #if DEBUG
+        // 调试：打印 Settings body 每次重算时读到的主题（验证切换后是否同步）
+        let _ = print("[ThemeDebug] SettingsView body — currentTheme: \(appState.currentTheme.rawValue), isDark: \(currentTheme.isDark), bg: \(currentTheme.backgroundGradientColors)")
+        #endif
+        ZStack {
+            LinearGradient(colors: currentTheme.backgroundGradientColors, startPoint: .top, endPoint: .bottom).ignoresSafeArea()
+            Form {
+                Section { trialSection.listRowBackground(currentTheme.cardSurface) } header: { Text(loc(L10n.Settings.trialStatus)) }
+                // 外观（主题切换 = Premium）
+                Section {
+                    languageRow.listRowBackground(currentTheme.cardSurface)
+                    darkModeRow.listRowBackground(currentTheme.cardSurface)
+                    themeRow.listRowBackground(currentTheme.cardSurface)
+                } header: { Text(loc(L10n.Settings.appearance)) }
+                // 数据导出（= Premium）
+                Section {
+                    exportRow.listRowBackground(currentTheme.cardSurface)
+                } header: { Text(loc(L10n.Settings.dataExport)) } footer: { Text(loc(L10n.Settings.exportFooter)) }
+                Section { storageInfoSection.listRowBackground(currentTheme.cardSurface) } header: { Text(loc(L10n.Settings.storage)) }
+                Section { privacySection.listRowBackground(currentTheme.cardSurface) } header: { Text(loc(L10n.Settings.privacy)) }
+                Section { premiumFeaturesSection.listRowBackground(currentTheme.cardSurface) } header: { Text(loc(L10n.Settings.premiumFeatures)) }
+            }
+            .scrollContentBackground(.hidden)
+            // 删除确认弹窗 — 挂在 Form 层级（附着在 Button 上 iOS 17+ 有 bug 不弹出）
+            .confirmationDialog(loc(L10n.Settings.deleteConfirmationTitle), isPresented: $viewModel.showDeleteConfirmation, titleVisibility: .visible) {
+                Button(loc(L10n.Common.delete), role: .destructive) {
+                    Task { await viewModel.deleteAllAccounts() }
                 }
-                .scrollContentBackground(.hidden)
-            }
-            .navigationTitle(loc(L10n.Settings.title))
-            .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showAccountSheet) {
-                AccountView(viewModel: AccountViewModel(
-                    accountRepo: appState.container.accountRepository,
-                    syncEngine: appState.container.syncEngine,
-                    apiClient: appState.container.apiClient,
-                    tokenProvider: appState.container.tokenProvider
-                ))
-            }
+                Button(loc(L10n.Common.cancel), role: .cancel) {}
+            } message: { Text(loc(L10n.Settings.deleteConfirmationMessage)) }
         }
+        .navigationTitle(loc(L10n.Settings.title))
+        .navigationBarTitleDisplayMode(.inline)
         .task { await viewModel.loadSettings() }
     }
 
@@ -60,56 +58,58 @@ struct SettingsView: View {
         HStack {
             Label(viewModel.isTrialActive ? loc(L10n.Settings.trialActive) : loc(L10n.Settings.trialEnded),
                   systemImage: viewModel.isTrialActive ? "timer" : "timer.circle")
+                .font(.subheadline)
+                .foregroundColor(currentTheme.textPrimary)
             Spacer()
-            Text(viewModel.trialRemainingTime).foregroundColor(.secondary).font(.subheadline)
-        }
-    }
-
-    // MARK: - Account
-    private var accountSection: some View {
-        Group {
-            ForEach(viewModel.accounts, id: \.id) { account in
-                HStack {
-                    Image(systemName: "camera.fill")
-                    VStack(alignment: .leading) {
-                        Text(account.username).font(.subheadline)
-                        Text(loc(L10n.Account.instagram)).font(.caption).foregroundColor(.secondary)
-                    }
-                    Spacer()
-                    Text(account.authState.rawValue.capitalized).font(.caption)
-                        .foregroundColor(account.authState == .authorized ? .green : .red)
-                }
-            }
-            .onDelete { indexSet in
-                for index in indexSet {
-                    if let id = viewModel.accounts[index].id {
-                        Task { await viewModel.deleteLocalData(accountId: id) }
-                    }
-                }
-            }
-            if viewModel.accounts.isEmpty {
-                Label(loc(L10n.Dashboard.connectAccount), systemImage: "person.crop.circle.badge.plus")
-                    .foregroundColor(.secondary)
-            }
+            Text(viewModel.trialRemainingTime).font(.subheadline).foregroundColor(.secondary)
         }
     }
 
     // MARK: - Language (free)
     private var languageRow: some View {
-        Picker(loc(L10n.Settings.language), selection: Binding(get: { appState.currentLanguage }, set: { appState.setLanguage($0) })) {
-            ForEach(AppLanguage.allCases, id: \.self) { lang in Text(lang.displayName).tag(lang) }
+        HStack {
+            Image(systemName: "globe")
+                .foregroundColor(currentTheme.accentPrimary)
+            Text(loc(L10n.Settings.language)).font(.subheadline)
+            Spacer()
+            Picker("", selection: Binding(get: { appState.currentLanguage }, set: { appState.setLanguage($0) })) {
+                ForEach(AppLanguage.allCases, id: \.self) { lang in Text(lang.displayName).tag(lang) }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
         }
+    }
+
+    // MARK: - Dark Mode（深色开关）
+    /// 深色模式开关 — 关闭 = 浅色主题，开启 = 深色主题（Apple Dark）。
+    /// 直接读写 AppState（确定性同步，不经环境传播）。
+    private var darkModeRow: some View {
+        Toggle(isOn: Binding(
+            get: { appState.currentTheme.theme.isDark },
+            set: { isDark in
+                if isDark {
+                    appState.currentTheme = .appleDark
+                } else {
+                    appState.currentTheme = appState.lightThemePreference
+                }
+            }
+        )) {
+            Label(loc(L10n.Settings.darkMode), systemImage: "moon.fill")
+                .font(.subheadline)
+                .foregroundColor(currentTheme.textPrimary)
+        }
+        .tint(currentTheme.accentPrimary)
     }
 
     // MARK: - Theme (Premium)
     private var themeRow: some View {
         HStack {
             Image(systemName: "paintpalette.fill")
-                .foregroundColor(theme.accentPrimary)
+                .foregroundColor(currentTheme.accentPrimary)
             Text(loc(L10n.Settings.theme)).font(.subheadline)
             Spacer()
             if appState.premiumEnabledFlags[PremiumFeatureKey.themeSwitching.rawValue] == true {
-                Picker("", selection: Binding(get: { viewModel.currentTheme }, set: { viewModel.updateTheme($0); appState.currentTheme = $0 })) {
+                Picker("", selection: Binding(get: { viewModel.currentTheme }, set: { viewModel.updateTheme($0); appState.currentTheme = $0; appState.rememberLightTheme($0) })) {
                     ForEach(AppTheme.allCases, id: \.self) { t in Text(t.displayName).tag(t) }
                 }.pickerStyle(.menu).labelsHidden()
             } else {
@@ -123,7 +123,7 @@ struct SettingsView: View {
     private var exportRow: some View {
         Group {
             HStack {
-                Image(systemName: "doc.text.fill").foregroundColor(theme.accentPrimary)
+                Image(systemName: "doc.text.fill").foregroundColor(currentTheme.accentPrimary)
                 Text(loc(L10n.Settings.format)).font(.subheadline)
                 Spacer()
                 if appState.premiumEnabledFlags[PremiumFeatureKey.csvExport.rawValue] == true {
@@ -135,7 +135,7 @@ struct SettingsView: View {
                 }
             }
             HStack {
-                Image(systemName: "square.and.arrow.up.fill").foregroundColor(theme.accentPrimary)
+                Image(systemName: "square.and.arrow.up.fill").foregroundColor(currentTheme.accentPrimary)
                 Text(loc(L10n.Settings.exportData)).font(.subheadline)
                 Spacer()
                 if appState.premiumEnabledFlags[PremiumFeatureKey.csvExport.rawValue] == true {
@@ -156,7 +156,9 @@ struct SettingsView: View {
     // MARK: - Storage
     private var storageInfoSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label(loc(L10n.Settings.localOnly), systemImage: "lock.shield.fill").font(.subheadline)
+            Label(loc(L10n.Settings.localOnly), systemImage: "lock.shield.fill")
+                .font(.subheadline)
+                .foregroundColor(currentTheme.textPrimary)
             Text(loc(L10n.Settings.storageDescription)).font(.caption).foregroundColor(.secondary)
         }
     }
@@ -165,7 +167,7 @@ struct SettingsView: View {
     private var privacySection: some View {
         Group {
             HStack {
-                Image(systemName: "hand.raised.fill").foregroundColor(theme.accentPrimary)
+                Image(systemName: "hand.raised.fill").foregroundColor(currentTheme.accentPrimary)
                 Text(loc(L10n.Settings.privacyPolicy)).font(.subheadline)
                 Spacer()
                 Image(systemName: "chevron.right").foregroundColor(.secondary).font(.caption)
@@ -174,62 +176,23 @@ struct SettingsView: View {
                 viewModel.showDeleteConfirmation = true
             } label: {
                 Label(loc(L10n.Settings.deleteAllData), systemImage: "trash.fill")
+                    .font(.subheadline)
             }
-            .confirmationDialog(loc(L10n.Settings.deleteConfirmationTitle), isPresented: $viewModel.showDeleteConfirmation, titleVisibility: .visible) {
-                Button(loc(L10n.Common.delete), role: .destructive) {
-                    Task { await viewModel.deleteAllAccounts() }
-                }
-                Button(loc(L10n.Common.cancel), role: .cancel) {}
-            } message: { Text(loc(L10n.Settings.deleteConfirmationMessage)) }
         }
     }
 
-    // MARK: - Premium Features
+    // MARK: - Premium Master Toggle
+    /// Master 开关 — ON 解锁全部，OFF 锁定全部（状态机聚合所有 key）
     private var premiumFeaturesSection: some View {
-        Group {
-            Button { Task { await viewModel.unlockAllPremium() } } label: {
-                HStack {
-                    Label(loc(L10n.Premium.unlockAll), systemImage: "crown.fill").foregroundColor(.orange)
-                    Spacer()
-                    Image(systemName: "chevron.right").foregroundColor(.secondary).font(.caption)
-                }
-            }
-            ForEach(viewModel.premiumFeatures, id: \.id) { feature in
-                HStack {
-                    Image(systemName: premiumIcon(for: feature.key))
-                        .foregroundColor(feature.enabled ? theme.positiveGreen : theme.textSecondary)
-                        .frame(width: 24)
-                    Text(feature.key.displayName).font(.subheadline)
-                    Spacer()
-                    Image(systemName: feature.enabled ? "checkmark.seal.fill" : "lock.fill")
-                        .foregroundColor(feature.enabled ? theme.positiveGreen : theme.textSecondary)
-                }
-            }
+        Toggle(isOn: Binding(
+            get: { viewModel.masterUnlocked },
+            set: { newValue in Task { await viewModel.setMasterUnlocked(newValue) } }
+        )) {
+            Label(loc(L10n.Premium.unlockAll), systemImage: "crown.fill")
+                .font(.subheadline)
+                .foregroundColor(.orange)
         }
-    }
-
-    private func premiumIcon(for key: PremiumFeatureKey) -> String {
-        switch key {
-        case .trendPrediction, .followerGrowthPrediction: return "chart.line.uptrend.xyaxis"
-        case .activityAnalysis: return "bolt.fill"
-        case .retentionAnalysis, .churnAnalysis: return "person.2.fill"
-        case .geoDistribution: return "globe.asia.australia.fill"
-        case .engagementQualityScore: return "star.fill"
-        case .longTermTrendComparison: return "arrow.left.arrow.right"
-        case .csvExport, .excelExport: return "doc.text.fill"
-        case .localAIAnalysis: return "brain.head.profile"
-        case .advancedEncryption: return "lock.shield.fill"
-        case .multiDeviceSync: return "icloud.fill"
-        case .competitorComparison: return "chart.bar.fill"
-        case .authenticityAssessment: return "checkmark.shield.fill"
-        case .mediaKitExport: return "doc.richtext.fill"
-        case .campaignTracking: return "flag.fill"
-        case .engagementHeatmap: return "calendar.badge.clock"
-        case .contentScheduling: return "clock.fill"
-        case .commentManagement: return "bubble.left.and.bubble.right.fill"
-        case .growthDecisions: return "sparkle.magnifyingglass"
-        case .themeSwitching: return "paintpalette.fill"
-        }
+        .tint(currentTheme.positiveGreen)
     }
 }
 
