@@ -93,7 +93,7 @@ struct LocalizationTests {
             L10n.Settings.title, L10n.Settings.trialStatus, L10n.Settings.accounts,
             L10n.Settings.appearance, L10n.Settings.theme, L10n.Settings.language,
             L10n.Settings.appleNative, L10n.Settings.instagram, L10n.Settings.appleDark,
-            L10n.Settings.forest, L10n.Settings.roseGold, L10n.Settings.monoStone,
+            L10n.Settings.forest, L10n.Settings.monoStone,
             L10n.Settings.dataExport, L10n.Settings.exportData, L10n.Settings.exportFooter,
             L10n.Settings.storage, L10n.Settings.localOnly, L10n.Settings.storageDescription,
             L10n.Settings.privacy, L10n.Settings.privacyPolicy, L10n.Settings.deleteAllData,

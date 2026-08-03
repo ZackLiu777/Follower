@@ -116,66 +116,67 @@ struct Theme: Sendable {
             isDark: false
         )
     }()
-
-    // MARK: - Instagram（日落微醺光影 → 高级透亮浅色）
+    
+    // MARK: - Instagram（高饱和通透日落鲜彩）
     static let instagram: Theme = {
-        // 1. 提取 Instagram 品牌的低饱和高级配色
-        let instaSunsetOrange = Color(red: 250/255, green: 130/255, blue: 49/255)  // 暖杏日落橙
-        let instaSunsetPink   = Color(red: 224/255, green: 86/255,  blue: 136/255) // 暮光软莓粉
-        let instaSunsetPurple = Color(red: 168/255, green: 85/255,  blue: 247/255) // 梦幻微醺紫
+        // 1. 剔除洋红/暗紫，选用极具活力与透光感的高饱和色彩组合
+        let instaYellow = Color(red: 255/255, green: 205/255, blue: 60/255)  // 鲜亮阳光黄
+        let instaOrange = Color(red: 255/255, green: 110/255, blue: 50/255)  // 高饱和霓虹暖橙
+        let instaBrightPink = Color(red: 0xE8 / 255.0, green: 0xA3 / 255.0, blue: 0x9C / 255.0)
 
         return Theme(
-            // 背景渐变：大幅降低不透明度（5%~10%），打造光晕呼吸感而非大块死色
+            // 背景渐变：采用“暖黄 → 亮橙 → 活力鲜粉”三色微光，营造明快通透的主题氛围
             backgroundGradientColors: [
-                instaSunsetOrange.opacity(0.10),
-                instaSunsetPink.opacity(0.08),
-                instaSunsetPurple.opacity(0.06)
+                instaYellow.opacity(0.18),
+                instaOrange.opacity(0.15),
+                instaBrightPink.opacity(0.12)
             ],
             backgroundPrimary: Color(.systemBackground),
             backgroundSecondary: Color(.secondarySystemBackground),
             backgroundGrouped: Color(.systemGroupedBackground),
             
-            backgroundGradientStart: instaSunsetOrange.opacity(0.10),
-            backgroundGradientEnd: instaSunsetPurple.opacity(0.06),
+            backgroundGradientStart: instaYellow.opacity(0.18),
+            backgroundGradientEnd: instaBrightPink.opacity(0.12),
             
-            // 关键改动：卡片表面切忌直接加浓橙色，改用极淡的粉白/半透明纯白，提升高级“玻璃/纸质”质感
-            cardSurface: Color.white.opacity(0.65),
-            cardElevated: Color.white.opacity(0.85),
+            // 卡片表面：保持 82% / 92% 的高不透明度白色基底，确保浅色毛玻璃下的文字清晰可读
+            cardSurface: Color.white.opacity(0.82),
+            cardElevated: Color.white.opacity(0.92),
             
-            textPrimary: .black.opacity(0.85),
-            textSecondary: .black.opacity(0.6),
-            textTertiary: .black.opacity(0.45),
+            // 文本颜色
+            textPrimary: Color.black.opacity(0.92),
+            textSecondary: Color.black.opacity(0.72),
+            textTertiary: Color.black.opacity(0.50),
             textInverted: .white,
             
-            // 主强调色使用柔和的 Instagram 品牌主色（橙/粉）
-            accentPrimary: instaSunsetPink,
-            accentSecondary: instaSunsetOrange,
+            // 主强调色：使用高饱和活力鲜粉与霓虹暖橙作为双强调色
+            accentPrimary: instaBrightPink,
+            accentSecondary: instaOrange,
             
             positiveGreen: .green,
             negativeRed: .red,
-            warningOrange: instaSunsetOrange,
+            warningOrange: instaOrange,
             
-            // 图表：使用暮光粉作为主线，图表填充极淡
-            chartLine: instaSunsetPink,
-            chartArea: instaSunsetPink.opacity(0.08),
-            chartGrid: .gray.opacity(0.12),
+            // 图表：主线条采用鲜粉色
+            chartLine: instaBrightPink,
+            chartArea: instaBrightPink.opacity(0.12),
+            chartGrid: Color.gray.opacity(0.15),
             
-            // 图表柱状图 & 徽章：经典日落渐变（橙 → 粉）
-            chartBarGradientStart: instaSunsetOrange,
-            chartBarGradientEnd: instaSunsetPink,
-            badgePremiumStart: instaSunsetOrange,
-            badgePremiumEnd: instaSunsetPink,
-            badgeTrial: instaSunsetOrange,
+            // 图表柱状图 & 徽章渐变：霓虹暖橙 → 活力鲜粉（高饱和亮色渐变）
+            chartBarGradientStart: instaOrange,
+            chartBarGradientEnd: instaBrightPink,
+            badgePremiumStart: instaOrange,
+            badgePremiumEnd: instaBrightPink,
+            badgeTrial: instaOrange,
             badgeLocked: Color(.systemGray3),
             
-            // 按钮：主按钮采用充满活力的品牌粉色
-            buttonPrimaryBg: instaSunsetPink,
+            // 按钮：主按钮采用高亮鲜粉
+            buttonPrimaryBg: instaBrightPink,
             buttonDestructiveBg: .red,
             buttonDisabledFg: Color(.systemGray3),
             
-            divider: .gray.opacity(0.12),
+            divider: Color.gray.opacity(0.15),
             navigationBg: Color(.systemBackground),
-            emptyStateIcon: .gray.opacity(0.4),
+            emptyStateIcon: Color.gray.opacity(0.4),
             
             displayName: "Instagram",
             liquidGlassEnabled: true,
@@ -262,63 +263,6 @@ struct Theme: Sendable {
         divider: .gray.opacity(0.15),
         navigationBg: .mint.opacity(0.15), emptyStateIcon: .gray.opacity(0.40),
         displayName: "Forest", liquidGlassEnabled: true, isDark: false
-    )
-
-    // MARK: - Rose Gold（暖玫瑰粉 → 柔白）
-
-    // MARK: - Rose Gold（暖玫瑰粉 → 柔白）
-
-    /// 精确玫瑰粉 #E8A39C — 重构后所有玫瑰金相关颜色统一使用该精准色
-    private static let preciseRosePink = Color(red: 0xE8 / 255.0, green: 0xA3 / 255.0, blue: 0x9C / 255.0)
-
-    static let roseGold = Theme(
-        // 背景渐变（三色）：柔和的玫瑰粉 → 更淡的藕粉 → 纯白
-        backgroundGradientColors: [
-            // 降低了起始颜色的不透明度，使过渡更柔和
-            preciseRosePink.opacity(0.18),
-            preciseRosePink.opacity(0.08),
-            .white
-        ],
-        backgroundPrimary: .white,
-        // 次要和成组背景使用极低的不透明度，仅提供最微妙的色调区别
-        backgroundSecondary: preciseRosePink.opacity(0.04),
-        backgroundGrouped: preciseRosePink.opacity(0.02),
-        backgroundGradientStart: preciseRosePink.opacity(0.18),
-        backgroundGradientEnd: .white,
-        // 卡片表面维持纯白毛玻璃（原设置意图更强）
-        cardSurface: .white.opacity(0.50),
-        cardElevated: .white.opacity(0.75),
-        textPrimary: .black.opacity(0.85),
-        textSecondary: .black.opacity(0.6),
-        textTertiary: .black.opacity(0.45), textInverted: .white,
-        // 主强调色和图表线使用精准色
-        accentPrimary: preciseRosePink,
-        accentSecondary: .purple, // 保持紫色作为次要强调，与暖粉色形成对比
-        positiveGreen: .green,
-        negativeRed: .red,
-        warningOrange: .orange,
-        chartLine: preciseRosePink,
-        // 图表区域使用较低不透明度的精准色
-        chartArea: preciseRosePink.opacity(0.08),
-        chartGrid: .gray.opacity(0.15),
-        // 图表和徽章渐变维持粉到紫的过渡，但粉色用精准色
-        chartBarGradientStart: preciseRosePink,
-        chartBarGradientEnd: .purple,
-        badgePremiumStart: preciseRosePink,
-        badgePremiumEnd: .purple,
-        badgeTrial: preciseRosePink,
-        badgeLocked: .gray.opacity(0.35),
-        // 按钮使用精准色
-        buttonPrimaryBg: preciseRosePink,
-        buttonDestructiveBg: .red,
-        buttonDisabledFg: .gray.opacity(0.35),
-        divider: .gray.opacity(0.15),
-        // 导航栏背景降低不透明度
-        navigationBg: preciseRosePink.opacity(0.04),
-        emptyStateIcon: .gray.opacity(0.45),
-        displayName: "Rose Gold",
-        liquidGlassEnabled: true, // 启用此效果通常需要背景有渐变或透明度，新的设置能很好地配合
-        isDark: false
     )
 
     // MARK: - Mono Stone（暖灰 → 净白，非 Liquid Glass）
@@ -420,72 +364,68 @@ struct Theme: Sendable {
         isDark: false
     )
 
-    // MARK: - Obsidian Amethyst (黑曜紫晶 — 液态玻璃高级深色)
-    /// Obsidian Amethyst — 极简高级创作者风格
-    /// 摒弃高饱和原色，采用微调黑曜石底色与低调的粉紫光晕，专为 Liquid Glass & OLED 优化
+    /// Instagram Dark — 深夜创作者风格
+    /// 深黑空间 + 紫色光晕 + 品红高光，延续 Instagram 品牌同时适配 OLED / Liquid Glass
     static let instagramDark = Theme(
-        // 背景渐变（三色）：纯粹深黑 → 深微靛蓝 → 幽暗红紫（降低饱和度与亮度，防止夺目）
+        // 背景渐变（三色）：品红 → 靛紫 → 深黑
         backgroundGradientColors: [
-            Color(red: 0.11, green: 0.05, blue: 0.12),
-            Color(red: 0.06, green: 0.04, blue: 0.11),
-            Color(red: 0.01, green: 0.01, blue: 0.03)
+            // 1. 暗珊瑚橘：保留 Instagram 原始暖色基因
+            Color(red: 0.42, green: 0.16, blue: 0.20),
+            // 2. 玫瑰粉：增加柔和过渡
+            Color(red: 0.50, green: 0.14, blue: 0.32),
+            // 3. Magenta：Instagram 核心色
+            Color(red: 0.42, green: 0.10, blue: 0.38),
+            // 4. 紫色：增加高级感
+            Color(red: 0.28, green: 0.10, blue: 0.42),
+            // 5. 深蓝紫：Apple 深色玻璃感
+            Color(red: 0.12, green: 0.08, blue: 0.30),
+            // 6. 黑紫背景
+            Color(red: 0.025, green: 0.02, blue: 0.08)
         ],
-        // 深色系统背景：极致纯黑搭配微冷调层次
-        backgroundPrimary: Color(red: 0.02, green: 0.02, blue: 0.03),
-        backgroundSecondary: Color(red: 0.05, green: 0.05, blue: 0.07),
-        backgroundGrouped: Color(red: 0.08, green: 0.08, blue: 0.11),
-        
-        // 背景光源：柔和弥散光（弱化不透明度，提升透光感）
-        backgroundGradientStart: Color(red: 0.55, green: 0.35, blue: 0.95).opacity(0.18), // 霓虹柔紫
-        backgroundGradientEnd: Color(red: 0.95, green: 0.35, blue: 0.65).opacity(0.12),   // 柔粉桃红
-        
-        // Liquid Glass 卡片：高透光 + 微弱高光
-        cardSurface: Color.white.opacity(0.04),
-        cardElevated: Color.white.opacity(0.08),
-        
-        // Typography：采用微冷的纯白度，减少视觉疲劳
-        textPrimary: Color(red: 0.96, green: 0.96, blue: 0.98),
-        textSecondary: Color.white.opacity(0.55),
-        textTertiary: Color.white.opacity(0.35),
-        textInverted: Color(red: 0.05, green: 0.05, blue: 0.08),
-        
-        // Obsidian Accent：自定义的高级感 Accent（精准 RGB 微调）
-        accentPrimary: Color(red: 0.68, green: 0.45, blue: 0.98),   // 柔紫 (Soft Violet)
-        accentSecondary: Color(red: 0.95, green: 0.42, blue: 0.62), // 霓桃粉 (Neon Peach)
-        
-        // 状态颜色：高级灰度调和色（降低原色刺眼感）
-        positiveGreen: Color(red: 0.20, green: 0.78, blue: 0.55),
-        negativeRed: Color(red: 0.92, green: 0.34, blue: 0.42),
-        warningOrange: Color(red: 0.95, green: 0.60, blue: 0.28),
-        
-        // Charts：精致渐变与清亮网格
-        chartLine: Color(red: 0.95, green: 0.42, blue: 0.62),
-        chartArea: Color(red: 0.95, green: 0.42, blue: 0.62).opacity(0.10),
-        chartGrid: Color.white.opacity(0.06),
-        
-        // 数据柱状图：柔紫 → 霓桃粉
-        chartBarGradientStart: Color(red: 0.68, green: 0.45, blue: 0.98),
-        chartBarGradientEnd: Color(red: 0.95, green: 0.42, blue: 0.62),
-        
+        // 深色系统背景
+        backgroundPrimary: Color(red: 0.015, green: 0.015, blue: 0.025),
+        backgroundSecondary: Color(red: 0.05, green: 0.04, blue: 0.08),
+        backgroundGrouped: Color(red: 0.07, green: 0.05, blue: 0.10),
+        // 背景光源：紫 → 粉
+        backgroundGradientStart: Color.purple.opacity(0.35),
+        backgroundGradientEnd: Color.pink.opacity(0.25),
+        // Liquid Glass 卡片
+        cardSurface: Color.white.opacity(0.08),
+        cardElevated: Color.white.opacity(0.14),
+        // Typography
+        textPrimary: .white,
+        textSecondary: .white.opacity(0.65),
+        textTertiary: .white.opacity(0.45),
+        textInverted: .black,
+        // Instagram Dark Accent
+        accentPrimary: .purple,
+        accentSecondary: .pink,
+        // 状态颜色
+        positiveGreen: Color.green.opacity(0.9),
+        negativeRed: Color.red.opacity(0.9),
+        warningOrange: Color.orange.opacity(0.9),
+        // Charts
+        chartLine: .pink,
+        chartArea: .pink.opacity(0.15),
+        chartGrid: .white.opacity(0.12),
+        // 数据柱状图：紫 → 粉
+        chartBarGradientStart: .purple,
+        chartBarGradientEnd: .pink,
         // Premium Badge
-        badgePremiumStart: Color(red: 0.68, green: 0.45, blue: 0.98),
-        badgePremiumEnd: Color(red: 0.95, green: 0.42, blue: 0.62),
-        badgeTrial: Color(red: 0.68, green: 0.45, blue: 0.98).opacity(0.7),
-        badgeLocked: Color.white.opacity(0.18),
-        
-        // Buttons：渐变高光按钮替代纯红/纯粉
-        buttonPrimaryBg: Color(red: 0.95, green: 0.42, blue: 0.62),
-        buttonDestructiveBg: Color(red: 0.85, green: 0.25, blue: 0.35),
-        buttonDisabledFg: Color.white.opacity(0.20),
-        
-        // Divider：更细致的暗色割线
-        divider: Color.white.opacity(0.08),
-        
+        badgePremiumStart: .purple,
+        badgePremiumEnd: .pink,
+        badgeTrial: .purple.opacity(0.8),
+        badgeLocked: Color.white.opacity(0.25),
+        // Buttons
+        buttonPrimaryBg: .pink,
+        buttonDestructiveBg: .red,
+        buttonDisabledFg: Color.white.opacity(0.25),
+        // Divider
+        divider: .white.opacity(0.15),
         // Navigation
-        navigationBg: Color(red: 0.02, green: 0.02, blue: 0.03).opacity(0.85),
-        
+        navigationBg: Color(red: 0.02, green: 0.02, blue: 0.03),
         // Empty State
-        emptyStateIcon: Color.white.opacity(0.35),
+        emptyStateIcon: .white.opacity(0.45),
         displayName: "Instagram Dark",
         liquidGlassEnabled: true,
         isDark: true
@@ -494,9 +434,9 @@ struct Theme: Sendable {
 
 // MARK: - AppTheme
 
-/// 主题枚举 — 6 套可选主题，提供 theme / displayName 计算属性
+/// 主题枚举 — 7 套可选主题，提供 theme / displayName 计算属性
 enum AppTheme: String, CaseIterable {
-    case appleNative, instagram, appleDark, forest, roseGold, monoStone, purple, instagramDark
+    case appleNative, instagram, appleDark, forest, monoStone, purple, instagramDark
 
     /// 将枚举值映射到对应的 Theme 实例
     var theme: Theme {
@@ -505,7 +445,6 @@ enum AppTheme: String, CaseIterable {
         case .instagram:   .instagram
         case .appleDark:   .appleDark
         case .forest:      .forest
-        case .roseGold:    .roseGold
         case .monoStone:   .monoStone
         case .purple:      .purple
         case .instagramDark: .instagramDark
@@ -519,7 +458,6 @@ enum AppTheme: String, CaseIterable {
         case .instagram:   loc(L10n.Settings.instagram)
         case .appleDark:   loc(L10n.Settings.appleDark)
         case .forest:      loc(L10n.Settings.forest)
-        case .roseGold:    loc(L10n.Settings.roseGold)
         case .monoStone:   loc(L10n.Settings.monoStone)
         case .purple:      loc(L10n.Settings.purple)
         case .instagramDark: loc(L10n.Settings.instagramDark)

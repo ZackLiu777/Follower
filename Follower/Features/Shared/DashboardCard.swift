@@ -13,8 +13,11 @@ import SwiftUI
 
 /// 官方 Liquid Glass 质感（忠实还原 Glass.swift 透亮光晕版）：
 /// 基础毛玻璃 + 垂直微弱渐变 + 光晕层（blur 羽化的边缘溢出光）+ 实线层（锐利切边）+ 悬浮阴影
+/// 明暗条件：边缘白线（光晕+实线）与阴影仅在深色主题显示；浅色主题取消白线、无阴影
 struct FollowerGlassModifier: ViewModifier {
     var cornerRadius: CGFloat = 16
+
+    @Environment(\.theme) private var theme
 
     func body(content: Content) -> some View {
         content
@@ -34,43 +37,46 @@ struct FollowerGlassModifier: ViewModifier {
                         )
                     )
             )
-            // 3. 【光晕层】模拟光线照射在玻璃边缘的溢出光线 (Edge Specular Blur)
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(
-                        LinearGradient(
-                            stops: [
-                                .init(color: Color.white.opacity(0.35), location: 0.0), // 顶部高光光晕
-                                .init(color: .clear, location: 1.0),
-                                .init(color: .clear, location: 1.0),
-                                .init(color: Color.white.opacity(0.35), location: 1.0) // 底部次级光晕
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 2
-                    )
-                    .blur(radius: 2) // 核心：通过羽化创造真实光效
+            // 3+4. 边缘白线（光晕层 + 实线层）— 仅深色主题显示；浅色主题取消
+            .overlay {
+                if theme.isDark {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .strokeBorder(
+                            LinearGradient(
+                                stops: [
+                                    .init(color: Color.white.opacity(0.35), location: 0.0), // 顶部高光光晕
+                                    .init(color: .clear, location: 1.0),
+                                    .init(color: .clear, location: 1.0),
+                                    .init(color: Color.white.opacity(0.35), location: 1.0) // 底部次级光晕
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            lineWidth: 2
+                        )
+                        .blur(radius: 2) // 核心：通过羽化创造真实光效
+
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .strokeBorder(
+                            LinearGradient(
+                                stops: [
+                                    .init(color: Color.white.opacity(0.25), location: 0.0),
+                                    .init(color: Color.white.opacity(0.02), location: 0.18),
+                                    .init(color: Color.white.opacity(0.02), location: 0.82),
+                                    .init(color: Color.white.opacity(0.25), location: 1.0)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            lineWidth: 0.8
+                        )
+                }
+            }
+            // 5. 悬浮阴影 — 深色 0.3 保持；浅色 0.0（无阴影）
+            .shadow(
+                color: Color.black.opacity(theme.isDark ? 0.3 : 0.0),
+                radius: 10, x: 0, y: 5
             )
-            // 4. 【实线层】玻璃切边的物理高光锐利边框
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(
-                        LinearGradient(
-                            stops: [
-                                .init(color: Color.white.opacity(0.25), location: 0.0),
-                                .init(color: Color.white.opacity(0.02), location: 0.18),
-                                .init(color: Color.white.opacity(0.02), location: 0.82),
-                                .init(color: Color.white.opacity(0.25), location: 1.0)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 0.8
-                    )
-            )
-            // 5. 悬浮阴影
-            .shadow(color: Color.black.opacity(0.4), radius: 10, x: 0, y: 5)
     }
 }
 
@@ -96,9 +102,11 @@ struct DashboardCard: ViewModifier {
 
 // MARK: - Liquid Glass 纯背景（.background() 场景）
 
-/// Liquid Glass 纯背景形状 — 与 Glass.swift 透亮光晕版一致
+/// Liquid Glass 纯背景形状 — 与 FollowerGlassModifier 同逻辑（边缘白线/阴影仅深色显示）
 struct LiquidGlassCardBackground: View {
     var cornerRadius: CGFloat = 16
+
+    @Environment(\.theme) private var theme
 
     var body: some View {
         ZStack {
@@ -116,42 +124,43 @@ struct LiquidGlassCardBackground: View {
                     )
                 )
         }
-        // 【光晕层】blur 羽化的边缘溢出光
-        .overlay(
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(
-                        stops: [
-                            .init(color: Color.white.opacity(0.65), location: 0.0),
-                            .init(color: .clear, location: 0.25),
-                            .init(color: .clear, location: 0.75),
-                            .init(color: Color.white.opacity(0.30), location: 1.0)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    lineWidth: 2
-                )
-                .blur(radius: 2)
-        )
-        // 【实线层】锐利切边
-        .overlay(
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(
-                        stops: [
-                            .init(color: Color.white.opacity(0.55), location: 0.0),
-                            .init(color: Color.white.opacity(0.02), location: 0.18),
-                            .init(color: Color.white.opacity(0.02), location: 0.82),
-                            .init(color: Color.white.opacity(0.28), location: 1.0)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    ),
-                    lineWidth: 0.8
-                )
-        )
-        .shadow(color: Color.black.opacity(0.4), radius: 10, x: 0, y: 5)
+        // 边缘白线（光晕 + 实线）— 仅深色主题
+        .overlay {
+            if theme.isDark {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(
+                        LinearGradient(
+                            stops: [
+                                .init(color: Color.white.opacity(0.65), location: 0.0),
+                                .init(color: .clear, location: 0.25),
+                                .init(color: .clear, location: 0.75),
+                                .init(color: Color.white.opacity(0.30), location: 1.0)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 2
+                    )
+                    .blur(radius: 2)
+
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(
+                        LinearGradient(
+                            stops: [
+                                .init(color: Color.white.opacity(0.55), location: 0.0),
+                                .init(color: Color.white.opacity(0.02), location: 0.18),
+                                .init(color: Color.white.opacity(0.02), location: 0.82),
+                                .init(color: Color.white.opacity(0.28), location: 1.0)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: 0.8
+                    )
+            }
+        }
+        // 阴影 — 深色 0.3 保持；浅色 0.0
+        .shadow(color: Color.black.opacity(theme.isDark ? 0.3 : 0.0), radius: 10, x: 0, y: 5)
     }
 }
 
