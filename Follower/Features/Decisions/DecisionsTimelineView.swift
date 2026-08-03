@@ -106,6 +106,9 @@ struct DecisionsTimelineView: View {
             .padding(.bottom, 24)
         }
         .scrollContentBackground(.hidden)
+        // Scroll Edge Effect — 内容与导航栏 / TabBar 玻璃控件间的柔和过渡
+        .scrollEdgeEffectStyle(.soft, for: .top)
+        .scrollEdgeEffectStyle(.soft, for: .bottom)
     }
 
     // MARK: - Header

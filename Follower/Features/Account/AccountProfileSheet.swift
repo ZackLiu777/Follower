@@ -131,6 +131,8 @@ struct AccountProfileSheet: View {
                 .listRowInsets(rowInsets)
         }
         .scrollContentBackground(.hidden)
+        // Scroll Edge Effect — 内容与弹窗导航栏玻璃控件间的柔和过渡
+        .scrollEdgeEffectStyle(.soft, for: .top)
     }
 
     /// 统一行内边距 — 顶部/底部 0，左右 16（消除 Form 默认 padding 差异）
