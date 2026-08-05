@@ -118,6 +118,7 @@ enum L10n {
         static let monoStone = "settings.monoStone"
         static let purple = "settings.purple"
         static let instagramDark = "settings.instagramDark"
+        static let cream = "settings.cream"
         static let dataExport = "settings.dataExport"
         static let format = "settings.format"
         static let exportData = "settings.exportData"

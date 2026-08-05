@@ -10323,14 +10323,35 @@
     "Weight Breakdown": {},
     "Window": {},
     "x%@": {},
-    "和弦练习与指法分析表": {},
-    "家": {},
-    "对于刚开始学习吉他和弦的人来说": {},
-    "探索和弦包": {},
-    "播放示范音效": {},
-    "第一个和弦": {},
-    "系统原生 Zoom 缩放转场能够完美接管卡片层次，支持天然手势侧滑与拖拽返回。": {},
-    "音符构成：%@": {}
+    "settings.cream": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cream"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "クリーム"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "羊皮纸白"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "羊皮紙白"
+          }
+        }
+      }
+    }
   },
   "version": "1.0"
 }

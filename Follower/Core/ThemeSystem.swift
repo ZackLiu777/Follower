@@ -363,24 +363,15 @@ struct Theme: Sendable {
         liquidGlassEnabled: true,
         isDark: false
     )
-
+    
     /// Instagram Dark — 深夜创作者风格
     /// 深黑空间 + 紫色光晕 + 品红高光，延续 Instagram 品牌同时适配 OLED / Liquid Glass
     static let instagramDark = Theme(
-        // 背景渐变（三色）：品红 → 靛紫 → 深黑
+        // 背景渐变（三色）：深黑 → 靛紫 → 品红
         backgroundGradientColors: [
-            // 1. 暗珊瑚橘：保留 Instagram 原始暖色基因
-            Color(red: 0.42, green: 0.16, blue: 0.20),
-            // 2. 玫瑰粉：增加柔和过渡
-            Color(red: 0.50, green: 0.14, blue: 0.32),
-            // 3. Magenta：Instagram 核心色
-            Color(red: 0.42, green: 0.10, blue: 0.38),
-            // 4. 紫色：增加高级感
-            Color(red: 0.28, green: 0.10, blue: 0.42),
-            // 5. 深蓝紫：Apple 深色玻璃感
-            Color(red: 0.12, green: 0.08, blue: 0.30),
-            // 6. 黑紫背景
-            Color(red: 0.025, green: 0.02, blue: 0.08)
+            Color(red: 0.30, green: 0.06, blue: 0.20),
+            Color(red: 0.16, green: 0.05, blue: 0.25),
+            Color(red: 0.03, green: 0.02, blue: 0.08)
         ],
         // 深色系统背景
         backgroundPrimary: Color(red: 0.015, green: 0.015, blue: 0.025),
@@ -430,13 +421,63 @@ struct Theme: Sendable {
         liquidGlassEnabled: true,
         isDark: true
     )
+
+    // MARK: - Cream（羊皮纸白 — 纯色无渐变）
+
+    /// 柔和温暖的米白 / 羊皮纸白主题：纯色背景（无渐变），卡片同色。
+    /// 主背景 #FAF6E9 / 辅助浅褐 #E8DFD1
+    static let cream = Theme(
+        // 纯色背景：三个相同色 = LinearGradient 视觉上无渐变
+        backgroundGradientColors: [
+            Color(red: 250 / 255.0, green: 246 / 255.0, blue: 233 / 255.0),
+            Color(red: 250 / 255.0, green: 246 / 255.0, blue: 233 / 255.0),
+            Color(red: 250 / 255.0, green: 246 / 255.0, blue: 233 / 255.0)
+        ],
+        backgroundPrimary: Color(red: 250 / 255.0, green: 246 / 255.0, blue: 233 / 255.0),
+        backgroundSecondary: Color(red: 250 / 255.0, green: 246 / 255.0, blue: 233 / 255.0),
+        backgroundGrouped: Color(red: 250 / 255.0, green: 246 / 255.0, blue: 233 / 255.0),
+        backgroundGradientStart: Color(red: 250 / 255.0, green: 246 / 255.0, blue: 233 / 255.0),
+        backgroundGradientEnd: Color(red: 250 / 255.0, green: 246 / 255.0, blue: 233 / 255.0),
+        // 卡片背景 = 主背景色（纯色平铺，非毛玻璃）
+        cardSurface: Color(red: 250 / 255.0, green: 246 / 255.0, blue: 233 / 255.0),
+        cardElevated: Color(red: 250 / 255.0, green: 246 / 255.0, blue: 233 / 255.0),
+        // 文字：米白背景上使用柔和深棕灰
+        textPrimary: Color(red: 0.30, green: 0.26, blue: 0.20),
+        textSecondary: Color(red: 0.45, green: 0.40, blue: 0.32),
+        textTertiary: Color(red: 0.58, green: 0.53, blue: 0.45),
+        textInverted: .white,
+        // 强调色：暖驼棕（与羊皮纸白协调）
+        accentPrimary: Color(red: 0.69, green: 0.53, blue: 0.35),
+        accentSecondary: Color(red: 232 / 255.0, green: 223 / 255.0, blue: 209 / 255.0),
+        positiveGreen: Color(red: 0.45, green: 0.60, blue: 0.35),
+        negativeRed: Color(red: 0.75, green: 0.35, blue: 0.30),
+        warningOrange: Color(red: 0.80, green: 0.55, blue: 0.25),
+        chartLine: Color(red: 0.69, green: 0.53, blue: 0.35),
+        chartArea: Color(red: 0.69, green: 0.53, blue: 0.35).opacity(0.12),
+        chartGrid: Color(red: 0.80, green: 0.76, blue: 0.68),
+        chartBarGradientStart: Color(red: 0.69, green: 0.53, blue: 0.35),
+        chartBarGradientEnd: Color(red: 0.80, green: 0.65, blue: 0.45),
+        badgePremiumStart: Color(red: 0.69, green: 0.53, blue: 0.35),
+        badgePremiumEnd: Color(red: 0.80, green: 0.65, blue: 0.45),
+        badgeTrial: Color(red: 0.69, green: 0.53, blue: 0.35),
+        badgeLocked: Color(red: 0.80, green: 0.76, blue: 0.68),
+        buttonPrimaryBg: Color(red: 0.69, green: 0.53, blue: 0.35),
+        buttonDestructiveBg: Color(red: 0.75, green: 0.35, blue: 0.30),
+        buttonDisabledFg: Color(red: 0.80, green: 0.76, blue: 0.68),
+        divider: Color(red: 0.84, green: 0.80, blue: 0.72),
+        navigationBg: Color(red: 250 / 255.0, green: 246 / 255.0, blue: 233 / 255.0),
+        emptyStateIcon: Color(red: 0.58, green: 0.53, blue: 0.45),
+        displayName: "Cream",
+        liquidGlassEnabled: false,   // 纯色平铺（卡片 = 背景色）
+        isDark: false
+    )
 }
 
 // MARK: - AppTheme
 
-/// 主题枚举 — 7 套可选主题，提供 theme / displayName 计算属性
+/// 主题枚举 — 8 套可选主题，提供 theme / displayName 计算属性
 enum AppTheme: String, CaseIterable {
-    case appleNative, instagram, appleDark, forest, monoStone, purple, instagramDark
+    case appleNative, instagram, appleDark, forest, monoStone, purple, instagramDark, cream
 
     /// 将枚举值映射到对应的 Theme 实例
     var theme: Theme {
@@ -448,6 +489,7 @@ enum AppTheme: String, CaseIterable {
         case .monoStone:   .monoStone
         case .purple:      .purple
         case .instagramDark: .instagramDark
+        case .cream:         .cream
         }
     }
 
@@ -461,6 +503,7 @@ enum AppTheme: String, CaseIterable {
         case .monoStone:   loc(L10n.Settings.monoStone)
         case .purple:      loc(L10n.Settings.purple)
         case .instagramDark: loc(L10n.Settings.instagramDark)
+        case .cream:         loc(L10n.Settings.cream)
         }
     }
 }
