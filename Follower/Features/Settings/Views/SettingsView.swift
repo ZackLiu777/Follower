@@ -40,6 +40,8 @@ struct SettingsView: View {
                 Section { premiumFeaturesSection.listRowBackground(currentTheme.cardSurface) } header: { Text(loc(L10n.Settings.premiumFeatures)) }
             }
             .scrollContentBackground(.hidden)
+            // Scroll Edge Effect — 内容与导航栏玻璃控件间的柔和过渡
+            .scrollEdgeEffectStyle(.soft, for: .top)
             // 删除确认弹窗 — 挂在 Form 层级（附着在 Button 上 iOS 17+ 有 bug 不弹出）
             .confirmationDialog(loc(L10n.Settings.deleteConfirmationTitle), isPresented: $viewModel.showDeleteConfirmation, titleVisibility: .visible) {
                 Button(loc(L10n.Common.delete), role: .destructive) {

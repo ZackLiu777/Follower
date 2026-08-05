@@ -86,6 +86,9 @@ struct DashboardView: View {
                             .padding(.bottom, 24)
                         }
                         .scrollContentBackground(.hidden)
+                        // Scroll Edge Effect — 内容与导航栏 / TabBar 玻璃控件间的柔和过渡
+                        .scrollEdgeEffectStyle(.soft, for: .top)
+                        .scrollEdgeEffectStyle(.soft, for: .bottom)
                     }
                 } else if viewModel.isLoading || viewModel.isSyncing {
                     ZStack {

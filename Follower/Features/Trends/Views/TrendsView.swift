@@ -58,6 +58,9 @@ struct TrendsView: View {
                     .padding(.vertical, 8)
                 }
                 .scrollContentBackground(.hidden)
+                // Scroll Edge Effect — 内容与导航栏 / TabBar 玻璃控件间的柔和过渡
+                .scrollEdgeEffectStyle(.soft, for: .top)
+                .scrollEdgeEffectStyle(.soft, for: .bottom)
                 case .syncing:
                     ProgressView(loc(L10n.Common.loading)).frame(maxWidth: .infinity, minHeight: 300)
                 case .readyToSync:
