@@ -48,6 +48,7 @@ jobs:
             -only-testing:FollowerTests/PhiServicesTests \
             -only-testing:FollowerTests/AppStateTests \
             -only-testing:FollowerTests/FollowerTests \
+            -only-testing:FollowerTests/DraftPostTests \
             -derivedDataPath /tmp/FollowerDD CODE_SIGNING_ALLOWED=NO
 
       - name: Run Flaky Tests (shared DB / @MainActor VM / UI timing — allowed to fail)
