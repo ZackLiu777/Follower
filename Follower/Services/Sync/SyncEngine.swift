@@ -41,7 +41,8 @@ final actor SyncEngine: SyncEngineProtocol {
     private let eventRepo: EventRepositoryProtocol
     private let accountRepo: AccountRepositoryProtocol
     private let ingestionService: IngestionServiceProtocol
-    private let apiClient: InstagramAPIClientProtocol
+    /// 唯一分派点：取到 token 后按 token 值选择 client（测试账号 → mock，其余 → real）
+    private let apiResolver: APIClientResolver
     private let tokenProvider: TokenProviderProtocol
 
     private var statusCache: [Int64: SyncStatus.State] = [:]
@@ -52,13 +53,13 @@ final actor SyncEngine: SyncEngineProtocol {
         eventRepo: EventRepositoryProtocol,
         accountRepo: AccountRepositoryProtocol,
         ingestionService: IngestionServiceProtocol,
-        apiClient: InstagramAPIClientProtocol,
+        apiResolver: APIClientResolver,
         tokenProvider: TokenProviderProtocol
     ) {
         self.eventRepo = eventRepo
         self.accountRepo = accountRepo
         self.ingestionService = ingestionService
-        self.apiClient = apiClient
+        self.apiResolver = apiResolver
         self.tokenProvider = tokenProvider
     }
 
@@ -104,14 +105,17 @@ final actor SyncEngine: SyncEngineProtocol {
 
         do {
 
+            // 按 token 值分派 client：测试账号（哨兵 token）→ mock，其余 → real
+            let client = apiResolver.client(for: token)
+
             // 并行 3 次 API 调用
-            async let igUser = apiClient.fetchProfile(accessToken: token)
-            async let igInsights = apiClient.fetchInsights(
+            async let igUser = client.fetchProfile(accessToken: token)
+            async let igInsights = client.fetchInsights(
                 accessToken: token,
                 metrics: ["follower_count", "reach", "views"],
                 period: "day"
             )
-            async let igMedia = apiClient.fetchMedia(accessToken: token, limit: 25)
+            async let igMedia = client.fetchMedia(accessToken: token, limit: 25)
 
             let user = try await igUser
             let insights = try await igInsights
@@ -230,10 +234,17 @@ private func buildTrend(from insights: [IGInsightValue], username: String) -> AP
     let fSeries = parse("follower_count")
     let rSeries = parse("reach")
     let iSeries = parse("views")
+    // 互动明细序列：真实 API 不请求 → 空 dict → 0；Mock 数据源提供 → 历史互动图表有数据
+    let lSeries = parse("likes")
+    let cSeries = parse("comments")
+    let sSeries = parse("shares")
 
     var allDays = Set(fSeries.keys)
     allDays.formUnion(rSeries.keys)
     allDays.formUnion(iSeries.keys)
+    allDays.formUnion(lSeries.keys)
+    allDays.formUnion(cSeries.keys)
+    allDays.formUnion(sSeries.keys)
 
     let points: [APITrendDataPoint] = allDays.sorted().map { day in
         let f = Int(fSeries[day] ?? 0)
@@ -241,7 +252,10 @@ private func buildTrend(from insights: [IGInsightValue], username: String) -> AP
         let er = f > 0 ? Double(imp) / Double(f) : 0
         return APITrendDataPoint(
             date: day, followersCount: f, followingCount: 0,
-            mediaCount: 0, engagementRate: er, totalViews: imp
+            mediaCount: 0, engagementRate: er, totalViews: imp,
+            likesCount: Int(lSeries[day] ?? 0),
+            commentsCount: Int(cSeries[day] ?? 0),
+            sharesCount: Int(sSeries[day] ?? 0)
         )
     }
 

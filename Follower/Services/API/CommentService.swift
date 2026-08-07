@@ -23,28 +23,31 @@ protocol CommentServiceProtocol: Sendable {
 
 // MARK: - CommentService
 
-/// 评论管理服务实现 — 组合 apiClient + tokenProvider，按 accountId 取 token
+/// 评论管理服务实现 — 组合 apiResolver + tokenProvider，按 accountId 取 token 后分派 client
 final class CommentService: CommentServiceProtocol {
-    private let apiClient: InstagramAPIClientProtocol
+    private let apiResolver: APIClientResolver
     private let tokenProvider: TokenProviderProtocol
 
-    init(apiClient: InstagramAPIClientProtocol, tokenProvider: TokenProviderProtocol) {
-        self.apiClient = apiClient
+    init(apiResolver: APIClientResolver, tokenProvider: TokenProviderProtocol) {
+        self.apiResolver = apiResolver
         self.tokenProvider = tokenProvider
     }
 
     func fetchComments(accountId: Int64, mediaID: String) async throws -> [IGComment] {
         let token = try await tokenProvider.getToken(accountId: accountId)
-        return try await apiClient.fetchComments(accessToken: token, mediaID: mediaID, limit: 50)
+        let client = apiResolver.client(for: token)
+        return try await client.fetchComments(accessToken: token, mediaID: mediaID, limit: 50)
     }
 
     func reply(accountId: Int64, mediaID: String, message: String) async throws -> String {
         let token = try await tokenProvider.getToken(accountId: accountId)
-        return try await apiClient.replyComment(accessToken: token, mediaID: mediaID, message: message)
+        let client = apiResolver.client(for: token)
+        return try await client.replyComment(accessToken: token, mediaID: mediaID, message: message)
     }
 
     func delete(accountId: Int64, commentID: String) async throws {
         let token = try await tokenProvider.getToken(accountId: accountId)
-        try await apiClient.deleteComment(accessToken: token, commentID: commentID)
+        let client = apiResolver.client(for: token)
+        try await client.deleteComment(accessToken: token, commentID: commentID)
     }
 }

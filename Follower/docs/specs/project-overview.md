@@ -31,14 +31,14 @@ Follower/
 ├── Models/                     # 领域模型（Account/Event/Snapshot/Metric/PremiumFeature...）
 ├── Repository/                 # 数据访问层（唯一入口：Account/Event/Snapshot/Metric/PremiumFeature）
 ├── Services/                   # 业务服务
-│   ├── API/                    #   InstagramAPIClient / TokenProvider / OAuth / IGModels / CommentService
+│   ├── API/                    #   InstagramAPIClient / TokenProvider + RoutingTokenProvider / OAuth / IGModels / CommentService
 │   ├── Sync/                   #   SyncEngine / APIDTOs
 │   ├── Ingestion/              #   API DTO → 内部模型
 │   ├── Aggregation/            #   原始事件 → Snapshot / Metric
 │   ├── Analysis/               #   10 个分析服务（预测/活跃度/留存/地域/质量...）
 │   ├── Decisions/              #   增长决策引擎
 │   ├── Export/                 #   JSON / CSV 导出
-│   ├── Mock/                   #   Mock 生成器（测试/预览兼容，非运行时）
+│   ├── Mock/                   #   Mock 层：SeededRandom（确定性随机）、MockInstagramAPIClient（测试账号假数据）、APIClientResolver（全局分派点）
 │   └── PostAssistantService    #   发布助手（剪贴板/图片/通知/快捷指令引导）
 └── Features/                   # 功能模块（每个模块 Views/ + ViewModels/）
     ├── Dashboard/   Views(16) + ViewModels(1)
@@ -204,6 +204,11 @@ AppState.currentTheme（单一状态源，@Observable）
 9. **发布助手能力边界**：App 无法程序化触发快捷指令（`AppIntents` 是反向的）；最终发布必须用户在 Instagram 内确认；「排期」= 到点本地通知提醒 + 一键预填（文案已在剪贴板），不是后台自动发布——UI 与文档必须按「发布助手」而非「自动排期」表述
 10. **评论管理**：仅 BUSINESS/CREATOR 账号可用（`account_type` 已随 `/me` 持久化到 Account）；API 报 400+permission 时 UI 给出切换商务账号提示；评论端点走 `graph.facebook.com`（与个人 API 的 `graph.instagram.com` 不同域）
 11. **DraftPost 图片存储**：沙盒 `Documents/FollowerDrafts/`，删除草稿时必须同步 `deleteImage` 清理文件，避免沙盒残留
+12. **测试账号（Test tab → 用测试数据连接）**：创建 `isTest=true` 账号 + 哨兵 token（`mock://token`）→ 全链路 Mock 同步（730 天序列 / 25 条媒体 / 评论 / 地域分布），无需真实 Token/OAuth；测试账号显示「测试」徽章，可多个（test.user / test.user.2 / ...）。**token 经 `RoutingTokenProvider` 分派**：测试账号不落 Keychain（`storeToken` no-op，连接永不因 Keychain 失败；`getToken` 一律返回哨兵，兼容历史坏账号），真实账号原样走 Keychain
+13. **Mock 分派契约**：`APIClientResolver` 是唯一分派点——哨兵 token（`mock://` 前缀）→ MockInstagramAPIClient，其余（真实 IGAA…/EAAB… token）→ 真实 API；真实 token 由 Meta 颁发，格式上不可能含 `mock://`，因此测试数据只能进测试账号（方向安全）；`Account.isTest` 仅做 UI 语义（徽章），不参与分派；Mock 数据确定性（seed=42 LCG），同 seed 同结果可断言
+14. **测试库隔离**：Repository 类测试用 `DatabaseManager(inMemory: true)`（内存库），不写磁盘、用例间不污染（DraftPostTests 已迁移）
+15. **批量写入性能**：`MetricRepository.upsertBatch` 用 INSERT OR REPLACE（依赖唯一索引 idx_metric_account_type_window，~5000 条/次 sync）；`SnapshotRepository.upsertBatch` 用 DELETE+INSERT（snapshot 表无唯一索引——历史重复行会使加唯一索引的迁移失败）。均去掉逐条前导 SELECT，同步耗时从秒级降到毫秒级
+16. **历史互动数据**：Mock `fetchInsights` 附加返回 likes/comments/shares 日频序列（独立 rng 副本生成，不扰动主序列形态）；`APITrendDataPoint.likesCount/commentsCount/sharesCount` 为 Optional（旧 Event payload 缺 key 解码不失败）；真实 API 不请求这三个指标 → nil → 0，行为不变
 
 ---
 

@@ -22,7 +22,10 @@ final class DIContainer {
 
     // MARK: - API Layer
 
+    /// 真实 Instagram API 客户端（账号连接验证等场景直连）
     let apiClient: InstagramAPIClientProtocol
+    /// 全局唯一分派点 — 所有业务服务经它按 token 值选择 client（测试→mock，其余→real）
+    let apiResolver: APIClientResolver
     let tokenProvider: TokenProviderProtocol
 
     // MARK: - Core Services
@@ -76,9 +79,16 @@ final class DIContainer {
         self.draftPostRepository = draftPostRepo
 
         // API Layer
+        // realClient：真实 Instagram API（OAuth / Token 账号专用）
+        // mockClient：测试账号专用（哨兵 token 才可命中，见 APIClientResolver）
         let client = InstagramAPIClient()
-        let tokenProv = TokenProvider()
+        let mockClient = MockInstagramAPIClient()
+        let resolver = APIClientResolver(realClient: client, mockClient: mockClient)
+        // RoutingTokenProvider：测试账号（isTest）token 不落 Keychain（内存语义，创建永不因
+        // Keychain 失败）；真实账号原样走 Keychain。各服务经协议引用，零改动。
+        let tokenProv = RoutingTokenProvider(keychain: TokenProvider(), accountRepo: accountRepo)
         self.apiClient = client
+        self.apiResolver = resolver
         self.tokenProvider = tokenProv
 
         // Core Services
@@ -96,7 +106,7 @@ final class DIContainer {
             eventRepo: eventRepo,
             accountRepo: accountRepo,
             ingestionService: ingestion,
-            apiClient: client,
+            apiResolver: resolver,
             tokenProvider: tokenProv
         )
         self.syncEngine = sync
@@ -109,7 +119,7 @@ final class DIContainer {
 
         // 发布助手 & 评论管理
         self.postAssistantService = PostAssistantService()
-        self.commentService = CommentService(apiClient: client, tokenProvider: tokenProv)
+        self.commentService = CommentService(apiResolver: resolver, tokenProvider: tokenProv)
 
         // Premium Services
         self.scoringService = ScoringService()
@@ -117,7 +127,7 @@ final class DIContainer {
         self.predictionService = PredictionService()
         self.activityAnalysisService = ActivityAnalysisService()
         self.retentionAnalysisService = RetentionAnalysisService()
-        self.geoDistributionService = GeoDistributionService(apiClient: client, tokenProvider: tokenProv)
+        self.geoDistributionService = GeoDistributionService(apiResolver: resolver, tokenProvider: tokenProv)
         self.aiAnalysisService = AIAnalysisService()
         self.authenticityService = AuthenticityService()
         self.campaignComparisonService = CampaignComparisonService()

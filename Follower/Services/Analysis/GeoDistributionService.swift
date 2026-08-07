@@ -25,22 +25,23 @@ protocol GeoDistributionServiceProtocol: Sendable {
 }
 
 final class GeoDistributionService: GeoDistributionServiceProtocol {
-    private let apiClient: InstagramAPIClientProtocol?
+    private let apiResolver: APIClientResolver?
     private let tokenProvider: TokenProviderProtocol?
 
-    init(apiClient: InstagramAPIClientProtocol? = nil, tokenProvider: TokenProviderProtocol? = nil) {
-        self.apiClient = apiClient
+    init(apiResolver: APIClientResolver? = nil, tokenProvider: TokenProviderProtocol? = nil) {
+        self.apiResolver = apiResolver
         self.tokenProvider = tokenProvider
     }
 
     func fetchDistribution(accountId: Int64) async -> GeoDistributionResult {
-        guard let apiClient, let tokenProvider else {
+        guard let apiResolver, let tokenProvider else {
             return Self.fallbackRegions()
         }
 
         do {
             let token = try await tokenProvider.getToken(accountId: accountId)
-            let insights = try await apiClient.fetchInsights(
+            let client = apiResolver.client(for: token)
+            let insights = try await client.fetchInsights(
                 accessToken: token,
                 metrics: ["audience_country"],
                 period: "lifetime"

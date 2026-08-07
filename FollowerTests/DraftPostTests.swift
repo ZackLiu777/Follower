@@ -65,7 +65,8 @@ struct DraftPostTests {
     let accountRepo: AccountRepository
 
     init() {
-        db = DatabaseManager.shared
+        // 内存库：测试数据不落盘、用例间互不污染（原 shared 磁盘库会累积数据）
+        db = DatabaseManager(inMemory: true)
         draftRepo = DraftPostRepository(db: db)
         accountRepo = AccountRepository(db: db)
     }

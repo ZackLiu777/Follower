@@ -181,6 +181,47 @@ final class AccountViewModel {
         shouldDismiss = true
     }
 
+    /// 用 Mock 数据连接测试账号 — 创建 isTest 账号 + 哨兵 token + 全链路 mock 同步。
+    /// 分派契约：哨兵 token（mock://）→ APIClientResolver 分派到 MockInstagramAPIClient，
+    /// 真实 API 从未被调用；数据覆盖 730 天序列 / 25 条媒体 / 评论 / 地域分布。
+    func connectTestAccount() async {
+        isConnecting = true
+        defer { isConnecting = false }
+        do {
+            // 允许多个测试账号：序号命名避免与已有账号冲突
+            let all = (try? await accountRepo.fetchAll()) ?? []
+            let testCount = all.filter { $0.isTest }.count
+            let username = testCount == 0 ? "test.user" : "test.user.\(testCount + 1)"
+
+            let account = Account(
+                platform: .instagram,
+                username: username,
+                displayName: "Test User \(testCount + 1)",
+                authState: .authorized,
+                accountType: "BUSINESS", // BUSINESS → 解锁评论管理入口
+                isTest: true,
+                createdAt: Date(), updatedAt: Date()
+            )
+            let inserted = try await accountRepo.insert(account)
+            guard let accountId = inserted.id else {
+                errorMessage = "测试账号创建失败"
+                return
+            }
+            // 哨兵 token：RoutingTokenProvider 对测试账号跳过 Keychain（no-op），
+            // 连接流程永不因 Keychain 失败；分派由 APIClientResolver 按 token 值决定
+            try await tokenProvider.storeToken(
+                accountId: accountId,
+                accessToken: MockInstagramAPIClient.sentinelToken
+            )
+            _ = try? await syncEngine.sync(accountId: accountId)
+            NotificationCenter.default.post(name: .accountCreated, object: nil)
+            await loadAccounts()
+            shouldDismiss = true
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     /// 手动创建测试账号（无 token，用于验证空状态 UI）
     func addAccount() async {
         guard !username.isEmpty, !displayName.isEmpty else { return }

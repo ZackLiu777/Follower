@@ -35,6 +35,8 @@ struct Account: Codable, FetchableRecord, PersistableRecord {
     var authState: AuthState
     /// Instagram 账号类型：PERSONAL / BUSINESS / CREATOR（评论管理仅对后两者开放）
     var accountType: String?
+    /// 测试账号标记（仅 UI 语义：徽章展示与连接流程限定；不参与 API 分派）
+    var isTest: Bool = false
     var createdAt: Date
     var updatedAt: Date
 
@@ -57,6 +59,7 @@ extension Account {
         static let displayName = Column(CodingKeys.displayName)
         static let authState = Column(CodingKeys.authState)
         static let accountType = Column(CodingKeys.accountType)
+        static let isTest = Column(CodingKeys.isTest)
         static let createdAt = Column(CodingKeys.createdAt)
         static let updatedAt = Column(CodingKeys.updatedAt)
     }

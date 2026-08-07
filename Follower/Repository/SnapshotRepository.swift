@@ -88,25 +88,21 @@ final class SnapshotRepository: SnapshotRepositoryProtocol {
         }
     }
 
-    /// 批量 upsert Snapshot，同 account + observedAt 存在则更新
+    /// 批量 upsert Snapshot：同事务内按 (accountId, observedAt) 先删后插。
+    /// snapshot 表无唯一索引（加唯一索引会因历史重复行导致迁移失败），
+    /// 因此用 DELETE+INSERT 实现替换语义 —— 去掉每条前导 SELECT 后，
+    /// 730 条快照写入从秒级降到毫秒级，且无索引迁移风险。
     func upsertBatch(_ snapshots: [Snapshot]) async throws -> [Snapshot] {
         try await db.batchWrite { db in
-            var results: [Snapshot] = []
             for var s in snapshots {
-                if let existing = try Snapshot
+                try Snapshot
                     .filter(Snapshot.Columns.accountId == s.accountId)
                     .filter(Snapshot.Columns.observedAt == s.observedAt)
-                    .fetchOne(db) {
-                    s.id = existing.id
-                    s.createdAt = Date()
-                    try s.update(db)
-                } else {
-                    s.createdAt = Date()
-                    try s.insert(db)
-                }
-                results.append(s)
+                    .deleteAll(db)
+                s.createdAt = Date()
+                try s.insert(db)
             }
-            return results
+            return snapshots
         }
     }
 }
