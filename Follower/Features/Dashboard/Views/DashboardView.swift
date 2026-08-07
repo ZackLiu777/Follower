@@ -348,22 +348,27 @@ private struct RecentPostsSection: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // ── 标题行 ──
-            HStack {
-                Text(loc(L10n.Dashboard.recentContent))
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(theme.textPrimary)
-                Spacer()
-                if !posts.isEmpty {
-                    NavigationLink(loc(L10n.Dashboard.viewAll)) {
-                        PostListView(posts: posts)
-                    }
-                    .font(.system(size: 13, weight: .medium))
+            // ── 标题行（整行可点 → All Posts 列表页；无数据时也可进入）──
+            NavigationLink {
+                PostListView(posts: posts)
+            } label: {
+                HStack(spacing: 6) {
+                    Text(loc(L10n.Dashboard.recentContent))
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(theme.textPrimary)
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundColor(theme.textTertiary)
+                    Spacer()
+                    Text(loc(L10n.Dashboard.viewAll))
+                        .font(.system(size: 13, weight: .medium))
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 8)
+            .buttonStyle(.plain)
 
             if posts.isEmpty {
                 Text(loc(L10n.Dashboard.noPostsHint))
