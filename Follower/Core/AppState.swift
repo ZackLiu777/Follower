@@ -11,7 +11,8 @@ import SwiftUI
 // MARK: - Sync State
 
 /// App 级同步状态机 — 所有 Tab 共享，确保 UI 状态一致
-enum AppSyncState: Sendable {
+/// Equatable：DashboardView 值保护写入（相同状态不写，避免 @Observable 无谓通知）
+enum AppSyncState: Equatable, Sendable {
     case noAccount      // 无账号 → 引导连接
     case readyToSync    // 有账号无数据 → 引导同步
     case syncing        // 同步中 → loading

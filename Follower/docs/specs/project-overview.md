@@ -177,8 +177,9 @@ AppState.currentTheme（单一状态源，@Observable）
 ## 5. UI 风格规范
 
 1. **Liquid Glass 玻璃卡片**（`FollowerGlassModifier`，Shared/Components/DashboardCard.swift）：
-   - 深色主题：材质 + 垂直充填 + 光晕层（blur 羽化）+ 实线层 + 阴影 0.3
+   - 深色主题：材质（或静态填充）+ 垂直充填 + 实线边缘高光，**无阴影**（黑色投影在深背景不可见）
    - 浅色主题：仅材质 + 充填，**无白线、无阴影**
+   - **性能策略**：光晕 blur 羽化层已移除（滚动每帧重渲主源）；阴影层整体移除；`usesMaterial: false` 时毛玻璃材质 → 静态半透明填充（零采样）——滚动路径的小卡片/tile（如 Dashboard Premium 网格 16 张）必须用静态版，大卡保留材质
 2. **图标**：18~20pt，`theme.accentPrimary`；头像 44pt（纯 icon + Material 圆底 + 白描边）
 3. **卡片行高统一 64pt**，`listRowInsets(0,16,0,16)`
 4. **文字**：浅色主题 `textPrimary: .black.opacity(0.85)`（纯黑散光）；行标签 subheadline、次级 caption
@@ -209,6 +210,7 @@ AppState.currentTheme（单一状态源，@Observable）
 14. **测试库隔离**：Repository 类测试用 `DatabaseManager(inMemory: true)`（内存库），不写磁盘、用例间不污染（DraftPostTests 已迁移）
 15. **批量写入性能**：`MetricRepository.upsertBatch` 用 INSERT OR REPLACE（依赖唯一索引 idx_metric_account_type_window，~5000 条/次 sync）；`SnapshotRepository.upsertBatch` 用 DELETE+INSERT（snapshot 表无唯一索引——历史重复行会使加唯一索引的迁移失败）。均去掉逐条前导 SELECT，同步耗时从秒级降到毫秒级
 16. **历史互动数据**：Mock `fetchInsights` 附加返回 likes/comments/shares 日频序列（独立 rng 副本生成，不扰动主序列形态）；`APITrendDataPoint.likesCount/commentsCount/sharesCount` 为 Optional（旧 Event payload 缺 key 解码不失败）；真实 API 不请求这三个指标 → nil → 0，行为不变
+17. **Dashboard 滚动性能**（滑动掉帧优化）：glass 光晕 blur 羽化层 + 阴影层移除、`usesMaterial: false` 静态填充版（滚动路径小卡片/tile 必须用，深色模式 material 每帧重采样是掉帧主因）（见 UI 规范 1）；滚动容器 `VStack → LazyVStack`（3 个 Section 离屏释放）；`updateSyncState()` 从 body 移出（body 内无条件写 @Observable 属性 → 每次求值通知订阅者），改由 onChange 驱动 + 值保护（`AppSyncState: Equatable` 相同状态不写）
 
 ---
 
