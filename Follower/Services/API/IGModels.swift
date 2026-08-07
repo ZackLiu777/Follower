@@ -18,12 +18,15 @@ struct IGUser: Codable {
     let followersCount: Int?
     let followsCount: Int?
     let mediaCount: Int?
+    /// 账号类型：PERSONAL / BUSINESS / CREATOR（评论管理仅对后两者开放）
+    let accountType: String?
 
     enum CodingKeys: String, CodingKey {
         case id, username, name
         case followersCount = "followers_count"
         case followsCount = "follows_count"
         case mediaCount = "media_count"
+        case accountType = "account_type"
     }
 }
 
@@ -99,4 +102,28 @@ struct IGMedia: Codable {
 /// GET /me/media 的分页响应
 struct IGMediaResponse: Codable {
     let data: [IGMedia]?
+}
+
+// MARK: - IGComment
+
+/// 单条评论（Business API：graph.facebook.com/{media-id}/comments）
+struct IGComment: Codable, Identifiable {
+    let id: String
+    let text: String?
+    let timestamp: String?
+    let username: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, text, timestamp, username
+    }
+}
+
+/// GET /{media-id}/comments 的分页响应
+struct IGCommentResponse: Codable {
+    let data: [IGComment]?
+}
+
+/// POST /{media-id}/comments 的响应（返回新评论 id）
+struct IGCommentReplyResponse: Codable {
+    let id: String?
 }

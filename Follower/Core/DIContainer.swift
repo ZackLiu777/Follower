@@ -18,6 +18,7 @@ final class DIContainer {
     let snapshotRepository: SnapshotRepositoryProtocol
     let metricRepository: MetricRepositoryProtocol
     let premiumFeatureRepository: PremiumFeatureRepositoryProtocol
+    let draftPostRepository: DraftPostRepositoryProtocol
 
     // MARK: - API Layer
 
@@ -34,6 +35,11 @@ final class DIContainer {
 
     let exportService: ExportServiceProtocol
     let trialManager: TrialManagerProtocol
+
+    // MARK: - 发布助手 & 评论管理
+
+    let postAssistantService: PostAssistantService
+    let commentService: CommentServiceProtocol
 
     // MARK: - Gamma Premium Services
 
@@ -60,12 +66,14 @@ final class DIContainer {
         let snapshotRepo = SnapshotRepository(db: databaseManager)
         let metricRepo = MetricRepository(db: databaseManager)
         let premiumRepo = PremiumFeatureRepository(db: databaseManager)
+        let draftPostRepo = DraftPostRepository(db: databaseManager)
 
         self.accountRepository = accountRepo
         self.eventRepository = eventRepo
         self.snapshotRepository = snapshotRepo
         self.metricRepository = metricRepo
         self.premiumFeatureRepository = premiumRepo
+        self.draftPostRepository = draftPostRepo
 
         // API Layer
         let client = InstagramAPIClient()
@@ -98,6 +106,10 @@ final class DIContainer {
         )
 
         self.trialManager = TrialManager(premiumFeatureRepo: premiumRepo)
+
+        // 发布助手 & 评论管理
+        self.postAssistantService = PostAssistantService()
+        self.commentService = CommentService(apiClient: client, tokenProvider: tokenProv)
 
         // Premium Services
         self.scoringService = ScoringService()

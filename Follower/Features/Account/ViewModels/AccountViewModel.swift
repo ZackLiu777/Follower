@@ -90,7 +90,7 @@ final class AccountViewModel {
 
         do {
             let user = try await apiClient.fetchProfile(accessToken: trimmed)
-            try await createAccountAndSync(token: trimmed, username: user.username)
+            try await createAccountAndSync(token: trimmed, username: user.username, accountType: user.accountType)
             NotificationCenter.default.post(name: .accountCreated, object: nil)
             shouldDismiss = true
         } catch let error as APIError {
@@ -126,12 +126,13 @@ final class AccountViewModel {
 
     // MARK: - Private helpers
 
-    private func createAccountAndSync(token: String, username: String) async throws {
+    private func createAccountAndSync(token: String, username: String, accountType: String? = nil) async throws {
         let account = Account(
             platform: .instagram,
             username: username,
             displayName: username,
             authState: .authorized,
+            accountType: accountType,
             createdAt: Date(), updatedAt: Date()
         )
         var accountId: Int64
@@ -146,7 +147,10 @@ final class AccountViewModel {
         if let existing = allAccounts.first(where: { $0.platform == .instagram && $0.username == username }),
            let existingId = existing.id {
             accountId = existingId
-            var updated = existing; updated.authState = .authorized; updated.updatedAt = Date()
+            var updated = existing
+            updated.authState = .authorized
+            if let accountType { updated.accountType = accountType }
+            updated.updatedAt = Date()
             try await accountRepo.update(updated)
         } else {
             do {

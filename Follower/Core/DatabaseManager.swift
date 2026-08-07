@@ -94,6 +94,9 @@ final class DatabaseManager: @unchecked Sendable {
         migrator.registerMigration("v1_initial_schema") { db in
             try MigrationV1.run(in: db)
         }
+        migrator.registerMigration("v2_draft_post") { db in
+            try MigrationV2.run(in: db)
+        }
         try migrator.migrate(dbQueue)
     }
 }

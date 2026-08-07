@@ -10,6 +10,16 @@ import SwiftUI
 struct PostDetailView: View {
     let post: MediaPost
 
+    @Environment(AppState.self) private var appState
+    // 评论管理（Premium: commentManagement）
+    @State private var showComments: Bool = false
+    @State private var showUpgrade: Bool = false
+
+    private var currentTheme: Theme { appState.currentTheme.theme }
+    private var commentsEnabled: Bool {
+        appState.premiumEnabledFlags[PremiumFeatureKey.commentManagement.rawValue] ?? false
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -46,11 +56,54 @@ struct PostDetailView: View {
                         .font(.caption).foregroundColor(.secondary)
                 }
                 .padding(.horizontal)
+
+                // MARK: 评论管理入口（Premium）
+                Button {
+                    if commentsEnabled {
+                        showComments = true
+                    } else {
+                        showUpgrade = true
+                    }
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "bubble.left.and.bubble.right")
+                            .foregroundColor(currentTheme.accentPrimary)
+                        Text("评论管理")
+                            .font(.subheadline)
+                            .foregroundColor(currentTheme.textPrimary)
+                        Spacer()
+                        if !commentsEnabled {
+                            Image(systemName: "lock.fill")
+                                .font(.caption)
+                                .foregroundColor(currentTheme.textTertiary)
+                        }
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(currentTheme.textTertiary)
+                    }
+                    .padding()
+                    .background(.regularMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal)
             }
             .padding(.vertical)
         }
         .navigationTitle("Post Detail")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(isPresented: $showComments) {
+            CommentListView(
+                accountId: appState.selectedAccountId,
+                mediaID: post.igMediaID,
+                commentService: appState.container.commentService
+            )
+        }
+        .sheet(isPresented: $showUpgrade) {
+            UpgradePromptView(featureKey: .commentManagement)
+                .presentationDetents([.fraction(0.75)])
+                .preferredColorScheme(currentTheme.isDark ? .dark : .light)
+        }
     }
 
     /// 互动指标行 — icon + 标签 + 数值
