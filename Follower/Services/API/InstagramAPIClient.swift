@@ -15,13 +15,22 @@ protocol InstagramAPIClientProtocol: Sendable {
     func fetchProfile(accessToken: String) async throws -> IGUser
     func fetchInsights(accessToken: String, metrics: [String], period: String) async throws -> [IGInsightValue]
     func fetchMedia(accessToken: String, limit: Int) async throws -> [IGMedia]
+    /// 拉取帖子评论（Business API，需 BUSINESS/CREATOR 账号）
+    func fetchComments(accessToken: String, mediaID: String, limit: Int) async throws -> [IGComment]
+    /// 回复评论（POST /{media-id}/comments），返回新评论 id
+    func replyComment(accessToken: String, mediaID: String, message: String) async throws -> String
+    /// 删除评论（DELETE /{comment-id}）
+    func deleteComment(accessToken: String, commentID: String) async throws
 }
 
 // MARK: - Client
 
 final class InstagramAPIClient: InstagramAPIClientProtocol {
 
+    /// 个人 / 创作者基础 API（/me、/me/media、/me/insights）
     private let baseURL = "https://graph.instagram.com"
+    /// Business API（评论管理端点）— 仅 BUSINESS/CREATOR 账号可用
+    private let facebookBaseURL = "https://graph.facebook.com/v21.0"
     private let session: URLSession
     private let decoder: JSONDecoder
 
@@ -36,11 +45,33 @@ final class InstagramAPIClient: InstagramAPIClientProtocol {
     // MARK: - Public API
 
     func fetchProfile(accessToken: String) async throws -> IGUser {
-        let url = "\(baseURL)/me?fields=id,username,name,followers_count,follows_count,media_count&access_token=\(accessToken)"
+        let url = "\(baseURL)/me?fields=id,username,name,followers_count,follows_count,media_count,account_type&access_token=\(accessToken)"
         #if DEBUG
         print("[APIClient] fetchProfile URL length: \(url.count), token length: \(accessToken.count)")
         #endif
         return try await get(url)
+    }
+
+    // MARK: - Comments（Business API）
+
+    func fetchComments(accessToken: String, mediaID: String, limit: Int = 50) async throws -> [IGComment] {
+        let url = "\(facebookBaseURL)/\(mediaID)/comments?fields=id,text,timestamp,username&limit=\(limit)&access_token=\(accessToken)"
+        let response: IGCommentResponse = try await get(url)
+        return response.data ?? []
+    }
+
+    func replyComment(accessToken: String, mediaID: String, message: String) async throws -> String {
+        let url = "\(facebookBaseURL)/\(mediaID)/comments"
+        let response: IGCommentReplyResponse = try await post(
+            url,
+            body: ["message": message, "access_token": accessToken]
+        )
+        return response.id ?? ""
+    }
+
+    func deleteComment(accessToken: String, commentID: String) async throws {
+        let url = "\(facebookBaseURL)/\(commentID)?access_token=\(accessToken)"
+        _ = try await request(url, method: "DELETE")
     }
 
     func fetchInsights(accessToken: String, metrics: [String], period: String) async throws -> [IGInsightValue] {
@@ -67,14 +98,32 @@ final class InstagramAPIClient: InstagramAPIClientProtocol {
         }
     }
 
-    private func request(_ urlString: String) async throws -> Data {
+    private func post<T: Decodable>(_ urlString: String, body: [String: String]) async throws -> T {
+        let data = try await request(urlString, method: "POST", body: body)
+        do {
+            return try decoder.decode(T.self, from: data)
+        } catch {
+            throw APIError.decodingFailed(error)
+        }
+    }
+
+    private func request(_ urlString: String, method: String = "GET", body: [String: String]? = nil) async throws -> Data {
         guard let url = URL(string: urlString) else {
             throw APIError.invalidURL(urlString)
         }
 
         var req = URLRequest(url: url)
-        req.httpMethod = "GET"
+        req.httpMethod = method
         req.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        // POST：表单编码 body（Meta 评论端点接受 application/x-www-form-urlencoded）
+        if let body {
+            let encoded = body
+                .map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? $0.value)" }
+                .joined(separator: "&")
+            req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+            req.httpBody = encoded.data(using: .utf8)
+        }
 
         let data: Data
         let response: URLResponse

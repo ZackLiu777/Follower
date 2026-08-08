@@ -55,6 +55,19 @@ final class DatabaseManager: @unchecked Sendable {
         self.isInMemoryFallback = fallback
     }
 
+    /// 测试专用：独立内存数据库（每次新建互不共享，用完即弃，不污染磁盘库）
+    init(inMemory: Bool) {
+        do {
+            let q = try DatabaseQueue()
+            try DatabaseManager.runMigrations(on: q)
+            self.dbQueue = q
+            self.isInMemoryFallback = true
+        } catch {
+            // 内存数据库不可能失败，但保留保护
+            fatalError("Follower: 内存数据库初始化失败: \(error)")
+        }
+    }
+
     // MARK: - Public API
 
     /// 只读事务 — 可并发执行
@@ -93,6 +106,12 @@ final class DatabaseManager: @unchecked Sendable {
         var migrator = DatabaseMigrator()
         migrator.registerMigration("v1_initial_schema") { db in
             try MigrationV1.run(in: db)
+        }
+        migrator.registerMigration("v2_draft_post") { db in
+            try MigrationV2.run(in: db)
+        }
+        migrator.registerMigration("v3_test_account") { db in
+            try MigrationV3.run(in: db)
         }
         try migrator.migrate(dbQueue)
     }

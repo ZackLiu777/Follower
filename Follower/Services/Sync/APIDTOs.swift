@@ -45,6 +45,11 @@ struct APITrendDataPoint: Codable {
     let mediaCount: Int
     let engagementRate: Double
     let totalViews: Int
+    /// 互动明细（点赞/评论/分享）。真实 API 不返回这些日频指标 → nil；
+    /// Mock 数据源提供 → 有值。Optional 保证旧 Event payload（无这些 key）解码不失败。
+    let likesCount: Int?
+    let commentsCount: Int?
+    let sharesCount: Int?
 }
 
 /// API 返回的趋势时间序列

@@ -122,6 +122,10 @@ final class AggregationService: AggregationServiceProtocol {
                     cur.media = point.mediaCount
                     cur.views = point.totalViews
                     cur.engagementRate = point.engagementRate
+                    // 互动明细：数据源缺失（真实 API / 旧 event）→ nil → 保持原值 0
+                    if let likes = point.likesCount { cur.likes = likes }
+                    if let comments = point.commentsCount { cur.comments = comments }
+                    if let shares = point.sharesCount { cur.shares = shares }
                 }
             default:
                 break

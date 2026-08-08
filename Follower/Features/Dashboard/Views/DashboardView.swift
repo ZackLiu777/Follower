@@ -23,8 +23,6 @@ struct DashboardView: View {
     @State private var showProfileSheet = false
 
     var body: some View {
-        let _ = updateSyncState()
-
         NavigationStack {
             Group {
                 if viewModel.accounts.isEmpty {
@@ -39,7 +37,8 @@ struct DashboardView: View {
                         ).ignoresSafeArea()
                         // 滚动内容（头像在导航栏 toolbar，与标题同一水平线）
                         ScrollView {
-                            VStack(spacing: 12) {
+                            // LazyVStack：3 个 Section 离屏即释放，避免 19 张卡片常驻渲染树
+                            LazyVStack(spacing: 12) {
                                 // 多账户快速切换（仅 >1 个账号时显示，Menu 留在内容区不进工具栏）
                                 if viewModel.accounts.count > 1 {
                                     HStack {
@@ -142,6 +141,13 @@ struct DashboardView: View {
         .onChange(of: viewModel.selectedAccountId) { _, newId in
             appState.selectedAccountId = newId
         }
+        // syncState 由状态变化驱动（替代原 body 内无条件写入 — @Observable setter 无值比较，
+        // 每次 body 求值都写会通知订阅者引起无谓重绘链）；值保护：相同状态不写
+        .onChange(of: viewModel.accounts.count) { _, _ in updateSyncState() }
+        .onChange(of: viewModel.selectedAccountId) { _, _ in updateSyncState() }
+        .onChange(of: viewModel.latestSnapshot?.id) { _, _ in updateSyncState() }
+        .onChange(of: viewModel.isLoading) { _, _ in updateSyncState() }
+        .onChange(of: viewModel.isSyncing) { _, _ in updateSyncState() }
     }
 
     // MARK: - Helpers
@@ -182,15 +188,21 @@ struct DashboardView: View {
         }
     }
 
+    /// 同步状态由 onChange 驱动；仅状态实际变化时才写（@Observable setter 无值比较，
+    /// 相同值写入仍通知订阅者 → 无谓重绘链）
     private func updateSyncState() {
+        let newState: AppSyncState
         if viewModel.accounts.isEmpty {
-            appState.syncState = .noAccount
+            newState = .noAccount
         } else if viewModel.latestSnapshot != nil {
-            appState.syncState = .dataReady
+            newState = .dataReady
         } else if viewModel.isLoading || viewModel.isSyncing {
-            appState.syncState = .syncing
+            newState = .syncing
         } else {
-            appState.syncState = .readyToSync
+            newState = .readyToSync
+        }
+        if appState.syncState != newState {
+            appState.syncState = newState
         }
     }
 
@@ -348,22 +360,27 @@ private struct RecentPostsSection: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // ── 标题行 ──
-            HStack {
-                Text(loc(L10n.Dashboard.recentContent))
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(theme.textPrimary)
-                Spacer()
-                if !posts.isEmpty {
-                    NavigationLink(loc(L10n.Dashboard.viewAll)) {
-                        PostListView(posts: posts)
-                    }
-                    .font(.system(size: 13, weight: .medium))
+            // ── 标题行（整行可点 → All Posts 列表页；无数据时也可进入）──
+            NavigationLink {
+                PostListView(posts: posts)
+            } label: {
+                HStack(spacing: 6) {
+                    Text(loc(L10n.Dashboard.recentContent))
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(theme.textPrimary)
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundColor(theme.textTertiary)
+                    Spacer()
+                    Text(loc(L10n.Dashboard.viewAll))
+                        .font(.system(size: 13, weight: .medium))
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 8)
+            .buttonStyle(.plain)
 
             if posts.isEmpty {
                 Text(loc(L10n.Dashboard.noPostsHint))
@@ -564,7 +581,9 @@ private struct PremiumInsightsSection: View {
             .frame(maxWidth: .infinity)
             .padding(10)
             .frame(maxWidth: .infinity, minHeight: 110)
-            .followerGlassEffect(cornerRadius: 12)
+            // 静态填充版 glass：tile 是滚动路径数量最多的卡片（16 张），
+            // material 每帧重采样是深色模式掉帧主因 — 用静态半透明填充替代
+            .followerGlassEffect(cornerRadius: 12, usesMaterial: false)
         }
         .buttonStyle(.plain)
     }
@@ -577,7 +596,7 @@ private struct PremiumInsightsSection: View {
                 .font(.system(size: 16))
                 .foregroundColor(theme.textTertiary)
                 .frame(width: 32, height: 32)
-                .background(.ultraThinMaterial)
+                .background(theme.textTertiary.opacity(0.08))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
             Text(label)
@@ -603,7 +622,8 @@ private struct PremiumInsightsSection: View {
                 .foregroundColor(theme.textTertiary)
                 .padding(8)
         }
-        .followerGlassEffect(cornerRadius: 12)
+        // 静态填充版 glass（同 unlockedTile — 滚动路径性能）
+        .followerGlassEffect(cornerRadius: 12, usesMaterial: false)
     }
 
     /// 根据全局 index 返回对应跳转页面

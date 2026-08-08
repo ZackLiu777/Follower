@@ -167,6 +167,27 @@ struct AccountView: View {
                 }
             } else {
                 Group {
+                    // 一键测试连接：Mock 数据绑定全部功能（730 天序列/媒体/评论/地域分布）
+                    Button {
+                        Task { await viewModel.connectTestAccount() }
+                    } label: {
+                        HStack {
+                            if viewModel.isConnecting { ProgressView() }
+                            Label("用测试数据连接", systemImage: "flask.fill")
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(currentTheme.accentPrimary)
+                    .disabled(viewModel.isConnecting)
+
+                    Text("无需 Token/OAuth，使用内置 Mock 数据体验全部功能（仅测试账号可见）")
+                        .font(.caption).foregroundColor(.secondary)
+
+                    Divider()
+
+                    // 手动创建空账号（无 token，用于验证空状态 UI）
                     TextField(loc(L10n.Account.username), text: $viewModel.username)
                         .textContentType(.username).autocapitalization(.none)
                     TextField(loc(L10n.Account.displayName), text: $viewModel.displayName)
@@ -183,7 +204,18 @@ struct AccountView: View {
             Image(systemName: "camera.fill")
                 .font(.title3).foregroundColor(.accentColor)
             VStack(alignment: .leading, spacing: 2) {
-                Text(account.displayName).font(.subheadline).fontWeight(.medium)
+                HStack(spacing: 6) {
+                    Text(account.displayName).font(.subheadline).fontWeight(.medium)
+                    if account.isTest {
+                        Text("测试")
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1)
+                            .background(currentTheme.warningOrange)
+                            .foregroundColor(.white)
+                            .clipShape(Capsule())
+                    }
+                }
                 Text("@\(account.username)").font(.caption).foregroundColor(.secondary)
             }
             Spacer()
@@ -223,7 +255,8 @@ private enum PreviewMocks {
     static let syncEngine = SyncEngine(
         eventRepo: eventRepo, accountRepo: accountRepo,
         ingestionService: ingestionService,
-        apiClient: apiClient, tokenProvider: tokenProvider
+        apiResolver: APIClientResolver(realClient: apiClient, mockClient: MockInstagramAPIClient()),
+        tokenProvider: tokenProvider
     )
 }
 #endif
