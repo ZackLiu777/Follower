@@ -113,6 +113,9 @@ final class DatabaseManager: @unchecked Sendable {
         migrator.registerMigration("v3_test_account") { db in
             try MigrationV3.run(in: db)
         }
+        migrator.registerMigration("v4_media_post") { db in
+            try MigrationV4.run(in: db)
+        }
         try migrator.migrate(dbQueue)
     }
 }

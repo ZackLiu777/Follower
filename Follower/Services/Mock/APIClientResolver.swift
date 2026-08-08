@@ -5,7 +5,7 @@
 //  API 客户端分派器 — 全局唯一分派点：所有需要 Instagram API 的服务
 //  （SyncEngine / CommentService / GeoDistributionService 等）都必须经由它拿 client。
 //
-//  契约：哨兵 token（mock:// 前缀）→ mockClient；其余（真实 token）→ realClient。
+//  契约：哨兵 token/Users/zaneliao/Documents/github/Follower/Follower/Services/Mock/MockFollowerListGenerator.swift（mock:// 前缀）→ mockClient；其余（真实 token）→ realClient。
 //  安全：真实 token 由 Meta 颁发（IGAA…/EAAB… 字母数字），格式上不可能含 "mock://" 前缀，
 //        因此真实账号永远不会落到 mockClient — 测试数据只能进测试账号。
 //

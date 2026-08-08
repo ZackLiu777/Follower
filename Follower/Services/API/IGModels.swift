@@ -90,12 +90,23 @@ struct IGMedia: Codable {
     let timestamp: String?
     let likeCount: Int?
     let commentsCount: Int?
+    /// 媒体 URL（图片媒体为原图；视频媒体为视频文件）— 帖子图片展示数据源
+    let mediaURL: String?
+    /// 缩略图 URL（视频/轮播封面图）— video 类型展示用封面
+    let thumbnailURL: String?
 
     enum CodingKeys: String, CodingKey {
         case id, caption, permalink, timestamp
         case mediaType = "media_type"
         case likeCount = "like_count"
         case commentsCount = "comments_count"
+        case mediaURL = "media_url"
+        case thumbnailURL = "thumbnail_url"
+    }
+
+    /// 展示用图片 URL：video 用封面缩略图（media_url 是视频文件），其余用 media_url 原图，互缺时兜底
+    var displayImageURL: String? {
+        mediaType == "VIDEO" ? (thumbnailURL ?? mediaURL) : (mediaURL ?? thumbnailURL)
     }
 }
 

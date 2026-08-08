@@ -27,7 +27,9 @@ struct InstagramOAuthConfig: Sendable {
     var scopeString: String { scopes.joined(separator: ",") }
 
     var authorizeURL: URL? {
-        var comps = URLComponents(string: "https://api.instagram.com/oauth/authorize")
+        // 2026 官方端点：www.instagram.com/oauth/authorize（api.instagram.com 的授权端点已迁移/停用；
+        // token 交换仍走 api.instagram.com/oauth/access_token，见 exchangeCodeForToken）
+        var comps = URLComponents(string: "https://www.instagram.com/oauth/authorize")
         comps?.queryItems = [
             URLQueryItem(name: "client_id", value: clientId),
             URLQueryItem(name: "redirect_uri", value: redirectURI),

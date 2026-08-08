@@ -19,6 +19,7 @@ final class DIContainer {
     let metricRepository: MetricRepositoryProtocol
     let premiumFeatureRepository: PremiumFeatureRepositoryProtocol
     let draftPostRepository: DraftPostRepositoryProtocol
+    let mediaPostRepository: MediaPostRepositoryProtocol
 
     // MARK: - API Layer
 
@@ -70,6 +71,7 @@ final class DIContainer {
         let metricRepo = MetricRepository(db: databaseManager)
         let premiumRepo = PremiumFeatureRepository(db: databaseManager)
         let draftPostRepo = DraftPostRepository(db: databaseManager)
+        let mediaPostRepo = MediaPostRepository(db: databaseManager)
 
         self.accountRepository = accountRepo
         self.eventRepository = eventRepo
@@ -77,6 +79,7 @@ final class DIContainer {
         self.metricRepository = metricRepo
         self.premiumFeatureRepository = premiumRepo
         self.draftPostRepository = draftPostRepo
+        self.mediaPostRepository = mediaPostRepo
 
         // API Layer
         // realClient：真实 Instagram API（OAuth / Token 账号专用）
@@ -107,7 +110,8 @@ final class DIContainer {
             accountRepo: accountRepo,
             ingestionService: ingestion,
             apiResolver: resolver,
-            tokenProvider: tokenProv
+            tokenProvider: tokenProv,
+            mediaRepo: mediaPostRepo
         )
         self.syncEngine = sync
 

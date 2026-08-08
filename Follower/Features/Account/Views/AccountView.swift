@@ -256,7 +256,8 @@ private enum PreviewMocks {
         eventRepo: eventRepo, accountRepo: accountRepo,
         ingestionService: ingestionService,
         apiResolver: APIClientResolver(realClient: apiClient, mockClient: MockInstagramAPIClient()),
-        tokenProvider: tokenProvider
+        tokenProvider: tokenProvider,
+        mediaRepo: MediaPostRepository(db: db)
     )
 }
 #endif

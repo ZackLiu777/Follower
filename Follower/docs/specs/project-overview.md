@@ -29,7 +29,7 @@ Follower/
 │   ├── TrialManager.swift      #   Premium 试用管理
 │   └── Localization/           #   L10n + 4 语言
 ├── Models/                     # 领域模型（Account/Event/Snapshot/Metric/PremiumFeature...）
-├── Repository/                 # 数据访问层（唯一入口：Account/Event/Snapshot/Metric/PremiumFeature）
+├── Repository/                 # 数据访问层（唯一入口：Account/Event/Snapshot/Metric/PremiumFeature/DraftPost/MediaPost）
 ├── Services/                   # 业务服务
 │   ├── API/                    #   InstagramAPIClient / TokenProvider + RoutingTokenProvider / OAuth / IGModels / CommentService
 │   ├── Sync/                   #   SyncEngine / APIDTOs
@@ -203,7 +203,7 @@ AppState.currentTheme（单一状态源，@Observable）
 7. **GitHub Actions**：unit-tests 用 `macos-26` runner，destination `name=iPhone 17 Pro`——若遇 "Unable to find a device"，需在 CI 加模拟器预创建步骤（runner 池不一致）
 8. **性能**：列表用 Lazy 组件、批量写批处理、指标卡/图表懒加载——保持
 9. **发布助手能力边界**：App 无法程序化触发快捷指令（`AppIntents` 是反向的）；最终发布必须用户在 Instagram 内确认；「排期」= 到点本地通知提醒 + 一键预填（文案已在剪贴板），不是后台自动发布——UI 与文档必须按「发布助手」而非「自动排期」表述
-10. **评论管理**：仅 BUSINESS/CREATOR 账号可用（`account_type` 已随 `/me` 持久化到 Account）；API 报 400+permission 时 UI 给出切换商务账号提示；评论端点走 `graph.facebook.com`（与个人 API 的 `graph.instagram.com` 不同域）
+10. **评论管理**：仅 BUSINESS/CREATOR 账号可用（`account_type` 已随 `/me` 持久化到 Account）；API 报 400+permission 时 UI 给出切换商务账号提示；评论端点与主数据同域 `graph.instagram.com/{media-id}/comments`（2024 年 Basic Display 停用后，Instagram Login token 已带 instagram_business_* 权限，无需 Facebook 域 EAAB token）
 11. **DraftPost 图片存储**：沙盒 `Documents/FollowerDrafts/`，删除草稿时必须同步 `deleteImage` 清理文件，避免沙盒残留
 12. **测试账号（Test tab → 用测试数据连接）**：创建 `isTest=true` 账号 + 哨兵 token（`mock://token`）→ 全链路 Mock 同步（730 天序列 / 25 条媒体 / 评论 / 地域分布），无需真实 Token/OAuth；测试账号显示「测试」徽章，可多个（test.user / test.user.2 / ...）。**token 经 `RoutingTokenProvider` 分派**：测试账号不落 Keychain（`storeToken` no-op，连接永不因 Keychain 失败；`getToken` 一律返回哨兵，兼容历史坏账号），真实账号原样走 Keychain
 13. **Mock 分派契约**：`APIClientResolver` 是唯一分派点——哨兵 token（`mock://` 前缀）→ MockInstagramAPIClient，其余（真实 IGAA…/EAAB… token）→ 真实 API；真实 token 由 Meta 颁发，格式上不可能含 `mock://`，因此测试数据只能进测试账号（方向安全）；`Account.isTest` 仅做 UI 语义（徽章），不参与分派；Mock 数据确定性（seed=42 LCG），同 seed 同结果可断言
@@ -211,6 +211,10 @@ AppState.currentTheme（单一状态源，@Observable）
 15. **批量写入性能**：`MetricRepository.upsertBatch` 用 INSERT OR REPLACE（依赖唯一索引 idx_metric_account_type_window，~5000 条/次 sync）；`SnapshotRepository.upsertBatch` 用 DELETE+INSERT（snapshot 表无唯一索引——历史重复行会使加唯一索引的迁移失败）。均去掉逐条前导 SELECT，同步耗时从秒级降到毫秒级
 16. **历史互动数据**：Mock `fetchInsights` 附加返回 likes/comments/shares 日频序列（独立 rng 副本生成，不扰动主序列形态）；`APITrendDataPoint.likesCount/commentsCount/sharesCount` 为 Optional（旧 Event payload 缺 key 解码不失败）；真实 API 不请求这三个指标 → nil → 0，行为不变
 17. **Dashboard 滚动性能**（滑动掉帧优化）：glass 光晕 blur 羽化层 + 阴影层移除、`usesMaterial: false` 静态填充版（滚动路径小卡片/tile 必须用，深色模式 material 每帧重采样是掉帧主因）（见 UI 规范 1）；滚动容器 `VStack → LazyVStack`（3 个 Section 离屏释放）；`updateSyncState()` 从 body 移出（body 内无条件写 @Observable 属性 → 每次求值通知订阅者），改由 onChange 驱动 + 值保护（`AppSyncState: Equatable` 相同状态不写）
+18. **帖子持久化（MigrationV4，media_post 表）**：MediaPost 原仅存 SyncEngine 内存缓存，App 重启后 Dashboard 最近内容消失；v4 起 sync 时经 `MediaPostRepository.upsertBatch` 落库（igMediaID 唯一键 → 重复同步替换），`fetchRecentMedia` 内存缓存优先 + 读库兜底回填；删账号外键级联清理；落库失败不阻塞 sync 主流程
+19. **帖子图片展示**：`fetchMedia` 请求 `media_url,thumbnail_url` → `IGMedia.mediaURL/thumbnailURL`（缺 key 解码为 nil 兼容旧响应）→ `displayImageURL` 选择规则（VIDEO 用封面缩略图——media_url 是视频文件；IMAGE/CAROUSEL 用原图，互缺时兜底）→ 落库 `MediaPost.mediaURL`；UI 用共享组件 `PostImageView`（AsyncImage + phase 降级：无 URL/加载失败/加载中 → 类型色块+图标，PostRowView 48pt 缩略图 / PostDetailView 260 大图）；Mock 数据无真实图片（本地优先）→ nil 走色块降级；图片从 IG CDN 拉取仅下行展示，不违反"数据不上传云端"
+20. **评论端点同域修复**（评论无法显示根因）：旧实现评论走 `graph.facebook.com/v21.0`（Facebook 域），而 App 的 token 是 Instagram Login 签发的 IGAA token（`api.instagram.com` 交换）——跨域 token 必被 Meta 拒绝（OAuthException 190），评论永远无法显示且与权限配置无关；2024 年 Basic Display 停用后评论端点已并入 `graph.instagram.com`（与主数据同域同 token），现全部评论方法（fetch/reply/delete）改走 `baseURL`，删除 facebookBaseURL 与 v21.0 版本号；新 API **不返回 username 字段**（fields 只用 id,text,timestamp，UI 兜底「Instagram 用户」）；`CommentViewModel.friendlyError` 解析 Meta 错误码（190→重新连接引导 / 200→商务账号提示 / 10→Meta 平台权限引导），`metaErrorCode` 为 nonisolated 纯函数；注意：Meta 开发模式下评论接口返回空数组（非报错）——正式使用需把 App 切到 Live 模式
+21. **2026 Instagram API 现状与 OAuth 端点迁移**：个人账号已完全不可用（2024-12-04 Basic Display 停用后官方 API 不支持个人账号），账号必须切专业账号（创作者/商务）；**Creator 账号走 Instagram Login 路径（graph.instagram.com）无需链接 FB 主页**（需 FB 主页的是 Business API graph.facebook.com 路径）；OAuth 授权端点已从 `api.instagram.com/oauth/authorize` 迁移到 **`www.instagram.com/oauth/authorize`**（token 交换仍走 `api.instagram.com/oauth/access_token`，长期 token `graph.instagram.com/access_token` 不变）——`InstagramOAuthConfig.authorizeURL` 已更新并有断言测试；手动粘贴 token 需注意 Meta token 可能被复制截断（错误 190 "Cannot parse access token"），推荐用 App 内 OAuth 登录生成
 
 ---
 

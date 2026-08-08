@@ -304,6 +304,7 @@ struct TestAccountSyncIntegrationTests {
         let eventRepo = EventRepository(db: db)
         let snapshotRepo = SnapshotRepository(db: db)
         let metricRepo = MetricRepository(db: db)
+        let mediaRepo = MediaPostRepository(db: db)
 
         let aggregation = AggregationService(
             eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo
@@ -316,7 +317,8 @@ struct TestAccountSyncIntegrationTests {
 
         let sync = SyncEngine(
             eventRepo: eventRepo, accountRepo: accountRepo,
-            ingestionService: ingestion, apiResolver: resolver, tokenProvider: tokenProv
+            ingestionService: ingestion, apiResolver: resolver, tokenProvider: tokenProv,
+            mediaRepo: mediaRepo
         )
 
         // 创建 test 账号 + 哨兵 token（与 AccountViewModel.connectTestAccount 一致）
@@ -380,5 +382,15 @@ struct TestAccountSyncIntegrationTests {
         #expect(!replyID.isEmpty)
 
         try await commentService.delete(accountId: accountId, commentID: comments.first!.id)
+
+        // ── 帖子持久化（v4）：模拟 App 重启 — 新 SyncEngine 实例（空内存缓存）从库读回 ──
+        let restartedSync = SyncEngine(
+            eventRepo: eventRepo, accountRepo: accountRepo,
+            ingestionService: ingestion, apiResolver: resolver, tokenProvider: tokenProv,
+            mediaRepo: mediaRepo
+        )
+        let recentAfterRestart = try await restartedSync.fetchRecentMedia(accountId: accountId, limit: 5)
+        #expect(recentAfterRestart.count == 5, "重启后应能从库读回最近 5 条帖子，实际 \(recentAfterRestart.count)")
+        #expect(recentAfterRestart.allSatisfy { $0.accountId == accountId })
     }
 }

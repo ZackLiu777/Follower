@@ -14,15 +14,9 @@ struct PostRowView: View {
     /// 水平布局：缩略图 | 标题+日期 | 三项互动统计
     var body: some View {
         HStack(spacing: 12) {
-            // 缩略图占位
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(hex: post.colorHex) ?? .gray)
-                    .frame(width: 48, height: 48)
-                Image(systemName: post.typeIconName)
-                    .font(.caption)
-                    .foregroundColor(.white)
-            }
+            // 缩略图：有 mediaURL 显示真实图片，无则色块+图标降级
+            PostImageView(post: post, cornerRadius: 8)
+                .frame(width: 48, height: 48)
 
             // 标题 + 日期
             VStack(alignment: .leading, spacing: 3) {
