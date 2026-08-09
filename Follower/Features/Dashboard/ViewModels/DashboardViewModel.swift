@@ -195,6 +195,17 @@ final class DashboardViewModel {
         } catch { errorMessage = error.localizedDescription }
     }
 
+    /// 增量同步（下拉刷新用）— 60 秒内已同步则跳过（SyncEngine 节流），
+    /// 防止频繁下拉耗尽 Instagram API 配额（200 次/小时/用户）
+    func incrementalSync() async {
+        guard let accountId = selectedAccountId else { return }
+        isSyncing = true; defer { isSyncing = false }
+        do {
+            _ = try await syncEngine.incrementalSync(accountId: accountId)
+            await loadAllData()
+        } catch { errorMessage = error.localizedDescription }
+    }
+
     /// 切换选中账户并重新加载数据
     func selectAccount(_ id: Int64) { selectedAccountId = id; Task { await loadAllData() } }
 

@@ -276,6 +276,8 @@ private final class RecordingTokenProvider: TokenProviderProtocol, @unchecked Se
 // MARK: - 集成：test 账号 sync 全链路（内存库）
 
 /// 测试账号全链路集成 — Mock API → SyncEngine → Ingestion → Aggregation → 数据库
+/// 串行执行：成员测试均跑全链路 sync（730 天聚合），并行时互相干扰（实测 insert 主键回填异常）
+@Suite(.serialized)
 struct TestAccountSyncIntegrationTests {
 
     /// 内存版 TokenProvider（Keychain 不可用于测试）
@@ -392,5 +394,52 @@ struct TestAccountSyncIntegrationTests {
         let recentAfterRestart = try await restartedSync.fetchRecentMedia(accountId: accountId, limit: 5)
         #expect(recentAfterRestart.count == 5, "重启后应能从库读回最近 5 条帖子，实际 \(recentAfterRestart.count)")
         #expect(recentAfterRestart.allSatisfy { $0.accountId == accountId })
+    }
+
+    /// incrementalSync 60 秒节流：首次调用走真实同步（有 Event 产物），
+    /// 紧随其后的第二次调用命中节流窗口 → 跳过网络链路，返回零结果
+    @Test
+    func testIncrementalSyncThrottlesWithinInterval() async throws {
+        let db = DatabaseManager(inMemory: true)
+        let accountRepo = AccountRepository(db: db)
+        let eventRepo = EventRepository(db: db)
+        let snapshotRepo = SnapshotRepository(db: db)
+        let metricRepo = MetricRepository(db: db)
+        let mediaRepo = MediaPostRepository(db: db)
+
+        let aggregation = AggregationService(
+            eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo
+        )
+        let ingestion = IngestionService(eventRepo: eventRepo, aggregationService: aggregation)
+        let mockClient = MockInstagramAPIClient()
+        let resolver = APIClientResolver(realClient: InstagramAPIClient(), mockClient: mockClient)
+        let tokenProv = RoutingTokenProvider(keychain: InMemoryTokenProvider(), accountRepo: accountRepo)
+
+        let sync = SyncEngine(
+            eventRepo: eventRepo, accountRepo: accountRepo,
+            ingestionService: ingestion, apiResolver: resolver, tokenProvider: tokenProv,
+            mediaRepo: mediaRepo
+        )
+
+        let account = Account(
+            platform: .instagram, username: "test.user", displayName: "Test User",
+            authState: .authorized, accountType: "BUSINESS", isTest: true,
+            createdAt: Date(), updatedAt: Date()
+        )
+        let saved = try await accountRepo.insert(account)
+        let accountId = try #require(saved.id)
+        try await tokenProv.storeToken(accountId: accountId, accessToken: MockInstagramAPIClient.sentinelToken)
+
+        // 首次调用：无历史 Event → 不节流，走完整同步链路
+        let first = try await sync.incrementalSync(accountId: accountId)
+        #expect(first.eventsCreated > 0, "首次增量同步应产生 Event，实际 \(first.eventsCreated)")
+        #expect(first.errors.isEmpty)
+
+        // 立即第二次调用：距上次观测 < 60 秒 → 节流跳过
+        let second = try await sync.incrementalSync(accountId: accountId)
+        #expect(second.eventsCreated == 0, "节流窗口内不应再产生 Event")
+        #expect(second.snapshotsUpdated == 0)
+        #expect(second.metricsUpdated == 0)
+        #expect(second.errors.isEmpty)
     }
 }

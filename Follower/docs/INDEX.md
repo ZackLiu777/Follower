@@ -12,6 +12,7 @@
 - `docs/roadmap.md`：产品路线图
 - `docs/specs/premium.md`：Premium 功能扩展规范
 - `docs/specs/instagram-oauth-login-plan.md`：Instagram OAuth 登录正式方案（域名 + AASA 回调）
+- `docs/specs/instagram-app-review-plan.md`：开发模式数据限制（评论/insights 空数组）与 App Review 解决方案
 
 ## 文档放置原则
 

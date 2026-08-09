@@ -124,7 +124,9 @@ struct DashboardView: View {
                         .frame(width: 32, height: 32)
                 }
             }
-            .refreshable { await viewModel.loadAccounts() }
+            // 下拉刷新 = 增量同步（60 秒节流防 Instagram 配额耗尽）；
+            // 账号列表由 .task 与 accountCreated 通知维护，不在此刷新
+            .refreshable { await viewModel.incrementalSync() }
         }
         // 个人资料弹窗由 Dashboard 根层级呈现（不挂 toolbar 内视图）
         .sheet(isPresented: $showProfileSheet) {
