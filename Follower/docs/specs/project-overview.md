@@ -25,6 +25,7 @@ Follower/
 │   ├── AppState.swift          #   全局状态（主题/语言/Premium/TabBar 折叠）
 │   ├── DIContainer.swift       #   依赖注入容器
 │   ├── DatabaseManager.swift   #   GRDB 数据库管理
+│   ├── DatabaseMigrations.swift #   数据库迁移（注册中心 + 6 个迁移）
 │   ├── ThemeSystem.swift       #   主题系统（8 套 + Liquid Glass 组件）
 │   ├── TrialManager.swift      #   Premium 试用管理
 │   └── Localization/           #   L10n + 4 语言
@@ -105,7 +106,7 @@ AppState.currentTheme（单一状态源，@Observable）
 - ✅ 排期：本地通知提醒（UNUserNotificationCenter），App 无法后台准点发布——到点提醒 + 用户确认
 - ✅ 发布队列（PostQueueView）：草稿/排期中/已发布/已取消 分组，到期高亮「待发布」，滑动删除清理图片
 - ✅ 快捷指令引导页（shortcuts:// 跳转 + 使用说明）
-- ✅ DraftPost 数据层（GRDB 表 + MigrationV2 + Repository）
+- ✅ DraftPost 数据层（GRDB 表 + V2DraftPost 迁移 + Repository）
 
 ### 3.4 评论管理（Premium: commentManagement）
 - ✅ Business API 端点（graph.facebook.com）：拉取 / 回复 / 删除评论，POST/DELETE 支持
@@ -226,6 +227,8 @@ AppState.currentTheme（单一状态源，@Observable）
 30. **总览页增减徽章修复（v0.12，View 零改动）**：用户验收——评论 10→14 徽章显示 14（应为 +4）、删 5 条后显示 9（应为 -5）；「总数只在详情页显示」。根因两个：① **周/月/年窗口** `delta(for:)` 用窗口首末差（`points.last − points.first`），而 `weeklyDataPoints` 无数据日补 0——窗口内只有最新一天有真实数据时 `14 − 0 = +14`、`9 − 0 = +9`，徽章显示的是总数不是增减；② **日窗口**用日粒度 Metric 相邻两天差——同一天内多次变化（10→14 两次同步）今天只有一条 Metric → 0，而真实采样点序列（`hourlyData`）里有 [10, 14] 两个点。修复（TrendsViewModel 仅一处，View 零改动）：`delta(for:)` 统一为**最近两次真实观测之差**——day 优先 `hourlyData` 相邻点差（同一天内多次变化正确），不足 2 点回退日粒度 Metric 相邻两条（今天 vs 昨天）；周/月/年直接用日粒度 Metric 相邻两条（真实值、无 0 占位，跨窗口边界同样生效）。详情页 `totalValue`（窗口最新真实值）不变。测试：`testDayDeltaSameDayMultipleChanges`（10→14 = +4、14→9 = -5）/ `testDayDeltaSingleSampleFallsBackToDaily`（今天一次观测 → 回退 Metric 14−10 = +4）/ `testWeekDeltaUsesLastTwoRealDays`（6 天前 10、今天 14 → +4，旧实现 14−0=14）/ `testDeltaSinglePointReturnsZero`
 31. **浏览计数接入（v0.13，用户确认方案 A，指标名两次修正）**：用户验收——统计图表「浏览」指标恒为 0，而 Instagram 专业版显示有浏览量。真因：① **数据未接入**——profile 快照 `totalViews` 硬编码 0（`SyncEngine`），图表 day 窗口 profileViews 指标读 `profile.totalViews` → 恒 0，insights 返回了也没填；② 权限/开发模式（见 note 20）——`/me/insights` 需 `instagram_business_manage_insights` 权限，开发模式下返回 `data:[]`（App 过审转 Live 前真机仍为 0，平台限制无法绕过）。**指标名教训（改错过一次）**：初版分析误判「views 无效」，改请求 `impressions` → 真机同步立刻 HTTP 400（Meta 错误列表含 views、**不含 impressions**——2026 年 API 已用 views 取代 impressions；`metric[2] must be one of the following...`）；已回退指标名保持 `["follower_count", "reach", "views"]` 原样（本来就合法）。最终修复仅保留数据接入：新增纯函数 `latestInsightValue(_:from:)`（取指标时间序列末值 = 最新一天；缺失/空 → 0）→ `profileDTO.totalViews = Int(latestInsightValue("views", from: insights))`；Mock 不变（viewsInsight 原样分发）。口径说明：图表「浏览」为**账号级**浏览量（views），与用户贴的「帖子成效分析 5 条浏览」（媒体级 reach）不是同一口径。测试：`testLatestInsightValueReturnsLatestDay`（多值取末值 / 多指标互不干扰）/ `testLatestInsightValueMissingReturnsZero`（空数组 → 0）
 32. **浏览图表删除（v0.14，用户决策）**：经用户查证，Instagram API 无可用「浏览」指标数据源（v0.13 的 insights views 接入后真机仍取不到——开发模式 + 权限双重限制，views 账号级数据不可得），决定删除图表。删除范围（仅显示层，与 v0.11 同模式）：① **趋势页**——`TrendsViewModel.visibleMetricTypes` 移除 `.profileViews`（5 → 4 指标，图表卡片自动消失，TrendsView/TrendChart 零改动）+ `generateHourlyData` 删 profileViews 映射分支（default 兜底仍在）；② **Dashboard**——帖子数卡片删「总曝光」mini metric（恒 0 无意义）；`DashboardViewModel.reachDelta`（totalViews 环比，View 从未显示的死代码）属性与计算一并移除。**数据生成全部保留**：Snapshot.totalViews / profileViews Metric 照常聚合；SyncEngine 的 `latestInsightValue` views 接入保留（Profile 快照字段语义不变）；**MediaKit PDF 趋势页（profileViews 系列）、AuthenticityService / ScoringService 互动质量评分（totalViews 做分母）为 Premium 真实依赖，不受影响**；`MetricType.profileViews` 枚举 / L10n 文案 / 数据库列无迁移。测试：`testVisibleMetricTypesCount` 5→4、`testVisibleMetricTypesContainsCore` 删 `.profileViews` 断言；数据层测试（MediaKitTests 等）profileViews 断言保留
+
+31. **迁移文件整理（v0.15-alpha，纯代码重构，行为零变化）**：6 个 `Core/MigrationV1…V7.swift`（按版本号拆散的单 enum 文件，无 V6）合并为 **`Core/DatabaseMigrations.swift`**——全部迁移集中一个文件，enum 语义化命名（`V1InitialSchema` / `V2DraftPost` / `V3TestAccountFlag` / `V4MediaPost` / `V5MetricDedupIndex` / `V7MetricIntegerValues`），新增注册中心 `Migrations.registerAll(on:)`，`DatabaseManager.runMigrations` 6 行注册 → 一行调用。**关键安全约束：`registerMigration` 标识符字符串（"v1_initial_schema" 等）与历史版本一一对应、原样保留**——已迁移用户库 `grdb_migrations` 表按标识符去重，改名会导致迁移重复执行（V1 建表非幂等 → 报错打不开库）。测试仅改名（`RepositoryTests` 调 `V5MetricDedupIndex.run` / `V7MetricIntegerValues.run`）；注册标识符、迁移 SQL、行为全部不变；pbxproj 零改动（文件系统同步组）。旧 note 20/24/25 中 MigrationV2/V4/V5/V7 为当时历史事实，保留原名。
 
 ---
 
