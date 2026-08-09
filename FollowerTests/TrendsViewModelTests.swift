@@ -225,6 +225,66 @@ struct TrendsViewModelTests {
         #expect(mixed[0].date == point(9, 2).date, "First occurrence time preserved")
     }
 
+    /// hourlyBuckets 纯函数：同小时多值 → 只保留最后观测；跨小时全保留；空 → 空
+    @Test
+    func testHourlyBucketsPureFunction() {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        func point(_ h: Int, _ m: Int, _ v: Int) -> TrendDataPoint {
+            TrendDataPoint(date: cal.date(bySettingHour: h, minute: m, second: 0, of: today)!, value: v)
+        }
+
+        #expect(TrendsViewModel.hourlyBuckets([]).isEmpty)
+
+        // 同一小时两次变化（18:05 评论 6 → 18:40 评论 7）→ 一根柱，值 = 最后一次观测 7
+        let sameHour = TrendsViewModel.hourlyBuckets([point(18, 5, 6), point(18, 40, 7)])
+        #expect(sameHour.count == 1, "Same hour must collapse to a single bucket")
+        #expect(sameHour[0].value == 7, "Bucket value must be the last observation (7)")
+        #expect(sameHour[0].date == point(18, 40, 7).date, "Bucket time must be the last observation time")
+
+        // 跨小时 → 各自保留
+        let crossHour = TrendsViewModel.hourlyBuckets([point(18, 40, 7), point(19, 10, 8)])
+        #expect(crossHour.map(\.value) == [7, 8], "Different hours must both stay")
+    }
+
+    /// Day 窗口 → 同一小时内评论多次变化 → 评论曲线单柱（最后一次观测），不再重叠
+    @MainActor
+    @Test
+    func testDaySameHourCommentChangesCollapse() async throws {
+        let accountId = Int64.random(in: 1_000_000...9_999_999)
+        let db = DatabaseManager.shared
+        let eventRepo = EventRepository(db: db)
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+
+        // 18:05 评论 6 → 18:40 评论 7（同小时两次变化）；19:30 评论 8（下一小时）
+        let specs: [(Int, Int, Int)] = [(18, 5, 6), (18, 40, 7), (19, 30, 8)]
+        var events: [Event] = []
+        for (h, m, comments) in specs {
+            let at = calendar.date(bySettingHour: h, minute: m, second: 0, of: today)!
+            let profile = APIProfileResponse(
+                username: "t", displayName: "T",
+                followersCount: 100, followingCount: 10, mediaCount: 5,
+                totalLikes: 50, totalComments: comments, totalShares: 1, totalViews: 100,
+                engagementRate: 0.05, fetchedAt: at
+            )
+            events.append(Event(
+                accountId: accountId, eventType: .profileSnapshot,
+                payload: try JSONEncoder().encode(profile), source: .api,
+                observedAt: at, createdAt: Date()
+            ))
+        }
+        _ = try await eventRepo.insertBatch(events)
+
+        let vm = makeVM()
+        vm.selectedAccountId = accountId
+        await vm.selectWindow(.day)
+
+        // 评论曲线：18 点桶 = 7，19 点桶 = 8 → [7, 8]，无重叠
+        let comments = vm.chartData(for: .averageComments)
+        #expect(comments.map(\.value) == [7, 8], "Same-hour changes must collapse to last observation")
+    }
+
     /// totalValue → 窗口内最新真实值（粉丝 2 → 5，显示 5 而非 2+5=7）
     @MainActor
     @Test

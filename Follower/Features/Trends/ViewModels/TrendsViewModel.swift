@@ -230,9 +230,24 @@ final class TrendsViewModel {
             // v0.09：每个指标独立显示「值的变化」——该指标值未变化的采样点跳过
             // （评论变了但粉丝没变 → 粉丝曲线不新增点）。事件表所有观测原样保留，
             // 只是曲线生成粒度 = 指标状态变化，而非每次同步。
-            dict[type] = Self.changedPoints(points.sorted { $0.date < $1.date })
+            // v0.10：先按小时桶合并（图表 x 轴为小时刻度，同一小时内多根柱会重叠显示），
+            // 再做同值过滤。
+            dict[type] = Self.changedPoints(Self.hourlyBuckets(points))
         }
         hourlyData = dict
+    }
+
+    /// 按小时桶合并：每小时只保留最后一次观测（柱状图 x 轴为小时刻度，
+    /// 同一小时内多个点会画在同一柱位重叠显示 — v0.10）。
+    /// 输入任意顺序；输出按时间升序。每个保留的点都是真实观测值。
+    nonisolated static func hourlyBuckets(_ points: [TrendDataPoint]) -> [TrendDataPoint] {
+        let calendar = Calendar.current
+        var byHour: [Date: TrendDataPoint] = [:]
+        for point in points.sorted(by: { $0.date < $1.date }) {
+            let hourStart = calendar.dateInterval(of: .hour, for: point.date)?.start ?? point.date
+            byHour[hourStart] = point // 后到覆盖 → 每桶保留该小时最后一次观测
+        }
+        return byHour.values.sorted { $0.date < $1.date }
     }
 
     /// 只保留「值发生变化」的采样点（首个点 + 变化点）；同值点跳过（保留首次出现的时间）。
