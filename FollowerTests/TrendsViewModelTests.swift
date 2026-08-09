@@ -297,6 +297,148 @@ struct TrendsViewModelTests {
                 "Total must be the latest real value (5), not the sum (7)")
     }
 
+    // MARK: - delta（总览页增减徽章）
+
+    /// day 窗口同一天多次变化：评论 10 → 14 显示 +4；再删 5 条到 9 显示 -5
+    @MainActor
+    @Test
+    func testDayDeltaSameDayMultipleChanges() async throws {
+        let accountId = Int64.random(in: 1_000_000...9_999_999)
+        let db = DatabaseManager.shared
+        let eventRepo = EventRepository(db: db)
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+
+        // 9h 评论 10 → 12h 评论 14（同一天加 4 条评论）
+        let specs: [(Int, Int)] = [(9, 10), (12, 14)]
+        var events: [Event] = []
+        for (h, comments) in specs {
+            let at = calendar.date(bySettingHour: h, minute: 0, second: 0, of: today)!
+            let profile = APIProfileResponse(
+                username: "t", displayName: "T",
+                followersCount: 100, followingCount: 10, mediaCount: 5,
+                totalLikes: 50, totalComments: comments, totalShares: 1, totalViews: 100,
+                engagementRate: 0.05, fetchedAt: at
+            )
+            events.append(Event(
+                accountId: accountId, eventType: .profileSnapshot,
+                payload: try JSONEncoder().encode(profile), source: .api,
+                observedAt: at, createdAt: Date()
+            ))
+        }
+        _ = try await eventRepo.insertBatch(events)
+
+        let vm = makeVM()
+        vm.selectedAccountId = accountId
+        await vm.selectWindow(.day)
+        #expect(vm.delta(for: .averageComments) == 4, "10 → 14 must show +4")
+
+        // 15h 删除 5 条评论 → 评论 9（同一天内第二次变化）
+        let at3 = calendar.date(bySettingHour: 15, minute: 0, second: 0, of: today)!
+        let profile3 = APIProfileResponse(
+            username: "t", displayName: "T",
+            followersCount: 100, followingCount: 10, mediaCount: 5,
+            totalLikes: 50, totalComments: 9, totalShares: 1, totalViews: 100,
+            engagementRate: 0.05, fetchedAt: at3
+        )
+        _ = try await eventRepo.insertBatch([Event(
+            accountId: accountId, eventType: .profileSnapshot,
+            payload: try JSONEncoder().encode(profile3), source: .api,
+            observedAt: at3, createdAt: Date()
+        )])
+        await vm.selectWindow(.day)
+        #expect(vm.delta(for: .averageComments) == -5, "14 → 9 must show -5")
+    }
+
+    /// day 窗口今天只有一次观测 → 回退日粒度 Metric 相邻两条（今天 vs 昨天）
+    @MainActor
+    @Test
+    func testDayDeltaSingleSampleFallsBackToDaily() async throws {
+        let accountId = Int64.random(in: 1_000_000...9_999_999)
+        let db = DatabaseManager.shared
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+
+        // 昨天 10、今天 14 两条日粒度 Metric
+        let metricRepo = MetricRepository(db: db)
+        _ = try await metricRepo.upsertBatch([
+            Metric(id: nil, accountId: accountId, metricType: .averageComments, value: 10,
+                   window: .day, observedAt: yesterday, createdAt: Date()),
+            Metric(id: nil, accountId: accountId, metricType: .averageComments, value: 14,
+                   window: .day, observedAt: today, createdAt: Date()),
+        ])
+
+        // 今天只有一次真实观测（14）→ 采样点不足 2 个 → 回退日粒度
+        let at = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: today)!
+        let profile = APIProfileResponse(
+            username: "t", displayName: "T",
+            followersCount: 100, followingCount: 10, mediaCount: 5,
+            totalLikes: 50, totalComments: 14, totalShares: 1, totalViews: 100,
+            engagementRate: 0.05, fetchedAt: at
+        )
+        let eventRepo = EventRepository(db: db)
+        _ = try await eventRepo.insertBatch([Event(
+            accountId: accountId, eventType: .profileSnapshot,
+            payload: try JSONEncoder().encode(profile), source: .api,
+            observedAt: at, createdAt: Date()
+        )])
+
+        let vm = makeVM()
+        vm.selectedAccountId = accountId
+        await vm.loadTrends(accountId: accountId)
+        #expect(vm.delta(for: .averageComments) == 4,
+                "Single sample today must fall back to day metrics (14 − 10)")
+    }
+
+    /// 周窗口：无数据日的 0 占位不参与计算 — 两条真实日 Metric（6 天前 10、今天 14）→ +4
+    @MainActor
+    @Test
+    func testWeekDeltaUsesLastTwoRealDays() async throws {
+        let accountId = Int64.random(in: 1_000_000...9_999_999)
+        let db = DatabaseManager.shared
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let sixDaysAgo = calendar.date(byAdding: .day, value: -6, to: today)!
+
+        let metricRepo = MetricRepository(db: db)
+        _ = try await metricRepo.upsertBatch([
+            Metric(id: nil, accountId: accountId, metricType: .averageComments, value: 10,
+                   window: .day, observedAt: sixDaysAgo, createdAt: Date()),
+            Metric(id: nil, accountId: accountId, metricType: .averageComments, value: 14,
+                   window: .day, observedAt: today, createdAt: Date()),
+        ])
+
+        let vm = makeVM()
+        vm.selectedAccountId = accountId
+        await vm.loadTrends(accountId: accountId)
+        await vm.selectWindow(.week)
+        // 旧实现：weeklyDataPoints 本周首日无数据 → 0 占位，delta = 14 − 0 = 14（显示总数）
+        #expect(vm.delta(for: .averageComments) == 4,
+                "Delta must use last two real observations, ignoring zero placeholder days")
+    }
+
+    /// 只有一条真实观测 → 无基线 → 0
+    @MainActor
+    @Test
+    func testDeltaSinglePointReturnsZero() async throws {
+        let accountId = Int64.random(in: 1_000_000...9_999_999)
+        let db = DatabaseManager.shared
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+
+        let metricRepo = MetricRepository(db: db)
+        _ = try await metricRepo.upsertBatch([
+            Metric(id: nil, accountId: accountId, metricType: .averageComments, value: 14,
+                   window: .day, observedAt: today, createdAt: Date()),
+        ])
+
+        let vm = makeVM()
+        vm.selectedAccountId = accountId
+        await vm.loadTrends(accountId: accountId)
+        #expect(vm.delta(for: .averageComments) == 0, "Single observation → no baseline → 0")
+    }
+
     // MARK: - Week / Month / Year chartData (sort order tested via testTrendDataPointsSortedChronologically)
 
     /// Week/Month/Year chartData 的 VM 创建测试在 XCTest 中因 @MainActor dealloc 崩溃。

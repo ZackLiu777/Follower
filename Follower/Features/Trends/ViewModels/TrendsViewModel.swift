@@ -163,18 +163,26 @@ final class TrendsViewModel {
 
     // MARK: - 总计 / 增减 / 周期标签
 
-    /// 总览页增减：窗口内末值 − 首值
-    /// day 窗口用日粒度相邻两天（今天 vs 昨天），其余窗口用窗口内首末差
+    /// 总览页增减：最近一次真实观测 − 上一次真实观测（10→14 显示 +4，14→9 显示 -5）。
+    /// v0.12：周/月/年不再用窗口首末差——weeklyDataPoints 无数据日补 0，窗口内首值为 0 时
+    /// 差值退化成最新值本身（徽章显示总数而非增减）；day 优先用真实采样点序列
+    /// （同一天内多次变化也能算差），不足 2 点回退日粒度 Metric 相邻两条（今天 vs 昨天）。
     func delta(for metricType: MetricType) -> Int {
         switch selectedWindow {
         case .day:
+            let hourly = hourlyData[metricType] ?? []
+            if hourly.count >= 2 {
+                return Int(hourly[hourly.count - 1].value - hourly[hourly.count - 2].value)
+            }
+            // 今天只有一次观测 → 回退日粒度 Metric（真实值，无 0 占位）
             let daily = (dailyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
             guard daily.count >= 2 else { return 0 }
             return daily[daily.count - 1].value - daily[daily.count - 2].value
         default:
-            let points = chartData(for: metricType)
-            guard points.count >= 2 else { return 0 }
-            return Int(points.last!.value - points.first!.value)
+            // 周/月/年：日粒度 Metric 相邻两条（真实值，无 0 占位；跨窗口边界同样生效）
+            let daily = (dailyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
+            guard daily.count >= 2 else { return 0 }
+            return daily[daily.count - 1].value - daily[daily.count - 2].value
         }
     }
 
