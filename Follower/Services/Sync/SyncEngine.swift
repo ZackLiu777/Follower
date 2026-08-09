@@ -116,6 +116,9 @@ final actor SyncEngine: SyncEngineProtocol {
 
             // 并行 3 次 API 调用
             async let igUser = client.fetchProfile(accessToken: token)
+            // v0.13 修正（回退）："views" 是合法指标（Meta 实测错误列表含 views、不含 impressions——
+            // 2026 年 API 已用 views 取代 impressions）。图表浏览为 0 的真因是开发模式
+            // insights 返回空数组（见 note 20），与指标名无关。
             async let igInsights = client.fetchInsights(
                 accessToken: token,
                 metrics: ["follower_count", "reach", "views"],
@@ -170,7 +173,9 @@ final actor SyncEngine: SyncEngineProtocol {
                 totalLikes: avgLikes,
                 totalComments: avgComments,
                 totalShares: 0,
-                totalViews: 0,
+                // v0.13：账号级浏览计数接入 — 取 insights 最新一天的 views（浏览量）。
+                // 原硬编码 0；开发模式 insights 返回空数组时保持 0（行为安全，不报错）。
+                totalViews: Int(latestInsightValue("views", from: insights)),
                 engagementRate: engagementRate,
                 fetchedAt: Date()
             )
@@ -228,6 +233,15 @@ final actor SyncEngine: SyncEngineProtocol {
 }
 
 // MARK: - Insights Merge
+
+/// 从 insights 结果中取指定指标最近一次观测值（时间序列末尾 = 最新一天）。
+/// 指标不存在或序列为空 → 0（开发模式 insights 返回空数组时行为安全）。
+/// v0.13 新增：profile 快照的浏览计数（totalViews）接入 impressions。
+func latestInsightValue(_ name: String, from insights: [IGInsightValue]) -> Double {
+    guard let insight = insights.first(where: { $0.name == name }),
+          let values = insight.values else { return 0 }
+    return values.last?.value ?? 0
+}
 
 /// 合并 follower_count / reach / impressions 三个时间序列为 APITrendResponse
 private func buildTrend(from insights: [IGInsightValue], username: String) -> APITrendResponse {

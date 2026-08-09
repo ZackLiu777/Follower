@@ -21,12 +21,13 @@ final class TrendsViewModel {
     /// 日窗口真实采样点来源：今天 0–24h 内的 profileSnapshot Event
     private let eventRepo: EventRepositoryProtocol
 
-    /// 图表中展示的五个指标类型，顺序固定
-    /// v0.11：互动率已从图表移除（公式口径不稳定，对单账号无对标意义）；
-    /// 数据生成保留 — 决策引擎 / MediaKit / Premium 仍依赖 engagementTrend Metric。
+    /// 图表中展示的四个指标类型，顺序固定
+    /// v0.11：互动率已从图表移除；v0.14：浏览（profileViews）已从图表移除
+    /// （Instagram API 无可用浏览指标数据源，恒 0）。
+    /// 两者数据生成均保留 — 决策引擎 / MediaKit / Premium 仍依赖。
     static let visibleMetricTypes: [MetricType] = [
         .followerGrowth, .averageLikes,
-        .averageComments, .averageShares, .profileViews
+        .averageComments, .averageShares
     ]
 
     // ── 多窗口指标缓存 ──
@@ -231,7 +232,6 @@ final class TrendsViewModel {
                 case .averageLikes: sample.profile.totalLikes
                 case .averageComments: sample.profile.totalComments
                 case .averageShares: sample.profile.totalShares
-                case .profileViews: sample.profile.totalViews
                 default: 0
                 }
                 return TrendDataPoint(date: sample.observedAt, value: value)

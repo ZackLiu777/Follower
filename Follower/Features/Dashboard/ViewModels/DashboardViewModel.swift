@@ -74,8 +74,7 @@ final class DashboardViewModel {
     // MARK: - Published: 次要指标
 
     // v0.11：互动率环比（engagementDelta）随互动率卡片一并移除
-    /// Reach 环比变化
-     var reachDelta: Int = 0
+    // v0.14：浏览环比（reachDelta，totalViews）随浏览图表一并移除（View 从未显示的死代码）
     /// 帖子数环比变化
      var postsDelta: Int = 0
 
@@ -257,7 +256,6 @@ final class DashboardViewModel {
         if let first = snapshots.first {
             followerDelta = current.followersCount - first.followersCount
             followerDeltaPercent = first.followersCount > 0 ? Double(followerDelta) / Double(first.followersCount) * 100 : 0
-            reachDelta = current.totalViews - first.totalViews
             postsDelta = current.mediaCount - first.mediaCount
         }
     }

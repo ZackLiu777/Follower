@@ -104,24 +104,7 @@ final class DatabaseManager: @unchecked Sendable {
     /// 注册并运行数据库迁移
     private static func runMigrations(on dbQueue: DatabaseQueue) throws {
         var migrator = DatabaseMigrator()
-        migrator.registerMigration("v1_initial_schema") { db in
-            try MigrationV1.run(in: db)
-        }
-        migrator.registerMigration("v2_draft_post") { db in
-            try MigrationV2.run(in: db)
-        }
-        migrator.registerMigration("v3_test_account") { db in
-            try MigrationV3.run(in: db)
-        }
-        migrator.registerMigration("v4_media_post") { db in
-            try MigrationV4.run(in: db)
-        }
-        migrator.registerMigration("v5_metric_dedup_index") { db in
-            try MigrationV5.run(in: db)
-        }
-        migrator.registerMigration("v7_metric_integer_values") { db in
-            try MigrationV7.run(in: db)
-        }
+        Migrations.registerAll(on: &migrator)
         try migrator.migrate(dbQueue)
     }
 }

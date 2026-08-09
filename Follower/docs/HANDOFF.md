@@ -149,7 +149,7 @@ TL;DR：**当前架构在 80-100 源文件、15,000 行以内不会出结构性�
 | 你想做什么 | 改哪个文件 |
 |-----------|----------|
 | 加新页面 | `Features/<Name>/` 下新建 View + ViewModel |
-| 加新数据表 | `Models/` + `MigrationV1.swift` → 注册 MigrationV2 |
+| 加新数据表 | `Models/` + `Core/DatabaseMigrations.swift` 新增迁移 enum → 在 `Migrations.registerAll` 注册（标识符字符串不可改名） |
 | 加新 Service | `Services/` 下新建 + 在 `DIContainer.swift` 注册 |
 | 加新查询 | 对应的 `Repository/` 文件 |
 | 加翻译 | `Core/Localization/L10n.swift` + `Resources/Localizable.xcstrings` |
@@ -160,7 +160,7 @@ TL;DR：**当前架构在 80-100 源文件、15,000 行以内不会出结构性�
 1. 在 ViewModel 中写 SQL 或直接访问 DatabaseManager
 2. 在 View 中直接调用 Repository
 3. 在测试中创建 SyncEngine 或 TrialManager（actor 崩溃）
-4. 修改已注册的 Migration（只新增 MigrationV2, V3...）
+4. 修改已注册的 Migration（只新增 enum，不动已有迁移与标识符）
 5. 把 Mock 数据当作真实数据源传输到生产环境
 
 ---

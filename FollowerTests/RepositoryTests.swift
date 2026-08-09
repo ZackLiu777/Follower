@@ -156,7 +156,7 @@ struct RepositoryTests {
         #expect(rows.count == 1, "重复 upsertBatch 不应产生重复行，实际 \(rows.count)")
     }
 
-    /// MigrationV5：清理同键重复行（模拟索引缺失时期的历史脏数据）+ 补齐唯一索引
+    /// v5 迁移：清理同键重复行（模拟索引缺失时期的历史脏数据）+ 补齐唯一索引
     @Test
     func testMigrationV5DeduplicatesAndRebuildsIndex() async throws {
         let memDB = DatabaseManager(inMemory: true)
@@ -185,7 +185,7 @@ struct RepositoryTests {
 
         // 3. 跑 v5 迁移：去重 + 建索引
         try await memDB.write { db in
-            try MigrationV5.run(in: db)
+            try V5MetricDedupIndex.run(in: db)
         }
 
         // 4. 验证：同键只剩 1 行
@@ -213,7 +213,7 @@ struct RepositoryTests {
         }
     }
 
-    /// MigrationV7：旧库浮点 Metric 值换算为整数语义
+    /// v7 迁移：旧库浮点 Metric 值换算为整数语义
     /// - engagementTrend 0~1 比率 → 万分比整数（0.0543 → 543）
     /// - 计数类浮点 → ROUND 取整（8250.5 → 8251）
     @Test
@@ -241,7 +241,7 @@ struct RepositoryTests {
 
         // 2. 跑 v7 迁移：换算为整数
         try await memDB.write { db in
-            try MigrationV7.run(in: db)
+            try V7MetricIntegerValues.run(in: db)
         }
 
         // 3. 验证：0.0543 → 543（万分比），8250.5 → 8251（ROUND）

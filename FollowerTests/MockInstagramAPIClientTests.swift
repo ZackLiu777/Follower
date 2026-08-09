@@ -442,4 +442,49 @@ struct TestAccountSyncIntegrationTests {
         #expect(second.metricsUpdated == 0)
         #expect(second.errors.isEmpty)
     }
+
+    /// v0.13：sync 后 profile 快照 totalViews 接入 insights 最新一天的 views（mock 序列非 0）—
+    /// 覆盖「图表浏览恒 0」的数据接入修复；指标名合法性由真机 Meta 错误列表验证
+    @Test
+    func testSyncWiresTotalViewsFromInsights() async throws {
+        let db = DatabaseManager(inMemory: true)
+        let accountRepo = AccountRepository(db: db)
+        let eventRepo = EventRepository(db: db)
+        let snapshotRepo = SnapshotRepository(db: db)
+        let metricRepo = MetricRepository(db: db)
+        let mediaRepo = MediaPostRepository(db: db)
+
+        let aggregation = AggregationService(
+            eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo
+        )
+        let ingestion = IngestionService(eventRepo: eventRepo, aggregationService: aggregation)
+        let mockClient = MockInstagramAPIClient()
+        let resolver = APIClientResolver(realClient: InstagramAPIClient(), mockClient: mockClient)
+        let tokenProv = RoutingTokenProvider(keychain: InMemoryTokenProvider(), accountRepo: accountRepo)
+
+        let sync = SyncEngine(
+            eventRepo: eventRepo, accountRepo: accountRepo,
+            ingestionService: ingestion, apiResolver: resolver, tokenProvider: tokenProv,
+            mediaRepo: mediaRepo
+        )
+
+        let account = Account(
+            platform: .instagram, username: "views.sync", displayName: "Views Sync",
+            authState: .authorized, accountType: "BUSINESS", isTest: true,
+            createdAt: Date(), updatedAt: Date()
+        )
+        let saved = try await accountRepo.insert(account)
+        let accountId = try #require(saved.id)
+        try await tokenProv.storeToken(accountId: accountId, accessToken: MockInstagramAPIClient.sentinelToken)
+
+        let result = try await sync.sync(accountId: accountId)
+        #expect(result.errors.isEmpty)
+
+        // 最新一条 profileSnapshot 事件（observedAt 倒序第一条）→ totalViews 来自 insights views
+        let events = try await eventRepo.fetch(accountId: accountId, eventType: .profileSnapshot, limit: 1)
+        let payload = try #require(events.first?.payload)
+        let profile = try JSONDecoder().decode(APIProfileResponse.self, from: payload)
+        #expect(profile.totalViews > 0,
+                "totalViews 必须接入 insights views 序列（mock 非 0），实际 \(profile.totalViews)")
+    }
 }
