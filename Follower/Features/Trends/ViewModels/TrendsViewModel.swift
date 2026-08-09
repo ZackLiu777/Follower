@@ -21,9 +21,11 @@ final class TrendsViewModel {
     /// 日窗口真实采样点来源：今天 0–24h 内的 profileSnapshot Event
     private let eventRepo: EventRepositoryProtocol
 
-    /// 图表中展示的六个指标类型，顺序固定
+    /// 图表中展示的五个指标类型，顺序固定
+    /// v0.11：互动率已从图表移除（公式口径不稳定，对单账号无对标意义）；
+    /// 数据生成保留 — 决策引擎 / MediaKit / Premium 仍依赖 engagementTrend Metric。
     static let visibleMetricTypes: [MetricType] = [
-        .followerGrowth, .engagementTrend, .averageLikes,
+        .followerGrowth, .averageLikes,
         .averageComments, .averageShares, .profileViews
     ]
 
@@ -218,7 +220,6 @@ final class TrendsViewModel {
             let points = samples.map { sample -> TrendDataPoint in
                 let value: Int = switch type {
                 case .followerGrowth: sample.profile.followersCount
-                case .engagementTrend: AggregationService.engagementBasis(sample.profile.engagementRate)
                 case .averageLikes: sample.profile.totalLikes
                 case .averageComments: sample.profile.totalComments
                 case .averageShares: sample.profile.totalShares

@@ -70,10 +70,10 @@ struct DashboardView: View {
 
                                 // 最近内容 — 上移至原折线图位置
                                 RecentPostsSection(posts: viewModel.recentPosts)
-                                // 指标卡片 — 互动率 / 帖子数（竖向堆叠，Liquid Glass）
+                                // 指标卡片 — 帖子数（Liquid Glass）
+                                // v0.11：互动率卡片已删除（互动率指标从 UI 移除，数据生成保留）
                                 KeyMetricsSection(
                                     snapshot: viewModel.latestSnapshot,
-                                    engagementDelta: viewModel.engagementDelta,
                                     postsDelta: viewModel.postsDelta
                                 )
                                 PremiumInsightsSection(
@@ -212,60 +212,20 @@ struct DashboardView: View {
 
 // ═══════════════════════════════════════════════════════
 //  MARK: - 2. KeyMetricsSection
-//  指标卡片 — 互动率 / 帖子数两张卡片，竖向堆叠，Liquid Glass 背景。
-//  每张卡片含主指标 + 3 个附加指标。
+//  指标卡片 — 帖子数卡片，Liquid Glass 背景。
+//  v0.11：互动率卡片已删除（互动率指标从 UI 移除，数据生成保留）。
 // ═══════════════════════════════════════════════════════
 
 private struct KeyMetricsSection: View {
     let snapshot: Snapshot?
-    let engagementDelta: Double
     let postsDelta: Int
 
     @Environment(\.theme) private var theme
 
     var body: some View {
         VStack(spacing: 12) {
-            engagementCard
             postsCard
         }
-    }
-
-    // MARK: 互动率卡片
-
-    /// 互动率卡片 — 互动率(主) + 总赞 + 总评论 + 总分享
-    private var engagementCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Label(loc(L10n.Dashboard.engagementRate), systemImage: "heart.fill")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(theme.textPrimary)
-                Spacer()
-                Text(deltaText(engagementDelta, unit: "%", isPercent: true))
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(engagementDelta >= 0 ? theme.accentPrimary : theme.negativeRed)
-            }
-            .padding(.bottom, 2)
-
-            Text(String(format: "%.1f%%", snapshot?.engagementRate ?? 0))
-                .font(.system(size: 32, weight: .bold))
-                .foregroundColor(theme.textPrimary)
-
-            HStack(spacing: 0) {
-                miniMetric(icon: "hand.thumbsup.fill",
-                           label: loc(L10n.Dashboard.likes),
-                           value: formatCompact(snapshot?.totalLikes ?? 0))
-                Divider().padding(.vertical, 6)
-                miniMetric(icon: "bubble.left.fill",
-                           label: loc(L10n.Dashboard.comments),
-                           value: formatCompact(snapshot?.totalComments ?? 0))
-                Divider().padding(.vertical, 6)
-                miniMetric(icon: "arrowshape.turn.up.right.fill",
-                           label: loc(L10n.Dashboard.shares),
-                           value: formatCompact(snapshot?.totalShares ?? 0))
-            }
-        }
-        .padding(16)
-        .dashboardCard()
     }
 
     // MARK: 帖子数卡片
@@ -278,7 +238,7 @@ private struct KeyMetricsSection: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(theme.textPrimary)
                 Spacer()
-                Text(deltaText(Double(postsDelta), unit: "", isPercent: false))
+                Text(deltaText(Double(postsDelta)))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(postsDelta >= 0 ? theme.accentPrimary : theme.negativeRed)
             }
@@ -334,11 +294,9 @@ private struct KeyMetricsSection: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func deltaText(_ val: Double, unit: String, isPercent: Bool) -> String {
+    /// 增减徽章文本（↑/↓ + 紧凑数值）；v0.11：百分比分支随互动率卡片一并移除
+    private func deltaText(_ val: Double) -> String {
         let prefix = val >= 0 ? "↑ " : "↓ "
-        if isPercent {
-            return "\(prefix)\(String(format: "%+.1f", val))\(unit)"
-        }
         return "\(prefix)\(formatCompact(Int(val)))"
     }
 

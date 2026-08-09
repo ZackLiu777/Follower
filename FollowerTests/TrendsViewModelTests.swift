@@ -46,20 +46,19 @@ struct TrendsViewModelTests {
 
     // MARK: - visibleMetricTypes
 
-    /// visibleMetricTypes 应包含 6 个基础指标
+    /// visibleMetricTypes 应包含 5 个基础指标（v0.11：互动率已从图表移除）
     @MainActor
     @Test
     func testVisibleMetricTypesCount() {
-        #expect(TrendsViewModel.visibleMetricTypes.count == 6)
+        #expect(TrendsViewModel.visibleMetricTypes.count == 5)
     }
 
-    /// visibleMetricTypes 应包含 followerGrowth, engagementTrend, averageLikes, averageComments, averageShares, profileViews
+    /// visibleMetricTypes 应包含 followerGrowth, averageLikes, averageComments, averageShares, profileViews
     @MainActor
     @Test
     func testVisibleMetricTypesContainsCore() {
         let t = TrendsViewModel.visibleMetricTypes
         #expect(t.contains(.followerGrowth))
-        #expect(t.contains(.engagementTrend))
         #expect(t.contains(.averageLikes))
         #expect(t.contains(.averageComments))
         #expect(t.contains(.averageShares))
@@ -106,7 +105,7 @@ struct TrendsViewModelTests {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
 
-        // 3 次真实同步采样：粉丝 1000 → 1050 → 1100，互动率 0.05 → 0.0543 → 0.06
+        // 3 次真实同步采样：粉丝 1000 → 1050 → 1100
         let profiles: [APIProfileResponse] = [
             APIProfileResponse(username: "t", displayName: "T", followersCount: 1000, followingCount: 100,
                                mediaCount: 10, totalLikes: 50, totalComments: 5, totalShares: 2,
@@ -141,9 +140,7 @@ struct TrendsViewModelTests {
             #expect(followers[i - 1].date < followers[i].date, "Day points must be chronological")
         }
 
-        // 互动率为万分比整数：0.05 → 500, 0.0543 → 543, 0.06 → 600
-        let engagement = vm.chartData(for: .engagementTrend)
-        #expect(engagement.map(\.value) == [500, 543, 600])
+        // v0.11：互动率已从图表移除（数据生成保留，由 ServicesTests 验证万分比存储）
     }
 
     /// Day 窗口 → 今天无同步事件 → 返回空数组（不伪造数据）
