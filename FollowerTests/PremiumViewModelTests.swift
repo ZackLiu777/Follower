@@ -121,7 +121,8 @@ struct PremiumViewModelTests {
             aiService: AIAnalysisService(),
             authenticityService: AuthenticityService(),
             campaignComparisonService: CampaignComparisonService(),
-            engagementHeatmapService: EngagementHeatmapService()
+            engagementHeatmapService: EngagementHeatmapService(),
+            mediaKitService: MediaKitService()
         )
     }
 

@@ -42,6 +42,8 @@ final class DashboardViewModel {
     private let campaignComparisonService: CampaignComparisonServiceProtocol
     /// 互动热力图服务（Premium - Phi）
     private let engagementHeatmapService: EngagementHeatmapServiceProtocol
+    /// 媒体包 PDF 服务（Premium: mediaKitExport）
+    private let mediaKitService: MediaKitServiceProtocol
 
     // MARK: - Published: 核心状态
 
@@ -71,8 +73,7 @@ final class DashboardViewModel {
 
     // MARK: - Published: 次要指标
 
-    /// 互动率环比变化
-     var engagementDelta: Double = 0
+    // v0.11：互动率环比（engagementDelta）随互动率卡片一并移除
     /// Reach 环比变化
      var reachDelta: Int = 0
     /// 帖子数环比变化
@@ -109,6 +110,15 @@ final class DashboardViewModel {
     /// 互动热力图结果（Premium）
      var heatmapResult: EngagementHeatmapResult?
 
+    // MARK: - Published: 媒体包 PDF（Premium: mediaKitExport）
+
+    /// 当前选中的媒体包模板
+     var selectedMediaKitTemplate: MediaKitTemplate = .professional
+    /// 媒体包 PDF 生成结果 URL（非 nil 时展示 ShareLink）
+     var mediaKitURL: URL?
+    /// 生成中标记
+     var isGeneratingMediaKit: Bool = false
+
     // MARK: - Published: Premium Mock 数据（向后兼容，保留 mock 回退）
 
     /// 取关用户列表（Mock）
@@ -136,7 +146,8 @@ final class DashboardViewModel {
         aiService: AIAnalysisServiceProtocol,
         authenticityService: AuthenticityServiceProtocol,
         campaignComparisonService: CampaignComparisonServiceProtocol,
-        engagementHeatmapService: EngagementHeatmapServiceProtocol
+        engagementHeatmapService: EngagementHeatmapServiceProtocol,
+        mediaKitService: MediaKitServiceProtocol
     ) {
         self.snapshotRepo = snapshotRepo
         self.metricRepo = metricRepo
@@ -153,6 +164,7 @@ final class DashboardViewModel {
         self.authenticityService = authenticityService
         self.campaignComparisonService = campaignComparisonService
         self.engagementHeatmapService = engagementHeatmapService
+        self.mediaKitService = mediaKitService
 
         // 监听新账号创建通知，自动刷新列表
         NotificationCenter.default.addObserver(
@@ -195,8 +207,39 @@ final class DashboardViewModel {
         } catch { errorMessage = error.localizedDescription }
     }
 
+    /// 增量同步（下拉刷新用）— 60 秒内已同步则跳过（SyncEngine 节流），
+    /// 防止频繁下拉耗尽 Instagram API 配额（200 次/小时/用户）
+    func incrementalSync() async {
+        guard let accountId = selectedAccountId else { return }
+        isSyncing = true; defer { isSyncing = false }
+        do {
+            _ = try await syncEngine.incrementalSync(accountId: accountId)
+            await loadAllData()
+        } catch { errorMessage = error.localizedDescription }
+    }
+
     /// 切换选中账户并重新加载数据
     func selectAccount(_ id: Int64) { selectedAccountId = id; Task { await loadAllData() } }
+
+    // MARK: - 媒体包 PDF
+
+    /// 按当前选中模板生成媒体包 PDF（后台执行），完成后暴露 mediaKitURL 供 ShareLink 分享
+    func generateMediaKit() async {
+        guard let accountId = selectedAccountId else {
+            errorMessage = loc(L10n.Account.noAccountSelected)
+            return
+        }
+        isGeneratingMediaKit = true
+        defer { isGeneratingMediaKit = false }
+
+        do {
+            mediaKitURL = try await mediaKitService.generateMediaKit(
+                accountId: accountId, template: selectedMediaKitTemplate
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 
     // MARK: - Private
 
@@ -214,7 +257,6 @@ final class DashboardViewModel {
         if let first = snapshots.first {
             followerDelta = current.followersCount - first.followersCount
             followerDeltaPercent = first.followersCount > 0 ? Double(followerDelta) / Double(first.followersCount) * 100 : 0
-            engagementDelta = current.engagementRate - first.engagementRate
             reachDelta = current.totalViews - first.totalViews
             postsDelta = current.mediaCount - first.mediaCount
         }

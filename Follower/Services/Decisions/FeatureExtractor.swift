@@ -45,14 +45,15 @@ struct FeatureExtractor: Sendable {
     /// 从 Metric 序列动态计算各内容类型表现 — 零硬编码
     /// 基线互动率来自真实 metric 值的均值，各类型按比例缩放
     static func extractContentPerformance(metrics: [Metric]) -> [ContentType: ContentStats] {
+        // v7 起 Metric.value 为整数（engagementTrend 为万分比，如 543），此处换算为 0~1 比率
         let allValues = metrics.map(\.value)
         let total = Double(max(1, allValues.count))
-        let avgEng = allValues.isEmpty ? 3.5 : allValues.reduce(0, +) / total
+        let avgEng = allValues.isEmpty ? 350.0 : Double(allValues.reduce(0, +)) / total
 
         // 趋势：比较前半段 vs 后半段
         let half = max(1, allValues.count / 2)
-        let firstAvg = allValues.prefix(half).reduce(0, +) / Double(half)
-        let lastAvg = allValues.suffix(half).reduce(0, +) / Double(half)
+        let firstAvg = Double(allValues.prefix(half).reduce(0, +)) / Double(half)
+        let lastAvg = Double(allValues.suffix(half).reduce(0, +)) / Double(half)
         let baseTrend = firstAvg > 0 ? (lastAvg - firstAvg) / firstAvg : 0.0
 
         /// 疲劳阈值 — 小数据集取 2.5，大数据集随量增长
@@ -71,7 +72,8 @@ struct FeatureExtractor: Sendable {
 
             result[type] = ContentStats(
                 type: type,
-                avgEngagement: max(0.005, avgEng * engScale / 100.0),
+                // avgEng 为万分比（543 ≈ 5.43%）→ ÷10000 还原为 0~1 比率（修复此前 ÷100 被兜底成 0.5% 的失真）
+                avgEngagement: max(0.005, avgEng * engScale / 10000.0),
                 totalPosts: Int(total),
                 recentPosts: recentPosts,
                 growthRate: baseTrend * trendScale

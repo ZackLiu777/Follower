@@ -66,6 +66,8 @@ jobs:
             -only-testing:FollowerTests/PremiumViewModelTests \
             -only-testing:FollowerTests/DraftPostTests \
             -only-testing:FollowerTests/MockInstagramAPIClientTests \
+            -only-testing:FollowerTests/MediaKitTests \
+            -only-testing:FollowerTests/MediaPostRepositoryTests \
             -derivedDataPath /tmp/FollowerDD CODE_SIGNING_ALLOWED=NO || true
 
   ui-tests:
@@ -107,6 +109,7 @@ jobs:
             -only-testing:FollowerUITests/TrendsUITests \
             -only-testing:FollowerUITests/DecisionsUITests \
             -only-testing:FollowerUITests/AccountUITests \
+            -only-testing:FollowerUITests/FollowerUITestsLaunchTests \
             -only-testing:FollowerUITests/ThemeAndLanguageUITests \
             -only-testing:FollowerUITests/PremiumUITests \
             -only-testing:FollowerUITests/FollowerUITests \

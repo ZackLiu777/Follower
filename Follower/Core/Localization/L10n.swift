@@ -504,4 +504,75 @@ enum L10n {
         static let strategyEngage = "premium.strategyEngage"
         static let strategyEngageDesc = "premium.strategyEngageDesc"
     }
+
+    // MARK: MediaKit（媒体包 PDF 导出）
+    enum MediaKit {
+        // 指标标签
+        static let followers = "mediakit.followers"
+        static let posts = "mediakit.posts"
+        static let engagementRate = "mediakit.engagementRate"
+        static let avgLikes = "mediakit.avgLikes"
+        static let avgComments = "mediakit.avgComments"
+        static let avgShares = "mediakit.avgShares"
+        static let profileViews = "mediakit.profileViews"
+
+        // 封面
+        static let generatedBy = "mediakit.generatedBy"
+        static let businessAccount = "mediakit.businessAccount"
+        static let creatorAccount = "mediakit.creatorAccount"
+        static let personalAccount = "mediakit.personalAccount"
+
+        // 核心指标页
+        static let coreMetrics = "mediakit.coreMetrics"
+        static let coreMetricsSubtitle = "mediakit.coreMetricsSubtitle"
+
+        // 增长趋势页
+        static let growthTrend = "mediakit.growthTrend"
+        static let growthTrendSubtitle = "mediakit.growthTrendSubtitle"
+        static let growthSummary = "mediakit.growthSummary"
+
+        // 内容表现页
+        static let contentPerformance = "mediakit.contentPerformance"
+        static let contentPerformanceSubtitle = "mediakit.contentPerformanceSubtitle"
+        static let topPosts = "mediakit.topPosts"
+        static let postTypeDistribution = "mediakit.postTypeDistribution"
+        static let typeImage = "mediakit.typeImage"
+        static let typeVideo = "mediakit.typeVideo"
+        static let typeCarousel = "mediakit.typeCarousel"
+
+        // 互动质量页
+        static let engagementQuality = "mediakit.engagementQuality"
+        static let engagementQualitySubtitle = "mediakit.engagementQualitySubtitle"
+
+        // 趋势柱状页
+        static let trendBars = "mediakit.trendBars"
+        static let trendBarsSubtitle = "mediakit.trendBarsSubtitle"
+
+        // 趋势统计页
+        static let trendStats = "mediakit.trendStats"
+        static let trendStatsSubtitle = "mediakit.trendStatsSubtitle"
+
+        // 增长建议页
+        static let decisions = "mediakit.decisions"
+        static let decisionsSubtitle = "mediakit.decisionsSubtitle"
+
+        // 模板说明
+        static let templateProfessionalDesc = "mediakit.templateProfessionalDesc"
+        static let templateCreativeDesc = "mediakit.templateCreativeDesc"
+        static let templateMinimalDesc = "mediakit.templateMinimalDesc"
+
+        // 结语页
+        static let dataNotes = "mediakit.dataNotes"
+        static let dataNotesSubtitle = "mediakit.dataNotesSubtitle"
+        static let note1 = "mediakit.note1"
+        static let note2 = "mediakit.note2"
+        static let note3 = "mediakit.note3"
+        static let note4 = "mediakit.note4"
+
+        // 错误与 UI 入口
+        static let accountNotFound = "mediakit.accountNotFound"
+        static let generateMediaKit = "mediakit.generateMediaKit"
+        static let mediaKitSection = "mediakit.mediaKitSection"
+        static let mediaKitDescription = "mediakit.mediaKitDescription"
+    }
 }

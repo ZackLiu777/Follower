@@ -70,10 +70,10 @@ struct DashboardView: View {
 
                                 // 最近内容 — 上移至原折线图位置
                                 RecentPostsSection(posts: viewModel.recentPosts)
-                                // 指标卡片 — 互动率 / 帖子数（竖向堆叠，Liquid Glass）
+                                // 指标卡片 — 帖子数（Liquid Glass）
+                                // v0.11：互动率卡片已删除（互动率指标从 UI 移除，数据生成保留）
                                 KeyMetricsSection(
                                     snapshot: viewModel.latestSnapshot,
-                                    engagementDelta: viewModel.engagementDelta,
                                     postsDelta: viewModel.postsDelta
                                 )
                                 PremiumInsightsSection(
@@ -124,7 +124,9 @@ struct DashboardView: View {
                         .frame(width: 32, height: 32)
                 }
             }
-            .refreshable { await viewModel.loadAccounts() }
+            // 下拉刷新 = 增量同步（60 秒节流防 Instagram 配额耗尽）；
+            // 账号列表由 .task 与 accountCreated 通知维护，不在此刷新
+            .refreshable { await viewModel.incrementalSync() }
         }
         // 个人资料弹窗由 Dashboard 根层级呈现（不挂 toolbar 内视图）
         .sheet(isPresented: $showProfileSheet) {
@@ -210,60 +212,20 @@ struct DashboardView: View {
 
 // ═══════════════════════════════════════════════════════
 //  MARK: - 2. KeyMetricsSection
-//  指标卡片 — 互动率 / 帖子数两张卡片，竖向堆叠，Liquid Glass 背景。
-//  每张卡片含主指标 + 3 个附加指标。
+//  指标卡片 — 帖子数卡片，Liquid Glass 背景。
+//  v0.11：互动率卡片已删除（互动率指标从 UI 移除，数据生成保留）。
 // ═══════════════════════════════════════════════════════
 
 private struct KeyMetricsSection: View {
     let snapshot: Snapshot?
-    let engagementDelta: Double
     let postsDelta: Int
 
     @Environment(\.theme) private var theme
 
     var body: some View {
         VStack(spacing: 12) {
-            engagementCard
             postsCard
         }
-    }
-
-    // MARK: 互动率卡片
-
-    /// 互动率卡片 — 互动率(主) + 总赞 + 总评论 + 总分享
-    private var engagementCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Label(loc(L10n.Dashboard.engagementRate), systemImage: "heart.fill")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(theme.textPrimary)
-                Spacer()
-                Text(deltaText(engagementDelta, unit: "%", isPercent: true))
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(engagementDelta >= 0 ? theme.accentPrimary : theme.negativeRed)
-            }
-            .padding(.bottom, 2)
-
-            Text(String(format: "%.1f%%", snapshot?.engagementRate ?? 0))
-                .font(.system(size: 32, weight: .bold))
-                .foregroundColor(theme.textPrimary)
-
-            HStack(spacing: 0) {
-                miniMetric(icon: "hand.thumbsup.fill",
-                           label: loc(L10n.Dashboard.likes),
-                           value: formatCompact(snapshot?.totalLikes ?? 0))
-                Divider().padding(.vertical, 6)
-                miniMetric(icon: "bubble.left.fill",
-                           label: loc(L10n.Dashboard.comments),
-                           value: formatCompact(snapshot?.totalComments ?? 0))
-                Divider().padding(.vertical, 6)
-                miniMetric(icon: "arrowshape.turn.up.right.fill",
-                           label: loc(L10n.Dashboard.shares),
-                           value: formatCompact(snapshot?.totalShares ?? 0))
-            }
-        }
-        .padding(16)
-        .dashboardCard()
     }
 
     // MARK: 帖子数卡片
@@ -276,7 +238,7 @@ private struct KeyMetricsSection: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(theme.textPrimary)
                 Spacer()
-                Text(deltaText(Double(postsDelta), unit: "", isPercent: false))
+                Text(deltaText(Double(postsDelta)))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(postsDelta >= 0 ? theme.accentPrimary : theme.negativeRed)
             }
@@ -332,11 +294,9 @@ private struct KeyMetricsSection: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func deltaText(_ val: Double, unit: String, isPercent: Bool) -> String {
+    /// 增减徽章文本（↑/↓ + 紧凑数值）；v0.11：百分比分支随互动率卡片一并移除
+    private func deltaText(_ val: Double) -> String {
         let prefix = val >= 0 ? "↑ " : "↓ "
-        if isPercent {
-            return "\(prefix)\(String(format: "%+.1f", val))\(unit)"
-        }
         return "\(prefix)\(formatCompact(Int(val)))"
     }
 
@@ -431,7 +391,7 @@ private struct PremiumInsightsSection: View {
         appState.premiumEnabledFlags[PremiumFeatureKey.trendPrediction.rawValue] == true
     }
 
-    // MARK: - 数据源: 全部 9 项
+    // MARK: - 数据源: 全部 14 项（地域分布 / 评论管理已移除）
 
     private var allPremiumItems: [PremiumTileItem] {
         if isUnlocked {
@@ -451,10 +411,6 @@ private struct PremiumInsightsSection: View {
                 .init(icon: "person.2.fill", label: loc(L10n.Premium.retentionChurn),
                       value: viewModel.retentionResult.map {
                           "Growth: \(String(format: "%+.1f%%", $0.netGrowthRate)) · Risk: \($0.churnRiskLevel)"
-                      } ?? loc(L10n.Premium.analyzing), locked: false),
-                .init(icon: "globe.asia.australia.fill", label: loc(L10n.Premium.geoDistribution),
-                      value: viewModel.geoDistribution.map {
-                          "\($0.regions.prefix(2).map(\.name).joined(separator: ", "))"
                       } ?? loc(L10n.Premium.analyzing), locked: false),
                 .init(icon: "arrow.left.arrow.right", label: loc(L10n.Premium.longTermComparison),
                       value: viewModel.comparisonResult.map {
@@ -481,8 +437,6 @@ private struct PremiumInsightsSection: View {
                       value: viewModel.heatmapResult.map { "Peak: \($0.peakDescription)" } ?? loc(L10n.Premium.analyzing), locked: false),
                 .init(icon: "calendar.badge.plus", label: loc(L10n.Premium.contentScheduling),
                       value: viewModel.activityResult.map { "\($0.activeDays)/\($0.totalDays) \(loc(L10n.Premium.daysActive))" } ?? loc(L10n.Premium.analyzing), locked: false),
-                .init(icon: "bubble.left.and.bubble.right.fill", label: loc(L10n.Premium.commentManagement),
-                      value: "4 pending · 2 overdue", locked: false),
             ]
         } else {
             return [
@@ -490,7 +444,6 @@ private struct PremiumInsightsSection: View {
                 .init(icon: "bolt.fill", label: loc(L10n.Premium.activityAnalysis), value: "", locked: true),
                 .init(icon: "star.fill", label: loc(L10n.Premium.engagementQuality), value: "", locked: true),
                 .init(icon: "person.2.fill", label: loc(L10n.Premium.retentionChurn), value: "", locked: true),
-                .init(icon: "globe.asia.australia.fill", label: loc(L10n.Premium.geoDistribution), value: "", locked: true),
                 .init(icon: "arrow.left.arrow.right", label: loc(L10n.Premium.longTermComparison), value: "", locked: true),
                 .init(icon: "person.2.slash", label: loc(L10n.Premium.whoUnfollowedYou), value: "", locked: true),
                 .init(icon: "clock.fill", label: loc(L10n.Premium.bestTimeToPost), value: "", locked: true),
@@ -502,7 +455,6 @@ private struct PremiumInsightsSection: View {
                 .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking), value: "", locked: true),
                 .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap), value: "", locked: true),
                 .init(icon: "calendar.badge.plus", label: loc(L10n.Premium.contentScheduling), value: "", locked: true),
-                .init(icon: "bubble.left.and.bubble.right.fill", label: loc(L10n.Premium.commentManagement), value: "", locked: true),
             ]
         }
     }
@@ -627,6 +579,7 @@ private struct PremiumInsightsSection: View {
     }
 
     /// 根据全局 index 返回对应跳转页面
+    /// 注意：删除卡片会改变 index 顺序 — 同步更新此表（当前 14 项，地域分布/评论管理已移除）
     @ViewBuilder
     private func destinationFor(index: Int) -> some View {
         switch index {
@@ -634,19 +587,17 @@ private struct PremiumInsightsSection: View {
         case 1: ActivityDetailView(result: viewModel.activityResult)
         case 2: QualityDetailView(result: viewModel.qualityScore)
         case 3: RetentionDetailView(result: viewModel.retentionResult)
-        case 4: GeoDetailView(result: viewModel.geoDistribution)
-        case 5: ComparisonDetailView(result: viewModel.comparisonResult)
-        case 6: UnfollowListView(followers: viewModel.unfollowList)
-        case 7: BestTimeView(heatmapResult: viewModel.heatmapResult)
-        case 8: ContentStrategyView(aiSummary: viewModel.aiSummary.isEmpty ? viewModel.contentTip : viewModel.aiSummary)
+        case 4: ComparisonDetailView(result: viewModel.comparisonResult)
+        case 5: UnfollowListView(followers: viewModel.unfollowList)
+        case 6: BestTimeView(heatmapResult: viewModel.heatmapResult)
+        case 7: ContentStrategyView(aiSummary: viewModel.aiSummary.isEmpty ? viewModel.contentTip : viewModel.aiSummary)
         // Phi: 三大人群画像新 Premium 功能
-        case 9: CompetitorDetailView(comparisonResult: viewModel.comparisonResult)
-        case 10: AuthenticityDetailView(result: viewModel.authenticityResult)
-        case 11: MediaKitDetailView()
-        case 12: CampaignDetailView(result: viewModel.campaignResult)
-        case 13: HeatmapDetailView(result: viewModel.heatmapResult)
-        case 14: ContentSchedulingDetailView(activityResult: viewModel.activityResult)
-        case 15: CommentManagementDetailView(comments: [])
+        case 8: CompetitorDetailView(comparisonResult: viewModel.comparisonResult)
+        case 9: AuthenticityDetailView(result: viewModel.authenticityResult)
+        case 10: MediaKitDetailView(viewModel: viewModel)
+        case 11: CampaignDetailView(result: viewModel.campaignResult)
+        case 12: HeatmapDetailView(result: viewModel.heatmapResult)
+        case 13: ContentSchedulingDetailView(activityResult: viewModel.activityResult)
         default: EmptyView()
         }
     }
@@ -682,7 +633,8 @@ private struct PremiumTileItem {
         aiService: container.aiAnalysisService,
         authenticityService: container.authenticityService,
         campaignComparisonService: container.campaignComparisonService,
-        engagementHeatmapService: container.engagementHeatmapService
+        engagementHeatmapService: container.engagementHeatmapService,
+        mediaKitService: container.mediaKitService
     )
     let settingsViewModel = SettingsViewModel(
         trialManager: container.trialManager,

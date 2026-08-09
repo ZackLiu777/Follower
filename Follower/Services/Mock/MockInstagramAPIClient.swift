@@ -246,7 +246,10 @@ private struct MockDataset {
                 permalink: "https://www.instagram.com/p/MOCK_\(i)/",
                 timestamp: iso.string(from: date),
                 likeCount: likes,
-                commentsCount: commentCounts[i]
+                commentsCount: commentCounts[i],
+                // Mock 无真实图片（本地优先）→ nil，UI 走色块占位降级
+                mediaURL: nil,
+                thumbnailURL: nil
             ))
         }
         media = generatedMedia

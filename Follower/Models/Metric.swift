@@ -47,7 +47,8 @@ struct Metric: Codable, FetchableRecord, PersistableRecord {
     var id: Int64?
     var accountId: Int64
     var metricType: MetricType
-    var value: Double
+    /// 指标值 — 整数语义（v7 起）：计数类为快照真实值，engagementTrend 为万分比整数（0.0543 → 543）
+    var value: Int
     var window: TimeWindow
     var observedAt: Date
     var createdAt: Date

@@ -79,26 +79,23 @@ final class MetricRepository: MetricRepositoryProtocol {
         }
     }
 
-    /// 批量 upsert：同事务内逐条 INSERT OR REPLACE。
-    /// 依赖唯一索引 idx_metric_account_type_window (accountId, metricType, window, observedAt)
-    /// 保证替换语义 —— 相比原逐条 SELECT+UPDATE/INSERT（每次 sync ~5000 条 → 两次查询往返），
-    /// 去掉每条前导 SELECT，同步耗时从秒级降到毫秒级。
+    /// 批量 upsert：同事务内按复合键先删后插。
+    /// 复合键 = (accountId, metricType, window, observedAt)。
+    /// 相比 INSERT OR REPLACE：替换语义不依赖唯一索引存在 —— 若历史库索引缺失，
+    /// REPLACE 退化为普通 INSERT，每次 sync 追加重复行 → 趋势图表「刷新后重复添加」。
+    /// 先删后插：任何环境下幂等，且 DELETE 顺带清理同键的历史重复行。
+    /// 写入耗时与 REPLACE 同量级（单条 DELETE + INSERT，无前导 SELECT 往返）。
     func upsertBatch(_ metrics: [Metric]) async throws -> [Metric] {
         try await db.batchWrite { db in
-            let sql = """
-                INSERT OR REPLACE INTO metric
-                (accountId, metricType, value, window, observedAt, createdAt)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """
             for var m in metrics {
+                try Metric
+                    .filter(Metric.Columns.accountId == m.accountId)
+                    .filter(Metric.Columns.metricType == m.metricType)
+                    .filter(Metric.Columns.window == m.window)
+                    .filter(Metric.Columns.observedAt == m.observedAt)
+                    .deleteAll(db)
                 m.createdAt = Date()
-                try db.execute(
-                    sql: sql,
-                    arguments: [
-                        m.accountId, m.metricType.rawValue, m.value,
-                        m.window.rawValue, m.observedAt, m.createdAt,
-                    ]
-                )
+                try m.insert(db)
             }
             return metrics
         }

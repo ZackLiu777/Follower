@@ -44,8 +44,12 @@ final actor SyncEngine: SyncEngineProtocol {
     /// 唯一分派点：取到 token 后按 token 值选择 client（测试账号 → mock，其余 → real）
     private let apiResolver: APIClientResolver
     private let tokenProvider: TokenProviderProtocol
+    /// 帖子持久化（v4）：sync 时落库，fetchRecentMedia 内存缓存 miss 时读库 —
+    /// 解决 App 重启后 Dashboard 最近内容消失
+    private let mediaRepo: MediaPostRepositoryProtocol
 
     private var statusCache: [Int64: SyncStatus.State] = [:]
+    /// 帖子内存缓存（快速路径；持久化兜底在 media_post 表）
     private var mediaCache: [Int64: [MediaPost]] = [:]
     private let minSyncInterval: TimeInterval = 60
 
@@ -54,13 +58,15 @@ final actor SyncEngine: SyncEngineProtocol {
         accountRepo: AccountRepositoryProtocol,
         ingestionService: IngestionServiceProtocol,
         apiResolver: APIClientResolver,
-        tokenProvider: TokenProviderProtocol
+        tokenProvider: TokenProviderProtocol,
+        mediaRepo: MediaPostRepositoryProtocol
     ) {
         self.eventRepo = eventRepo
         self.accountRepo = accountRepo
         self.ingestionService = ingestionService
         self.apiResolver = apiResolver
         self.tokenProvider = tokenProvider
+        self.mediaRepo = mediaRepo
     }
 
     // MARK: - Public
@@ -121,8 +127,8 @@ final actor SyncEngine: SyncEngineProtocol {
             let insights = try await igInsights
             let media = try await igMedia
 
-            // 缓存媒体帖子
-            mediaCache[accountId] = media.compactMap { m -> MediaPost? in
+            // 媒体 → 帖子模型映射
+            let posts = media.compactMap { m -> MediaPost? in
                 let nid = Int64(m.id) ?? Int64(abs(m.id.hashValue))
                 let date: Date = {
                     guard let ts = m.timestamp else { return Date() }
@@ -135,11 +141,16 @@ final actor SyncEngine: SyncEngineProtocol {
                 let ptype: MediaPostType = m.mediaType == "VIDEO" ? .video
                     : m.mediaType == "CAROUSEL_ALBUM" ? .carousel : .image
                 return MediaPost(
-                    id: nid, igMediaID: m.id, type: ptype, date: date,
+                    id: nid, accountId: accountId, igMediaID: m.id, type: ptype, date: date,
                     likes: m.likeCount ?? 0, comments: m.commentsCount ?? 0,
-                    caption: m.caption ?? "", mediaURL: nil, permalink: m.permalink
+                    caption: m.caption ?? "", mediaURL: m.displayImageURL, permalink: m.permalink
                 )
             }
+            // 缓存媒体帖子（快速路径）
+            mediaCache[accountId] = posts
+            // 帖子持久化（v4）：App 重启后 Dashboard 最近内容不丢。
+            // 落库失败不阻塞 sync 主流程（媒体数据非关键路径）
+            _ = try? await mediaRepo.upsertBatch(accountId: accountId, media: posts)
 
             // 媒体聚合
             let totalLikes = media.compactMap(\.likeCount).reduce(0, +)
@@ -202,11 +213,17 @@ final actor SyncEngine: SyncEngineProtocol {
         return SyncStatus(state: state, accountId: accountId)
     }
 
+    /// 最近帖子：内存缓存优先（快速路径）；App 重启缓存为空时读库兜底（持久化 v4），
+    /// 读库成功后回填缓存
     func fetchRecentMedia(accountId: Int64, limit: Int) async throws -> [MediaPost] {
         if let cached = mediaCache[accountId], !cached.isEmpty {
             return Array(cached.prefix(limit))
         }
-        return []
+        let persisted = try await mediaRepo.fetchRecent(accountId: accountId, limit: limit)
+        if !persisted.isEmpty {
+            mediaCache[accountId] = persisted
+        }
+        return persisted
     }
 }
 

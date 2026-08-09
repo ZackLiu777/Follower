@@ -46,12 +46,14 @@ private struct ContentViewInner: View {
             aiService: container.aiAnalysisService,
             authenticityService: container.authenticityService,
             campaignComparisonService: container.campaignComparisonService,
-            engagementHeatmapService: container.engagementHeatmapService
+            engagementHeatmapService: container.engagementHeatmapService,
+            mediaKitService: container.mediaKitService
         ))
         _trendsVM = State(wrappedValue: TrendsViewModel(
-            snapshotRepo: container.snapshotRepository, 
+            snapshotRepo: container.snapshotRepository,
             metricRepo: container.metricRepository,
-            accountRepo: container.accountRepository
+            accountRepo: container.accountRepository,
+            eventRepo: container.eventRepository
         ))
         _decisionsVM = State(wrappedValue: DecisionsViewModel(
             snapshotRepo: container.snapshotRepository,

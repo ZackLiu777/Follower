@@ -27,10 +27,9 @@ protocol InstagramAPIClientProtocol: Sendable {
 
 final class InstagramAPIClient: InstagramAPIClientProtocol {
 
-    /// 个人 / 创作者基础 API（/me、/me/media、/me/insights）
+    /// Instagram Graph API（/me、/me/media、/me/insights、/media/comments 全端点）
+    /// 2024 年 Basic Display 停用后，评论端点与主数据同域同 token（IGAA，带 instagram_business_manage_comments 权限）
     private let baseURL = "https://graph.instagram.com"
-    /// Business API（评论管理端点）— 仅 BUSINESS/CREATOR 账号可用
-    private let facebookBaseURL = "https://graph.facebook.com/v21.0"
     private let session: URLSession
     private let decoder: JSONDecoder
 
@@ -52,16 +51,18 @@ final class InstagramAPIClient: InstagramAPIClientProtocol {
         return try await get(url)
     }
 
-    // MARK: - Comments（Business API）
+    // MARK: - Comments（Instagram Graph API，同域同 token）
 
+    /// 注意：新 API 不返回 username / from 字段（请求会失败或忽略），fields 只用稳定字段；
+    /// username 由 UI 兜底为「Instagram 用户」
     func fetchComments(accessToken: String, mediaID: String, limit: Int = 50) async throws -> [IGComment] {
-        let url = "\(facebookBaseURL)/\(mediaID)/comments?fields=id,text,timestamp,username&limit=\(limit)&access_token=\(accessToken)"
+        let url = "\(baseURL)/\(mediaID)/comments?fields=id,text,timestamp&limit=\(limit)&access_token=\(accessToken)"
         let response: IGCommentResponse = try await get(url)
         return response.data ?? []
     }
 
     func replyComment(accessToken: String, mediaID: String, message: String) async throws -> String {
-        let url = "\(facebookBaseURL)/\(mediaID)/comments"
+        let url = "\(baseURL)/\(mediaID)/comments"
         let response: IGCommentReplyResponse = try await post(
             url,
             body: ["message": message, "access_token": accessToken]
@@ -70,7 +71,7 @@ final class InstagramAPIClient: InstagramAPIClientProtocol {
     }
 
     func deleteComment(accessToken: String, commentID: String) async throws {
-        let url = "\(facebookBaseURL)/\(commentID)?access_token=\(accessToken)"
+        let url = "\(baseURL)/\(commentID)?access_token=\(accessToken)"
         _ = try await request(url, method: "DELETE")
     }
 
@@ -82,7 +83,7 @@ final class InstagramAPIClient: InstagramAPIClientProtocol {
     }
 
     func fetchMedia(accessToken: String, limit: Int = 25) async throws -> [IGMedia] {
-        let url = "\(baseURL)/me/media?fields=id,caption,media_type,permalink,timestamp,like_count,comments_count&limit=\(limit)&access_token=\(accessToken)"
+        let url = "\(baseURL)/me/media?fields=id,caption,media_type,permalink,timestamp,like_count,comments_count,media_url,thumbnail_url&limit=\(limit)&access_token=\(accessToken)"
         let response: IGMediaResponse = try await get(url)
         return response.data ?? []
     }

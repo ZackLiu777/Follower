@@ -23,18 +23,10 @@ struct PostDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // MARK: 图片占位
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(hex: post.colorHex) ?? .gray)
-                        .frame(height: 260)
-                    VStack(spacing: 8) {
-                        Image(systemName: post.typeIconName)
-                            .font(.largeTitle).foregroundColor(.white)
-                        Text("Mock Content").font(.caption).foregroundColor(.white.opacity(0.7))
-                    }
-                }
-                .padding(.horizontal)
+                // MARK: 帖子图片（真实图片，无 URL/加载失败降级色块+图标）
+                PostImageView(post: post, cornerRadius: 12)
+                    .frame(height: 260)
+                    .padding(.horizontal)
 
                 // MARK: 互动数据卡片
                 VStack(spacing: 12) {

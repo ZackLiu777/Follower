@@ -181,17 +181,11 @@ struct AuthenticityDetailView: View {
     }
 }
 
-// MARK: - 媒体包导出详情（Alpha 阶段保留 UI 壳，PDF 生成后续实现）
+// MARK: - 媒体包导出详情（三模板 + PDF 生成 + 分享）
 
 struct MediaKitDetailView: View {
     @Environment(\.theme) private var theme
-    @State private var selectedTemplate: Int = 0
-
-    private var templates: [String] {
-        [loc(L10n.Premium.templateProfessional),
-         loc(L10n.Premium.templateCreative),
-         loc(L10n.Premium.templateMinimal)]
-    }
+    @Bindable var viewModel: DashboardViewModel
 
     var body: some View {
         ZStack {
@@ -212,12 +206,18 @@ struct MediaKitDetailView: View {
                     .background(.regularMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 20)).padding(.horizontal)
 
+                    // 模板选择：segmented + 当前模板说明
                     VStack(alignment: .leading, spacing: 8) {
                         Text(loc(L10n.Premium.template)).font(.headline).padding(.horizontal)
-                        Picker(loc(L10n.Premium.template), selection: $selectedTemplate) {
-                            ForEach(0..<templates.count, id: \.self) { i in Text(templates[i]).tag(i) }
+                        Picker(loc(L10n.Premium.template), selection: $viewModel.selectedMediaKitTemplate) {
+                            ForEach(MediaKitTemplate.allCases) { template in
+                                Text(template.displayName).tag(template)
+                            }
                         }
                         .pickerStyle(.segmented).padding(.horizontal)
+                        Text(viewModel.selectedMediaKitTemplate.detailDescription)
+                            .font(.caption).foregroundColor(.secondary)
+                            .padding(.horizontal)
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
@@ -236,12 +236,30 @@ struct MediaKitDetailView: View {
                     .background(.regularMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 16)).padding(.horizontal)
 
-                    Button {} label: {
-                        Label(loc(L10n.Premium.exportPDF), systemImage: "arrow.down.doc.fill")
-                            .font(.headline).frame(maxWidth: .infinity).padding()
-                            .background(theme.accentPrimary).foregroundColor(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    // 生成 + 分享
+                    if let url = viewModel.mediaKitURL {
+                        ShareLink(item: url) {
+                            Label(loc(L10n.Common.share), systemImage: "square.and.arrow.up")
+                                .font(.headline).frame(maxWidth: .infinity).padding()
+                                .background(theme.positiveGreen).foregroundColor(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
                     }
+                    Button {
+                        Task { await viewModel.generateMediaKit() }
+                    } label: {
+                        if viewModel.isGeneratingMediaKit {
+                            ProgressView().frame(maxWidth: .infinity).padding()
+                                .background(theme.accentPrimary.opacity(0.3))
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        } else {
+                            Label(loc(L10n.MediaKit.generateMediaKit), systemImage: "arrow.down.doc.fill")
+                                .font(.headline).frame(maxWidth: .infinity).padding()
+                                .background(theme.accentPrimary).foregroundColor(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+                    .disabled(viewModel.selectedAccountId == nil || viewModel.isGeneratingMediaKit)
                     .padding(.horizontal)
                 }
                 .padding(.vertical)

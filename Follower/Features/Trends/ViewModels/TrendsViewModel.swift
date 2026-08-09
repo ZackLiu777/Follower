@@ -18,10 +18,14 @@ final class TrendsViewModel {
     private let snapshotRepo: SnapshotRepositoryProtocol
     private let metricRepo: MetricRepositoryProtocol
     private let accountRepo: AccountRepositoryProtocol
+    /// 日窗口真实采样点来源：今天 0–24h 内的 profileSnapshot Event
+    private let eventRepo: EventRepositoryProtocol
 
-    /// 图表中展示的六个指标类型，顺序固定
+    /// 图表中展示的五个指标类型，顺序固定
+    /// v0.11：互动率已从图表移除（公式口径不稳定，对单账号无对标意义）；
+    /// 数据生成保留 — 决策引擎 / MediaKit / Premium 仍依赖 engagementTrend Metric。
     static let visibleMetricTypes: [MetricType] = [
-        .followerGrowth, .engagementTrend, .averageLikes,
+        .followerGrowth, .averageLikes,
         .averageComments, .averageShares, .profileViews
     ]
 
@@ -64,8 +68,16 @@ final class TrendsViewModel {
     }
 
     /// 依赖注入 Repository，建立数据访问通道
-    init(snapshotRepo: SnapshotRepositoryProtocol, metricRepo: MetricRepositoryProtocol, accountRepo: AccountRepositoryProtocol) {
-        self.snapshotRepo = snapshotRepo; self.metricRepo = metricRepo; self.accountRepo = accountRepo
+    init(
+        snapshotRepo: SnapshotRepositoryProtocol,
+        metricRepo: MetricRepositoryProtocol,
+        accountRepo: AccountRepositoryProtocol,
+        eventRepo: EventRepositoryProtocol
+    ) {
+        self.snapshotRepo = snapshotRepo
+        self.metricRepo = metricRepo
+        self.accountRepo = accountRepo
+        self.eventRepo = eventRepo
     }
 
     /// 页面首次加载 — 获取首个账号 ID（供 fallback），实际数据由 View 层传入
@@ -107,6 +119,9 @@ final class TrendsViewModel {
             dailyMetrics = dayDict; weeklyMetrics = weekDict
             monthlyMetrics = monthDict; yearlyMetrics = yearDict
         } catch { errorMessage = error.localizedDescription }
+
+        // 首次进入默认窗口为 .day — 需在加载时触发一次真实采样点生成
+        if selectedWindow == .day { await generateHourlyData() }
     }
 
     /// 根据当前时间窗返回指定指标的 TrendDataPoint 数组，供图表渲染
@@ -130,12 +145,17 @@ final class TrendsViewModel {
             result = TrendChart.weeklyDataPoints(from: raw, calendar: calendar, referenceDate: now)
 
         case .month:
-            result = (monthlyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
+            // 月窗口 = 当月内日粒度真实值（不含平均数）
+            result = (dailyMetrics[metricType] ?? [])
+                .filter { calendar.isDate($0.observedAt, equalTo: now, toGranularity: .month) }
+                .sorted { $0.observedAt < $1.observedAt }
                 .map { TrendDataPoint(date: $0.observedAt, value: $0.value) }
 
         case .year:
-            result = (yearlyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
-                .filter { Calendar.current.component(.year, from: $0.observedAt) == selectedYear }
+            // 年窗口 = 所选年份的 12 根月柱（月指标 = 月末真实值）
+            result = (monthlyMetrics[metricType] ?? [])
+                .filter { calendar.component(.year, from: $0.observedAt) == selectedYear }
+                .sorted { $0.observedAt < $1.observedAt }
                 .map { TrendDataPoint(date: $0.observedAt, value: $0.value) }
         }
         return result
@@ -143,24 +163,33 @@ final class TrendsViewModel {
 
     // MARK: - 总计 / 增减 / 周期标签
 
-    /// 总览页增减：窗口内末值 − 首值
-    /// day 窗口用日粒度相邻两天（今天 vs 昨天），其余窗口用窗口内首末差
+    /// 总览页增减：最近一次真实观测 − 上一次真实观测（10→14 显示 +4，14→9 显示 -5）。
+    /// v0.12：周/月/年不再用窗口首末差——weeklyDataPoints 无数据日补 0，窗口内首值为 0 时
+    /// 差值退化成最新值本身（徽章显示总数而非增减）；day 优先用真实采样点序列
+    /// （同一天内多次变化也能算差），不足 2 点回退日粒度 Metric 相邻两条（今天 vs 昨天）。
     func delta(for metricType: MetricType) -> Int {
         switch selectedWindow {
         case .day:
+            let hourly = hourlyData[metricType] ?? []
+            if hourly.count >= 2 {
+                return Int(hourly[hourly.count - 1].value - hourly[hourly.count - 2].value)
+            }
+            // 今天只有一次观测 → 回退日粒度 Metric（真实值，无 0 占位）
             let daily = (dailyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
             guard daily.count >= 2 else { return 0 }
-            return Int(daily[daily.count - 1].value - daily[daily.count - 2].value)
+            return daily[daily.count - 1].value - daily[daily.count - 2].value
         default:
-            let points = chartData(for: metricType)
-            guard points.count >= 2 else { return 0 }
-            return Int(points.last!.value - points.first!.value)
+            // 周/月/年：日粒度 Metric 相邻两条（真实值，无 0 占位；跨窗口边界同样生效）
+            let daily = (dailyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
+            guard daily.count >= 2 else { return 0 }
+            return daily[daily.count - 1].value - daily[daily.count - 2].value
         }
     }
 
-    /// 详情页总计：窗口内直接求和
+    /// 详情页总计：窗口内最新真实值（柱高/点为绝对值，求和无意义 — v0.09）。
+    /// 例：日窗口粉丝采样 2 → 5，显示 5（当前真实粉丝数），而非 2+5=7。
     func totalValue(for metricType: MetricType, in window: TimeWindow) -> Int {
-        chartData(for: metricType, in: window).reduce(0) { $0 + Int($1.value) }
+        Int(chartData(for: metricType, in: window).last?.value ?? 0)
     }
 
     /// 周期标签（详情页总计下方）：今天 / 本周 / 2026年7月 / 2026
@@ -173,34 +202,75 @@ final class TrendsViewModel {
         }
     }
 
-    /// 日视图：基于最新 Snapshot 按 24 小时均分
+    /// 日视图：今天 0–24h 内的真实同步采样点（每次同步写入的 profileSnapshot Event）。
+    /// 无事件时返回空数组 — 图表显示空态，不伪造数据。
     func generateHourlyData() async {
-        guard let accountId = selectedAccountId,
-              let snap = try? await snapshotRepo.latest(accountId: accountId) else {
+        guard let accountId = selectedAccountId else {
             hourlyData = [:]
             return
         }
-        var dict: [MetricType: [TrendDataPoint]] = [:]
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) ?? today
+        let events = (try? await eventRepo.fetch(accountId: accountId, from: today, to: tomorrow)) ?? []
+
+        // 仅取 profileSnapshot 事件，保留精确观测时间（observedAt 到秒）
+        let samples: [(observedAt: Date, profile: APIProfileResponse)] = events.compactMap { event in
+            guard event.eventType == .profileSnapshot,
+                  let profile = try? JSONDecoder().decode(APIProfileResponse.self, from: event.payload)
+            else { return nil }
+            return (event.observedAt, profile)
+        }
+        guard !samples.isEmpty else { hourlyData = [:]; return }
+
+        var dict: [MetricType: [TrendDataPoint]] = [:]
         for type in Self.visibleMetricTypes {
-            let baseVal: Double = switch type {
-            case .followerGrowth: Double(snap.followersCount)
-            case .engagementTrend: snap.engagementRate * 100
-            case .averageLikes: Double(snap.totalLikes)
-            case .averageComments: Double(snap.totalComments)
-            case .averageShares: Double(snap.totalShares)
-            case .profileViews: Double(snap.totalViews)
-            default: 0
+            let points = samples.map { sample -> TrendDataPoint in
+                let value: Int = switch type {
+                case .followerGrowth: sample.profile.followersCount
+                case .averageLikes: sample.profile.totalLikes
+                case .averageComments: sample.profile.totalComments
+                case .averageShares: sample.profile.totalShares
+                case .profileViews: sample.profile.totalViews
+                default: 0
+                }
+                return TrendDataPoint(date: sample.observedAt, value: value)
             }
-            let hourlyValue = max(0, baseVal / 24.0)
-            let points = (0..<24).map { h in
-                let date = calendar.date(byAdding: .hour, value: h, to: today) ?? today
-                return TrendDataPoint(date: date, value: hourlyValue)
-            }
-            dict[type] = points
+            // v0.09：每个指标独立显示「值的变化」——该指标值未变化的采样点跳过
+            // （评论变了但粉丝没变 → 粉丝曲线不新增点）。事件表所有观测原样保留，
+            // 只是曲线生成粒度 = 指标状态变化，而非每次同步。
+            // v0.10：先按小时桶合并（图表 x 轴为小时刻度，同一小时内多根柱会重叠显示），
+            // 再做同值过滤。
+            dict[type] = Self.changedPoints(Self.hourlyBuckets(points))
         }
         hourlyData = dict
+    }
+
+    /// 按小时桶合并：每小时只保留最后一次观测（柱状图 x 轴为小时刻度，
+    /// 同一小时内多个点会画在同一柱位重叠显示 — v0.10）。
+    /// 输入任意顺序；输出按时间升序。每个保留的点都是真实观测值。
+    nonisolated static func hourlyBuckets(_ points: [TrendDataPoint]) -> [TrendDataPoint] {
+        let calendar = Calendar.current
+        var byHour: [Date: TrendDataPoint] = [:]
+        for point in points.sorted(by: { $0.date < $1.date }) {
+            let hourStart = calendar.dateInterval(of: .hour, for: point.date)?.start ?? point.date
+            byHour[hourStart] = point // 后到覆盖 → 每桶保留该小时最后一次观测
+        }
+        return byHour.values.sorted { $0.date < $1.date }
+    }
+
+    /// 只保留「值发生变化」的采样点（首个点 + 变化点）；同值点跳过（保留首次出现的时间）。
+    /// 纯函数，不访问实例状态 → nonisolated 供测试直接调用。
+    nonisolated static func changedPoints(_ points: [TrendDataPoint]) -> [TrendDataPoint] {
+        var result: [TrendDataPoint] = []
+        for point in points {
+            guard let last = result.last else {
+                result.append(point)
+                continue
+            }
+            if point.value != last.value { result.append(point) }
+        }
+        return result
     }
 
     /// 切换时间窗 — day 窗口时按小时均分
