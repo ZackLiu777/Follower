@@ -116,9 +116,11 @@ final actor SyncEngine: SyncEngineProtocol {
 
             // 并行 3 次 API 调用
             async let igUser = client.fetchProfile(accessToken: token)
+            // v0.13：metrics 修正为 Instagram 合法指标名——原 "views" 无效（合法为
+            // impressions/reach/profile_views 等），即使权限齐全也取不到数据。
             async let igInsights = client.fetchInsights(
                 accessToken: token,
-                metrics: ["follower_count", "reach", "views"],
+                metrics: ["follower_count", "reach", "impressions"],
                 period: "day"
             )
             async let igMedia = client.fetchMedia(accessToken: token, limit: 25)
@@ -170,7 +172,9 @@ final actor SyncEngine: SyncEngineProtocol {
                 totalLikes: avgLikes,
                 totalComments: avgComments,
                 totalShares: 0,
-                totalViews: 0,
+                // v0.13：账号级浏览计数接入 — 取 insights 最新一天的 impressions（展示次数）。
+                // 原硬编码 0；开发模式 insights 返回空数组时保持 0（行为安全，不报错）。
+                totalViews: Int(latestInsightValue("impressions", from: insights)),
                 engagementRate: engagementRate,
                 fetchedAt: Date()
             )
@@ -229,6 +233,15 @@ final actor SyncEngine: SyncEngineProtocol {
 
 // MARK: - Insights Merge
 
+/// 从 insights 结果中取指定指标最近一次观测值（时间序列末尾 = 最新一天）。
+/// 指标不存在或序列为空 → 0（开发模式 insights 返回空数组时行为安全）。
+/// v0.13 新增：profile 快照的浏览计数（totalViews）接入 impressions。
+func latestInsightValue(_ name: String, from insights: [IGInsightValue]) -> Double {
+    guard let insight = insights.first(where: { $0.name == name }),
+          let values = insight.values else { return 0 }
+    return values.last?.value ?? 0
+}
+
 /// 合并 follower_count / reach / impressions 三个时间序列为 APITrendResponse
 private func buildTrend(from insights: [IGInsightValue], username: String) -> APITrendResponse {
     let iso = ISO8601DateFormatter()
@@ -250,7 +263,8 @@ private func buildTrend(from insights: [IGInsightValue], username: String) -> AP
 
     let fSeries = parse("follower_count")
     let rSeries = parse("reach")
-    let iSeries = parse("views")
+    // v0.13：原 parse("views")——"views" 非合法指标名，修正为 impressions
+    let iSeries = parse("impressions")
     // 互动明细序列：真实 API 不请求 → 空 dict → 0；Mock 数据源提供 → 历史互动图表有数据
     let lSeries = parse("likes")
     let cSeries = parse("comments")

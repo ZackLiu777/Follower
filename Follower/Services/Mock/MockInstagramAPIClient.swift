@@ -65,7 +65,9 @@ final class MockInstagramAPIClient: InstagramAPIClientProtocol, @unchecked Senda
             switch metric {
             case "follower_count": result.append(dataset.followerInsight)
             case "reach": result.append(dataset.reachInsight)
-            case "views": result.append(dataset.viewsInsight)
+            // v0.13：sync 请求指标从无效的 "views" 修正为 "impressions"（展示次数），
+            // mock 复用原 views 日频序列作为 impressions 数据源
+            case "views", "impressions": result.append(dataset.viewsInsight)
             default: break
             }
         }
