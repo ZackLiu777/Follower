@@ -89,36 +89,72 @@ struct TrendsViewModelTests {
         return TrendsViewModel(
             snapshotRepo: SnapshotRepository(db: db),
             metricRepo: MetricRepository(db: db),
-            accountRepo: AccountRepository(db: db)
+            accountRepo: AccountRepository(db: db),
+            eventRepo: EventRepository(db: db)
         )
     }
 
-    // MARK: - Day window mock fallback
+    // MARK: - Day window real sync samples
 
-    /// Day 窗口 → 每个 visibleMetricType 应返回 24 个正值 mock 数据点
+    /// Day 窗口 → 返回今天真实同步采样点（每个 profileSnapshot 事件一个点）
     @MainActor
     @Test
-    func testDayMockHas24Points() async throws {
-        let vm = makeVM()
-        await vm.selectWindow(.day)
-        for type in TrendsViewModel.visibleMetricTypes {
-            let points = vm.chartData(for: type)
-            #expect(points.count == 24, "Day mock \(type) should have 24 points")
-            for p in points {
-                #expect(p.value > 0, "Day mock value should be > 0")
-            }
+    func testDayUsesRealSyncSamples() async throws {
+        let accountId = Int64.random(in: 1_000_000...9_999_999)
+        let db = DatabaseManager.shared
+        let eventRepo = EventRepository(db: db)
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+
+        // 3 次真实同步采样：粉丝 1000 → 1050 → 1100，互动率 0.05 → 0.0543 → 0.06
+        let profiles: [APIProfileResponse] = [
+            APIProfileResponse(username: "t", displayName: "T", followersCount: 1000, followingCount: 100,
+                               mediaCount: 10, totalLikes: 50, totalComments: 5, totalShares: 2,
+                               totalViews: 500, engagementRate: 0.05, fetchedAt: today),
+            APIProfileResponse(username: "t", displayName: "T", followersCount: 1050, followingCount: 100,
+                               mediaCount: 10, totalLikes: 55, totalComments: 6, totalShares: 3,
+                               totalViews: 520, engagementRate: 0.0543, fetchedAt: today),
+            APIProfileResponse(username: "t", displayName: "T", followersCount: 1100, followingCount: 100,
+                               mediaCount: 10, totalLikes: 60, totalComments: 7, totalShares: 4,
+                               totalViews: 550, engagementRate: 0.06, fetchedAt: today),
+        ]
+        var events: [Event] = []
+        for (i, profile) in profiles.enumerated() {
+            let at = calendar.date(byAdding: .hour, value: 9 + i * 3, to: today)!
+            events.append(Event(
+                accountId: accountId, eventType: .profileSnapshot,
+                payload: try JSONEncoder().encode(profile), source: .api,
+                observedAt: at, createdAt: Date()
+            ))
         }
+        _ = try await eventRepo.insertBatch(events)
+
+        let vm = makeVM()
+        vm.selectedAccountId = accountId
+        await vm.selectWindow(.day)
+
+        // 采样点 = 每个事件一个点，值 = 快照真实值，时间 = 事件 observedAt
+        let followers = vm.chartData(for: .followerGrowth)
+        #expect(followers.map(\.value) == [1000, 1050, 1100], "Day window must show real sync sample values")
+        #expect(followers.map(\.date) == events.map(\.observedAt), "Sample dates must be the event observedAt")
+        for i in 1..<followers.count {
+            #expect(followers[i - 1].date < followers[i].date, "Day points must be chronological")
+        }
+
+        // 互动率为万分比整数：0.05 → 500, 0.0543 → 543, 0.06 → 600
+        let engagement = vm.chartData(for: .engagementTrend)
+        #expect(engagement.map(\.value) == [500, 543, 600])
     }
 
-    /// Day 窗口 → 数据点应按时间先后排序
+    /// Day 窗口 → 今天无同步事件 → 返回空数组（不伪造数据）
     @MainActor
     @Test
-    func testDayMockPointsAreChronological() async throws {
+    func testDayNoSyncEventsReturnsEmpty() async throws {
         let vm = makeVM()
+        vm.selectedAccountId = Int64.random(in: 1_000_000...9_999_999)
         await vm.selectWindow(.day)
-        let points = vm.chartData(for: .followerGrowth)
-        for i in 1..<points.count {
-            #expect(points[i-1].date < points[i].date, "Day points must be chronological")
+        for type in TrendsViewModel.visibleMetricTypes {
+            #expect(vm.chartData(for: type).isEmpty, "No events today → no fabricated points")
         }
     }
 
@@ -310,7 +346,8 @@ struct TrendsViewModelTests {
 
     // MARK: - Multi-Account: cache clearing on account switch
 
-    /// loadTrends 切换到新 accountId → 清空所有缓存，selectedAccountId 更新
+    /// loadTrends 切换到新 accountId → 清空所有缓存，selectedAccountId 更新；
+    /// 切换到无数据的账号时日窗口重新生成为空（不残留旧账号采样点）
     @MainActor
     @Test
     func testLoadTrendsSwitchAccountClearsCache() async throws {
@@ -326,14 +363,16 @@ struct TrendsViewModelTests {
         vm.yearlyMetrics = [.followerGrowth: []]
         vm.hourlyData = [.followerGrowth: []]
 
-        // 切换到 account 2 → 应清空全部缓存
-        await vm.loadTrends(accountId: 2)
-        #expect(vm.selectedAccountId == 2)
+        // 切换到无数据的随机账号 → 应清空全部缓存
+        let freshId = Int64.random(in: 1_000_000...9_999_999)
+        await vm.loadTrends(accountId: freshId)
+        #expect(vm.selectedAccountId == freshId)
         #expect(vm.dailyMetrics.isEmpty, "dailyMetrics should be cleared on account switch")
         #expect(vm.weeklyMetrics.isEmpty, "weeklyMetrics should be cleared on account switch")
         #expect(vm.monthlyMetrics.isEmpty, "monthlyMetrics should be cleared on account switch")
         #expect(vm.yearlyMetrics.isEmpty, "yearlyMetrics should be cleared on account switch")
-        #expect(vm.hourlyData.isEmpty, "hourlyData should be cleared on account switch")
+        // 日窗口采样点为新账号重新生成 — 无事件账号 → 空
+        #expect(vm.hourlyData.isEmpty, "hourlyData should be regenerated (empty) for the new account")
     }
 
     /// loadTrends 相同 accountId → 不清空缓存（避免不必要的数据丢失）
@@ -389,7 +428,7 @@ struct TrendsViewModelTests {
             return Metric(
                 accountId: 1,
                 metricType: .followerGrowth,
-                value: Double((i + 1) * 10),
+                value: (i + 1) * 10,
                 window: .day,
                 observedAt: dayStart,
                 createdAt: Date()

@@ -151,146 +151,71 @@ final class AggregationService: AggregationServiceProtocol {
         }
     }
 
-    /// 由 Snapshot 计算 Metric：按日/周/月生成聚合指标
+    /// 由 Snapshot 计算 Metric：日窗口取快照真实值（整数直通），周/月/年窗口取周期末值（组内最后一次真实快照），不使用平均数。
     private func buildMetrics(accountId: Int64, snapshots: [Snapshot]) -> [Metric] {
         let calendar = Calendar.current
         var metrics: [Metric] = []
 
-        // Day metrics：每个 Snapshot 映射为一条日 Metric
+        // Day metrics：每个 Snapshot 一组 6 项真实值
         for snapshot in snapshots {
-            metrics.append(contentsOf: [
-                Metric(
-                    accountId: accountId,
-                    metricType: .followerGrowth,
-                    value: Double(snapshot.followersCount),
-                    window: .day,
-                    observedAt: snapshot.observedAt,
-                    createdAt: Date()
-                ),
-                Metric(
-                    accountId: accountId,
-                    metricType: .engagementTrend,
-                    value: snapshot.engagementRate,
-                    window: .day,
-                    observedAt: snapshot.observedAt,
-                    createdAt: Date()
-                ),
-                Metric(
-                    accountId: accountId,
-                    metricType: .averageLikes,
-                    value: Double(snapshot.totalLikes),
-                    window: .day,
-                    observedAt: snapshot.observedAt,
-                    createdAt: Date()
-                ),
-                Metric(
-                    accountId: accountId,
-                    metricType: .averageComments,
-                    value: Double(snapshot.totalComments),
-                    window: .day,
-                    observedAt: snapshot.observedAt,
-                    createdAt: Date()
-                ),
-                Metric(
-                    accountId: accountId,
-                    metricType: .averageShares,
-                    value: Double(snapshot.totalShares),
-                    window: .day,
-                    observedAt: snapshot.observedAt,
-                    createdAt: Date()
-                ),
-                Metric(
-                    accountId: accountId,
-                    metricType: .profileViews,
-                    value: Double(snapshot.totalViews),
-                    window: .day,
-                    observedAt: snapshot.observedAt,
-                    createdAt: Date()
-                ),
-            ])
+            metrics.append(contentsOf: Self.dayMetrics(accountId: accountId, snapshot: snapshot))
         }
 
-        // Week metrics：按周聚合（全部 6 种 metricType）
-        var weekly: [Date: (fSum: Double, eSum: Double, lSum: Double, cSum: Double, sSum: Double, vSum: Double, count: Int)] = [:]
-        for snapshot in snapshots {
-            guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: snapshot.observedAt)?.start else { continue }
-            let cur = weekly[weekStart] ?? (0, 0, 0, 0, 0, 0, 0)
-            weekly[weekStart] = (
-                cur.fSum + Double(snapshot.followersCount),
-                cur.eSum + snapshot.engagementRate,
-                cur.lSum + Double(snapshot.totalLikes),
-                cur.cSum + Double(snapshot.totalComments),
-                cur.sSum + Double(snapshot.totalShares),
-                cur.vSum + Double(snapshot.totalViews),
-                cur.count + 1
-            )
-        }
-        for (weekStart, v) in weekly where v.count > 0 {
-            let cnt = Double(v.count)
-            metrics.append(contentsOf: [
-                Metric(accountId: accountId, metricType: .followerGrowth, value: v.fSum / cnt, window: .week, observedAt: weekStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .engagementTrend, value: v.eSum / cnt, window: .week, observedAt: weekStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .averageLikes, value: v.lSum / cnt, window: .week, observedAt: weekStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .averageComments, value: v.cSum / cnt, window: .week, observedAt: weekStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .averageShares, value: v.sSum / cnt, window: .week, observedAt: weekStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .profileViews, value: v.vSum / cnt, window: .week, observedAt: weekStart, createdAt: Date()),
-            ])
-        }
-
-        // Month metrics：按月聚合（全部 6 种 metricType）
-        var monthly: [Date: (fSum: Double, eSum: Double, lSum: Double, cSum: Double, sSum: Double, vSum: Double, count: Int)] = [:]
-        for snapshot in snapshots {
-            let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: snapshot.observedAt)) ?? snapshot.observedAt
-            let cur = monthly[monthStart] ?? (0, 0, 0, 0, 0, 0, 0)
-            monthly[monthStart] = (
-                cur.fSum + Double(snapshot.followersCount),
-                cur.eSum + snapshot.engagementRate,
-                cur.lSum + Double(snapshot.totalLikes),
-                cur.cSum + Double(snapshot.totalComments),
-                cur.sSum + Double(snapshot.totalShares),
-                cur.vSum + Double(snapshot.totalViews),
-                cur.count + 1
-            )
-        }
-        for (monthStart, v) in monthly where v.count > 0 {
-            let cnt = Double(v.count)
-            metrics.append(contentsOf: [
-                Metric(accountId: accountId, metricType: .followerGrowth, value: v.fSum / cnt, window: .month, observedAt: monthStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .engagementTrend, value: v.eSum / cnt, window: .month, observedAt: monthStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .averageLikes, value: v.lSum / cnt, window: .month, observedAt: monthStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .averageComments, value: v.cSum / cnt, window: .month, observedAt: monthStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .averageShares, value: v.sSum / cnt, window: .month, observedAt: monthStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .profileViews, value: v.vSum / cnt, window: .month, observedAt: monthStart, createdAt: Date()),
-            ])
-        }
-
-        // Year metrics：按年聚合（全部 6 种 metricType）
-        var yearly: [Date: (fSum: Double, eSum: Double, lSum: Double, cSum: Double, sSum: Double, vSum: Double, count: Int)] = [:]
-        for snapshot in snapshots {
-            let yearStart = calendar.date(from: calendar.dateComponents([.year], from: snapshot.observedAt)) ?? snapshot.observedAt
-            let cur = yearly[yearStart] ?? (0, 0, 0, 0, 0, 0, 0)
-            yearly[yearStart] = (
-                cur.fSum + Double(snapshot.followersCount),
-                cur.eSum + snapshot.engagementRate,
-                cur.lSum + Double(snapshot.totalLikes),
-                cur.cSum + Double(snapshot.totalComments),
-                cur.sSum + Double(snapshot.totalShares),
-                cur.vSum + Double(snapshot.totalViews),
-                cur.count + 1
-            )
-        }
-        for (yearStart, v) in yearly where v.count > 0 {
-            let cnt = Double(v.count)
-            metrics.append(contentsOf: [
-                Metric(accountId: accountId, metricType: .followerGrowth, value: v.fSum / cnt, window: .year, observedAt: yearStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .engagementTrend, value: v.eSum / cnt, window: .year, observedAt: yearStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .averageLikes, value: v.lSum / cnt, window: .year, observedAt: yearStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .averageComments, value: v.cSum / cnt, window: .year, observedAt: yearStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .averageShares, value: v.sSum / cnt, window: .year, observedAt: yearStart, createdAt: Date()),
-                Metric(accountId: accountId, metricType: .profileViews, value: v.vSum / cnt, window: .year, observedAt: yearStart, createdAt: Date()),
-            ])
-        }
+        // Week / Month / Year metrics：周期末值（组内 observedAt 最大的快照的真实值）
+        metrics.append(contentsOf: Self.periodEndMetrics(
+            accountId: accountId, snapshots: snapshots, window: .week,
+            periodStart: { calendar.dateInterval(of: .weekOfYear, for: $0)?.start }
+        ))
+        metrics.append(contentsOf: Self.periodEndMetrics(
+            accountId: accountId, snapshots: snapshots, window: .month,
+            periodStart: { calendar.date(from: calendar.dateComponents([.year, .month], from: $0)) }
+        ))
+        metrics.append(contentsOf: Self.periodEndMetrics(
+            accountId: accountId, snapshots: snapshots, window: .year,
+            periodStart: { calendar.date(from: calendar.dateComponents([.year], from: $0)) }
+        ))
 
         return metrics
+    }
+
+    /// 单个 Snapshot 的 6 项日指标 — 全部整数：计数类直通快照值，互动率为万分比整数
+    static func dayMetrics(accountId: Int64, snapshot: Snapshot) -> [Metric] {
+        let e = engagementBasis(snapshot.engagementRate)
+        let createdAt = Date()
+        return [
+            Metric(accountId: accountId, metricType: .followerGrowth, value: snapshot.followersCount, window: .day, observedAt: snapshot.observedAt, createdAt: createdAt),
+            Metric(accountId: accountId, metricType: .engagementTrend, value: e, window: .day, observedAt: snapshot.observedAt, createdAt: createdAt),
+            Metric(accountId: accountId, metricType: .averageLikes, value: snapshot.totalLikes, window: .day, observedAt: snapshot.observedAt, createdAt: createdAt),
+            Metric(accountId: accountId, metricType: .averageComments, value: snapshot.totalComments, window: .day, observedAt: snapshot.observedAt, createdAt: createdAt),
+            Metric(accountId: accountId, metricType: .averageShares, value: snapshot.totalShares, window: .day, observedAt: snapshot.observedAt, createdAt: createdAt),
+            Metric(accountId: accountId, metricType: .profileViews, value: snapshot.totalViews, window: .day, observedAt: snapshot.observedAt, createdAt: createdAt),
+        ]
+    }
+
+    /// 周期末值聚合 — 每个时间窗组内取 observedAt 最大的真实快照，其 6 项值作为该周期指标。
+    /// 输入 snapshots 按时间升序遍历，后到者覆盖 → 组内保留最后一次真实观测。
+    static func periodEndMetrics(
+        accountId: Int64, snapshots: [Snapshot], window: TimeWindow,
+        periodStart: (Date) -> Date?
+    ) -> [Metric] {
+        var latest: [Date: Snapshot] = [:]  // periodStart → 组内最新快照
+        for snapshot in snapshots.sorted(by: { $0.observedAt < $1.observedAt }) {
+            guard let start = periodStart(snapshot.observedAt) else { continue }
+            latest[start] = snapshot
+        }
+        var metrics: [Metric] = []
+        for (start, snapshot) in latest {
+            let day = dayMetrics(accountId: accountId, snapshot: snapshot)
+            metrics.append(contentsOf: day.map { m in
+                Metric(accountId: accountId, metricType: m.metricType, value: m.value,
+                       window: window, observedAt: start, createdAt: Date())
+            })
+        }
+        return metrics
+    }
+
+    /// 互动率万分比换算：0.0543 → 543（整数存储，杜绝浮点失真）
+    static func engagementBasis(_ rate: Double) -> Int {
+        Int((rate * 10000).rounded())
     }
 }

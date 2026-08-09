@@ -67,7 +67,7 @@ struct ServicesTests {
 
     // MARK: - Average Comments / Shares (Phi: 验证 per-post 平均计算)
 
-    /// averageComments day metric 应存储每帖平均评论数（totalComments / mediaCount）
+    /// averageComments day metric 应存储快照真实值（totalComments，整数）
     @MainActor
     @Test
     func testAverageCommentsMetricPerPost() async throws {
@@ -76,7 +76,7 @@ struct ServicesTests {
         let calendar = Calendar.current
         let day1 = calendar.startOfDay(for: now)
 
-        // 5 篇帖子，总共 10 条评论 → 平均 2.0 条/帖
+        // 5 篇帖子，总共 10 条评论
         let profile = APIProfileResponse(
             username: "test", displayName: "T",
             followersCount: 100, followingCount: 10, mediaCount: 5,
@@ -97,7 +97,7 @@ struct ServicesTests {
         #expect(result.snapshotsUpdated >= 1)
         #expect(result.metricsUpdated > 0)
 
-        // 验证 day metric 值 = totalComments / mediaCount = 10 / 5 = 2.0
+        // 验证 day metric 值 = 快照 totalComments = 10（真实值整数存储）
         let metrics = try await metricRepo.fetch(
             accountId: accountId,
             metricType: .averageComments,
@@ -105,11 +105,11 @@ struct ServicesTests {
             limit: 10
         )
         if let dayMetric = metrics.first {
-            #expect(dayMetric.value == 2.0, "averageComments day metric should be 10/5 = 2.0")
+            #expect(dayMetric.value == 10, "averageComments day metric stores snapshot totalComments = 10")
         }
     }
 
-    /// averageShares day metric 应存储每帖平均分享数（totalShares / mediaCount）
+    /// averageShares day metric 应存储快照真实值（totalShares，整数）
     @MainActor
     @Test
     func testAverageSharesMetricPerPost() async throws {
@@ -118,7 +118,7 @@ struct ServicesTests {
         let calendar = Calendar.current
         let day1 = calendar.startOfDay(for: now)
 
-        // 10 篇帖子，总共 5 次分享 → 平均 0.5 次/帖
+        // 10 篇帖子，总共 5 次分享
         let profile = APIProfileResponse(
             username: "test", displayName: "T",
             followersCount: 200, followingCount: 20, mediaCount: 10,
@@ -146,7 +146,7 @@ struct ServicesTests {
             limit: 10
         )
         if let dayMetric = metrics.first {
-            #expect(dayMetric.value == 0.5, "averageShares day metric should be 5/10 = 0.5")
+            #expect(dayMetric.value == 5, "averageShares day metric stores snapshot totalShares = 5")
         }
     }
 
@@ -180,50 +180,126 @@ struct ServicesTests {
         #expect(result.metricsUpdated >= 0, "Zero mediaCount should not crash aggregation")
     }
 
-    /// 周聚合 averageComments 应 = 每日总和的平均值
+    /// 周聚合 → 周期末值（组内最后一次真实快照），非平均数
     @MainActor
     @Test
-    func testWeekAverageCommentsAggregation() async throws {
-        let accountId = try await createTestAccount("week_avg")
+    func testWeekUsesPeriodEndValueNotAverage() async throws {
+        let accountId = try await createTestAccount("week_end")
         let now = Date()
         let calendar = Calendar.current
 
-        // 创建 7 天数据，每天 totalComments 不同
+        // 用上一完整周（保证全部日期都在过去）：周一 2 粉丝 → 周三 8 粉丝
+        var cal = calendar; cal.firstWeekday = 2
+        let thisWeekStart = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!
+        let weekStart = calendar.date(byAdding: .day, value: -7, to: thisWeekStart)!
+        let mon = weekStart
+        let wed = calendar.date(byAdding: .day, value: 2, to: weekStart)!
+
         var events: [Event] = []
-        for i in 0..<7 {
-            let day = calendar.date(byAdding: .day, value: -i, to: calendar.startOfDay(for: now))!
+        for (day, followers) in [(mon, 2), (wed, 8)] {
             let profile = APIProfileResponse(
                 username: "test", displayName: "T",
-                followersCount: 100 + i * 10, followingCount: 10,
-                mediaCount: 5,
-                totalLikes: 50, totalComments: (i + 1) * 2,  // 2, 4, 6, 8, 10, 12, 14
-                totalShares: 1, totalViews: 100,
+                followersCount: followers, followingCount: 10, mediaCount: 5,
+                totalLikes: 50, totalComments: 10, totalShares: 1, totalViews: 100,
                 engagementRate: 0.05, fetchedAt: day
             )
-            let payload = try JSONEncoder().encode(profile)
             events.append(Event(
                 accountId: accountId, eventType: .profileSnapshot,
-                payload: payload, source: .api, observedAt: day, createdAt: now
+                payload: try JSONEncoder().encode(profile), source: .api,
+                observedAt: day, createdAt: now
             ))
         }
         _ = try await eventRepo.insertBatch(events)
 
         let aggregation = AggregationService(eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo)
-        let result = try await aggregation.aggregate(
-            accountId: accountId,
-            from: calendar.date(byAdding: .day, value: -7, to: now)!,
-            to: now
-        )
+        let result = try await aggregation.aggregate(accountId: accountId, from: weekStart, to: now)
         #expect(result.metricsUpdated > 0)
 
-        // 验证周指标存在
         let weekMetrics = try await metricRepo.fetch(
             accountId: accountId,
-            metricType: .averageComments,
+            metricType: .followerGrowth,
             window: .week,
             limit: 10
         )
-        #expect(!weekMetrics.isEmpty, "Week aggregation should produce weekly averageComments metrics")
+        #expect(weekMetrics.first?.value == 8,
+                "Week metric must be period-end value (8), not the average (5)")
+    }
+
+    /// engagementTrend → 万分比整数存储（0.0543 → 543）
+    @MainActor
+    @Test
+    func testEngagementTrendStoredAsBasisPoints() async throws {
+        let accountId = try await createTestAccount("eng_basis")
+        let now = Date()
+        let calendar = Calendar.current
+        let day1 = calendar.startOfDay(for: now)
+
+        let profile = APIProfileResponse(
+            username: "test", displayName: "T",
+            followersCount: 100, followingCount: 10, mediaCount: 5,
+            totalLikes: 50, totalComments: 10, totalShares: 1, totalViews: 500,
+            engagementRate: 0.0543, fetchedAt: day1
+        )
+        let payload = try JSONEncoder().encode(profile)
+        _ = try await eventRepo.insertBatch([Event(
+            accountId: accountId, eventType: .profileSnapshot,
+            payload: payload, source: .api, observedAt: day1, createdAt: now
+        )])
+
+        let aggregation = AggregationService(eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo)
+        _ = try await aggregation.aggregate(accountId: accountId, from: day1, to: now)
+
+        let metrics = try await metricRepo.fetch(
+            accountId: accountId, metricType: .engagementTrend, window: .day, limit: 10
+        )
+        #expect(metrics.first?.value == 543,
+                "engagementTrend must be stored as basis points integer (0.0543 → 543)")
+    }
+
+    /// 月/年聚合 → 周期末值（月内 1000 和 1200 → 存 1200，不是平均 1100）
+    @MainActor
+    @Test
+    func testMonthAndYearUsePeriodEndValue() async throws {
+        let accountId = try await createTestAccount("month_end")
+        let now = Date()
+        let calendar = Calendar.current
+
+        // 用上一完整月（保证都在过去且同月）— 1 号 1000 粉丝 → 10 号 1200 粉丝
+        let thisMonthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
+        let monthStart = calendar.date(byAdding: .month, value: -1, to: thisMonthStart)!
+        let day1 = calendar.date(byAdding: .day, value: 1, to: monthStart)!
+        let day10 = calendar.date(byAdding: .day, value: 10, to: monthStart)!
+
+        var events: [Event] = []
+        for (day, followers) in [(day1, 1000), (day10, 1200)] {
+            let profile = APIProfileResponse(
+                username: "test", displayName: "T",
+                followersCount: followers, followingCount: 10, mediaCount: 5,
+                totalLikes: 50, totalComments: 10, totalShares: 1, totalViews: 100,
+                engagementRate: 0.05, fetchedAt: day
+            )
+            events.append(Event(
+                accountId: accountId, eventType: .profileSnapshot,
+                payload: try JSONEncoder().encode(profile), source: .api,
+                observedAt: day, createdAt: now
+            ))
+        }
+        _ = try await eventRepo.insertBatch(events)
+
+        let aggregation = AggregationService(eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo)
+        _ = try await aggregation.aggregate(accountId: accountId, from: day1, to: now)
+
+        let monthMetrics = try await metricRepo.fetch(
+            accountId: accountId, metricType: .followerGrowth, window: .month, limit: 10
+        )
+        #expect(monthMetrics.first?.value == 1200,
+                "Month metric must be period-end value (1200), not the average (1100)")
+
+        let yearMetrics = try await metricRepo.fetch(
+            accountId: accountId, metricType: .followerGrowth, window: .year, limit: 10
+        )
+        #expect(yearMetrics.first?.value == 1200,
+                "Year metric must be period-end value (1200), not the average (1100)")
     }
 
     // MARK: - Export Service

@@ -32,7 +32,8 @@ final class TimeSeriesEngine {
     static func aggregate(_ metrics: [Metric], bucket: TimeBucket) -> [TrendDataPoint] {
         let grouped = Dictionary(grouping: metrics) { bucketStart($0.observedAt, by: bucket) }
         return grouped.map { (key, values) in
-            TrendDataPoint(date: key, value: values.map(\.value).reduce(0, +) / Double(values.count))
+            // Metric.value 为 Int，先转 Double 再取均值（保持既有均值语义，1 bucket = 1 point）
+            TrendDataPoint(date: key, value: Double(values.map(\.value).reduce(0, +)) / Double(values.count))
         }
         .sorted { $0.date < $1.date }
     }

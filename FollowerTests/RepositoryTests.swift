@@ -213,6 +213,49 @@ struct RepositoryTests {
         }
     }
 
+    /// MigrationV7：旧库浮点 Metric 值换算为整数语义
+    /// - engagementTrend 0~1 比率 → 万分比整数（0.0543 → 543）
+    /// - 计数类浮点 → ROUND 取整（8250.5 → 8251）
+    @Test
+    func testMigrationV7ConvertsLegacyDoubleValues() async throws {
+        let memDB = DatabaseManager(inMemory: true)
+        let memAccountRepo = AccountRepository(db: memDB)
+
+        let account = Account(platform: .instagram, username: "v7_\(UUID())", displayName: "V7",
+                              authState: .authorized, createdAt: Date(), updatedAt: Date())
+        let saved = try await memAccountRepo.insert(account)
+        let accountId = try #require(saved.id)
+        let day = Calendar.current.startOfDay(for: Date())
+
+        // 1. 模拟旧库 REAL 值：互动率存比率、计数类存浮点
+        try await memDB.write { db in
+            try db.execute(
+                sql: "INSERT INTO metric (accountId, metricType, value, window, observedAt, createdAt) VALUES (?,?,?,?,?,?)",
+                arguments: [accountId, MetricType.engagementTrend.rawValue, 0.0543, TimeWindow.day.rawValue, day, Date()]
+            )
+            try db.execute(
+                sql: "INSERT INTO metric (accountId, metricType, value, window, observedAt, createdAt) VALUES (?,?,?,?,?,?)",
+                arguments: [accountId, MetricType.followerGrowth.rawValue, 8250.5, TimeWindow.day.rawValue, day, Date()]
+            )
+        }
+
+        // 2. 跑 v7 迁移：换算为整数
+        try await memDB.write { db in
+            try MigrationV7.run(in: db)
+        }
+
+        // 3. 验证：0.0543 → 543（万分比），8250.5 → 8251（ROUND）
+        let rows = try await memDB.read { db in
+            try Metric
+                .filter(Metric.Columns.accountId == accountId)
+                .order(Metric.Columns.metricType)
+                .fetchAll(db)
+        }
+        let byType = Dictionary(uniqueKeysWithValues: rows.map { ($0.metricType, $0.value) })
+        #expect(byType[.engagementTrend] == 543, "0.0543 should become 543 basis points")
+        #expect(byType[.followerGrowth] == 8251, "8250.5 should round to 8251")
+    }
+
     // MARK: - Premium Feature Repository
 
     /// 设置 Premium 开关 → isEnabled 反映最新状态

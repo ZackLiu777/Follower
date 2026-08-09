@@ -136,7 +136,7 @@ struct MediaKitDataProvider: MediaKitDataProviding {
         )) ?? []
         return metrics
             .sorted { $0.observedAt < $1.observedAt }
-            .map { MediaKitGrowthPoint(date: $0.observedAt, followers: Int($0.value)) }
+            .map { MediaKitGrowthPoint(date: $0.observedAt, followers: $0.value) }
     }
 
     /// Top 5 帖子：最近 25 条按点赞数降序取前 5
@@ -158,7 +158,7 @@ struct MediaKitDataProvider: MediaKitDataProviding {
         let metrics = (try? await metricRepo.fetch(
             accountId: accountId, metricType: type, window: .day, limit: 30
         )) ?? []
-        return metrics.sorted { $0.observedAt < $1.observedAt }.map(\.value)
+        return metrics.sorted { $0.observedAt < $1.observedAt }.map { Double($0.value) }
     }
 
     /// 趋势统计序列（完整模板）：5 指标 × 30 天日窗口（粉丝周序列走 weeklyGrowth）
@@ -182,7 +182,7 @@ struct MediaKitDataProvider: MediaKitDataProviding {
             let metrics = (try? await metricRepo.fetch(
                 accountId: accountId, metricType: type, window: .week, limit: 7
             )) ?? []
-            let values = metrics.sorted { $0.observedAt < $1.observedAt }.map(\.value)
+            let values = metrics.sorted { $0.observedAt < $1.observedAt }.map { Double($0.value) }
             if !values.isEmpty { result[type] = values }
         }
         return result

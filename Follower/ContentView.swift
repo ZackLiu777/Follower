@@ -50,9 +50,10 @@ private struct ContentViewInner: View {
             mediaKitService: container.mediaKitService
         ))
         _trendsVM = State(wrappedValue: TrendsViewModel(
-            snapshotRepo: container.snapshotRepository, 
+            snapshotRepo: container.snapshotRepository,
             metricRepo: container.metricRepository,
-            accountRepo: container.accountRepository
+            accountRepo: container.accountRepository,
+            eventRepo: container.eventRepository
         ))
         _decisionsVM = State(wrappedValue: DecisionsViewModel(
             snapshotRepo: container.snapshotRepository,

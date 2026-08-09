@@ -91,7 +91,7 @@ struct ModelsTests {
             id: 1,
             accountId: 1,
             metricType: .followerGrowth,
-            value: 3.5,
+            value: 3,
             window: .week,
             observedAt: Date(),
             createdAt: Date()
@@ -238,10 +238,10 @@ struct ModelsTests {
     @Test
     func testTrendDataPoint_Initialization() {
         let date = Date()
-        let point = TrendDataPoint(date: date, value: 42.0)
+        let point = TrendDataPoint(date: date, value: 42)
 
         #expect(point.id == date)
         #expect(point.date == date)
-        #expect(point.value == 42.0)
+        #expect(point.value == 42)
     }
 }

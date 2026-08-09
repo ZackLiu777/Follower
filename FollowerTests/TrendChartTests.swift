@@ -28,7 +28,7 @@ struct TrendChartTests {
     /// 全部值相等 = 5.0 → domain 不应为零宽度
     @Test
     func testYScaleDomainAllEqualValues() {
-        let points = (0..<7).map { _ in TrendDataPoint(date: Date(), value: 5.0) }
+        let points = (0..<7).map { _ in TrendDataPoint(date: Date(), value: 5) }
         let domain = TrendChart.computeYScaleDomain(from: points)
         #expect(domain.lowerBound >= 0)
         #expect(domain.upperBound > domain.lowerBound,
@@ -38,7 +38,7 @@ struct TrendChartTests {
     /// 单一数据点 → 正常计算 domain
     @Test
     func testYScaleDomainSinglePoint() {
-        let points = [TrendDataPoint(date: Date(), value: 42.0)]
+        let points = [TrendDataPoint(date: Date(), value: 42)]
         let domain = TrendChart.computeYScaleDomain(from: points)
         #expect(domain.upperBound >= 42, "Upper bound should cover the single value")
         #expect(domain.lowerBound >= 0)
@@ -77,7 +77,7 @@ struct TrendChartTests {
     /// 小数值（0~2 范围，如评论/分享）→ domain 应合理缩放到可读范围
     @Test
     func testYScaleDomainSmallValues() {
-        let points = (0..<7).map { _ in TrendDataPoint(date: Date(), value: Double.random(in: 0...2)) }
+        let points = (0..<7).map { _ in TrendDataPoint(date: Date(), value: Int.random(in: 0...2)) }
         let domain = TrendChart.computeYScaleDomain(from: points)
         #expect(domain.lowerBound >= 0, "Small positive values must not produce negative domain")
         #expect(domain.upperBound > domain.lowerBound)
@@ -159,7 +159,7 @@ struct TrendChartTests {
             return Metric(
                 accountId: 1,
                 metricType: .followerGrowth,
-                value: Double((i + 1) * 10),
+                value: (i + 1) * 10,
                 window: .day,
                 observedAt: dayStart,
                 createdAt: Date()

@@ -114,7 +114,8 @@ struct TrendDetailView: View {
         let viewModel = TrendsViewModel(
             snapshotRepo: appState.container.snapshotRepository,
             metricRepo: appState.container.metricRepository,
-            accountRepo: appState.container.accountRepository
+            accountRepo: appState.container.accountRepository,
+            eventRepo: appState.container.eventRepository
         )
         TrendDetailView(
             viewModel: viewModel,
