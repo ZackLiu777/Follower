@@ -158,6 +158,88 @@ struct TrendsViewModelTests {
         }
     }
 
+    /// Day 窗口 → 每个指标独立显示「值的变化」：粉丝 2→2→5 只显示 [2,5]（评论变化不产生粉丝点）；
+    /// 评论 5→6→6 只显示 [5,6]（粉丝变化不产生评论点）
+    @MainActor
+    @Test
+    func testDayFiltersUnchangedPointsPerMetric() async throws {
+        let accountId = Int64.random(in: 1_000_000...9_999_999)
+        let db = DatabaseManager.shared
+        let eventRepo = EventRepository(db: db)
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+
+        // 事件1：粉丝 2、评论 5；事件2：粉丝 2（没变）、评论 6（变了）；
+        // 事件3：粉丝 5（变了）、评论 6（没变）
+        let profiles: [(Int, Int)] = [(2, 5), (2, 6), (5, 6)]
+        var events: [Event] = []
+        for (i, pair) in profiles.enumerated() {
+            let profile = APIProfileResponse(
+                username: "t", displayName: "T",
+                followersCount: pair.0, followingCount: 10, mediaCount: 5,
+                totalLikes: 50, totalComments: pair.1, totalShares: 1, totalViews: 100,
+                engagementRate: 0.05, fetchedAt: today
+            )
+            let at = calendar.date(byAdding: .hour, value: 9 + i * 3, to: today)!
+            events.append(Event(
+                accountId: accountId, eventType: .profileSnapshot,
+                payload: try JSONEncoder().encode(profile), source: .api,
+                observedAt: at, createdAt: Date()
+            ))
+        }
+        _ = try await eventRepo.insertBatch(events)
+
+        let vm = makeVM()
+        vm.selectedAccountId = accountId
+        await vm.selectWindow(.day)
+
+        // 粉丝曲线：2（首个点）→ 2（没变，跳过）→ 5（变化，保留）
+        let followers = vm.chartData(for: .followerGrowth)
+        #expect(followers.map(\.value) == [2, 5],
+                "Follower curve must only change when followers change: [2,5]")
+
+        // 评论曲线：5 → 6（变化）→ 6（没变，跳过）
+        let comments = vm.chartData(for: .averageComments)
+        #expect(comments.map(\.value) == [5, 6],
+                "Comment curve must only change when comments change: [5,6]")
+    }
+
+    /// changedPoints 纯函数：空数组 → 空；全同值 → 1 点；值来回变化 → 全保留
+    @Test
+    func testChangedPointsPureFunction() {
+        let cal = Calendar.current
+        func point(_ h: Int, _ v: Int) -> TrendDataPoint {
+            TrendDataPoint(date: cal.date(byAdding: .hour, value: h, to: cal.startOfDay(for: Date()))!, value: v)
+        }
+
+        #expect(TrendsViewModel.changedPoints([]).isEmpty)
+
+        let allSame = TrendsViewModel.changedPoints([point(9, 2), point(12, 2), point(18, 2)])
+        #expect(allSame.count == 1 && allSame[0].value == 2, "All-same values → single point")
+
+        let zigzag = TrendsViewModel.changedPoints([point(9, 2), point(12, 5), point(18, 2)])
+        #expect(zigzag.count == 3, "Value going 2→5→2 must keep all points")
+
+        let mixed = TrendsViewModel.changedPoints([point(9, 2), point(12, 2), point(15, 5), point(18, 5)])
+        #expect(mixed.map(\.value) == [2, 5], "Same-value runs collapse, changes kept")
+        #expect(mixed[0].date == point(9, 2).date, "First occurrence time preserved")
+    }
+
+    /// totalValue → 窗口内最新真实值（粉丝 2 → 5，显示 5 而非 2+5=7）
+    @MainActor
+    @Test
+    func testTotalValueReturnsLatestValue() async {
+        let vm = makeVM()
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        vm.hourlyData = [.followerGrowth: [
+            TrendDataPoint(date: cal.date(byAdding: .hour, value: 9, to: today)!, value: 2),
+            TrendDataPoint(date: cal.date(byAdding: .hour, value: 18, to: today)!, value: 5),
+        ]]
+        #expect(vm.totalValue(for: .followerGrowth, in: .day) == 5,
+                "Total must be the latest real value (5), not the sum (7)")
+    }
+
     // MARK: - Week / Month / Year chartData (sort order tested via testTrendDataPointsSortedChronologically)
 
     /// Week/Month/Year chartData 的 VM 创建测试在 XCTest 中因 @MainActor dealloc 崩溃。

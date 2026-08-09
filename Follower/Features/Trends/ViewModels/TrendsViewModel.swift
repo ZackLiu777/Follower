@@ -176,9 +176,10 @@ final class TrendsViewModel {
         }
     }
 
-    /// 详情页总计：窗口内直接求和
+    /// 详情页总计：窗口内最新真实值（柱高/点为绝对值，求和无意义 — v0.09）。
+    /// 例：日窗口粉丝采样 2 → 5，显示 5（当前真实粉丝数），而非 2+5=7。
     func totalValue(for metricType: MetricType, in window: TimeWindow) -> Int {
-        chartData(for: metricType, in: window).reduce(0) { $0 + Int($1.value) }
+        Int(chartData(for: metricType, in: window).last?.value ?? 0)
     }
 
     /// 周期标签（详情页总计下方）：今天 / 本周 / 2026年7月 / 2026
@@ -226,9 +227,26 @@ final class TrendsViewModel {
                 }
                 return TrendDataPoint(date: sample.observedAt, value: value)
             }
-            dict[type] = points.sorted { $0.date < $1.date }
+            // v0.09：每个指标独立显示「值的变化」——该指标值未变化的采样点跳过
+            // （评论变了但粉丝没变 → 粉丝曲线不新增点）。事件表所有观测原样保留，
+            // 只是曲线生成粒度 = 指标状态变化，而非每次同步。
+            dict[type] = Self.changedPoints(points.sorted { $0.date < $1.date })
         }
         hourlyData = dict
+    }
+
+    /// 只保留「值发生变化」的采样点（首个点 + 变化点）；同值点跳过（保留首次出现的时间）。
+    /// 纯函数，不访问实例状态 → nonisolated 供测试直接调用。
+    nonisolated static func changedPoints(_ points: [TrendDataPoint]) -> [TrendDataPoint] {
+        var result: [TrendDataPoint] = []
+        for point in points {
+            guard let last = result.last else {
+                result.append(point)
+                continue
+            }
+            if point.value != last.value { result.append(point) }
+        }
+        return result
     }
 
     /// 切换时间窗 — day 窗口时按小时均分
