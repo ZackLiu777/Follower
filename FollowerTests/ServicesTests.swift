@@ -302,6 +302,109 @@ struct ServicesTests {
                 "Year metric must be period-end value (1200), not the average (1100)")
     }
 
+    // MARK: - Ingestion Service — 重复观测抑制（v0.08）
+
+    /// 相同 profile 连续摄取两次 → 第二次跳过写入（事件表只有 1 条，不产生重复观测）
+    @MainActor
+    @Test
+    func testIngestSkipsUnchangedProfile() async throws {
+        let accountId = try await createTestAccount("ingest_dup")
+        let now = Date()
+        let day = Calendar.current.startOfDay(for: now)
+        let profile = APIProfileResponse(
+            username: "test", displayName: "T",
+            followersCount: 1000, followingCount: 100, mediaCount: 10,
+            totalLikes: 50, totalComments: 5, totalShares: 2, totalViews: 500,
+            engagementRate: 0.05, fetchedAt: day
+        )
+        let trend = APITrendResponse(username: "test", dataPoints: [], period: "day")
+        let ingestion = IngestionService(
+            eventRepo: eventRepo,
+            aggregationService: AggregationService(
+                eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo
+            )
+        )
+
+        _ = try await ingestion.ingest(accountId: accountId, profile: profile, trend: trend)
+        let second = try await ingestion.ingest(accountId: accountId, profile: profile, trend: trend)
+
+        #expect(second.eventsCreated == 0, "Unchanged profile must not create events")
+        let events = try await eventRepo.fetch(
+            accountId: accountId, eventType: .profileSnapshot, limit: 10
+        )
+        #expect(events.count == 1, "Repeated sync with same values must not duplicate events")
+    }
+
+    /// profile 值变化 → 正常写入新观测（事件表新增 1 条，每天的真实变化保留）
+    @MainActor
+    @Test
+    func testIngestWritesChangedProfile() async throws {
+        let accountId = try await createTestAccount("ingest_chg")
+        let now = Date()
+        let day = Calendar.current.startOfDay(for: now)
+        let trend = APITrendResponse(username: "test", dataPoints: [], period: "day")
+        let ingestion = IngestionService(
+            eventRepo: eventRepo,
+            aggregationService: AggregationService(
+                eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo
+            )
+        )
+
+        let first = APIProfileResponse(
+            username: "test", displayName: "T",
+            followersCount: 1000, followingCount: 100, mediaCount: 10,
+            totalLikes: 50, totalComments: 5, totalShares: 2, totalViews: 500,
+            engagementRate: 0.05, fetchedAt: day
+        )
+        _ = try await ingestion.ingest(accountId: accountId, profile: first, trend: trend)
+
+        // 粉丝数 1000 → 1100：数据变化 → 必须写入
+        let changed = APIProfileResponse(
+            username: "test", displayName: "T",
+            followersCount: 1100, followingCount: 100, mediaCount: 10,
+            totalLikes: 50, totalComments: 5, totalShares: 2, totalViews: 500,
+            engagementRate: 0.05, fetchedAt: day
+        )
+        let second = try await ingestion.ingest(accountId: accountId, profile: changed, trend: trend)
+
+        #expect(second.eventsCreated == 1, "Changed profile must be recorded")
+        let events = try await eventRepo.fetch(
+            accountId: accountId, eventType: .profileSnapshot, limit: 10
+        )
+        #expect(events.count == 2, "Value change must create a new observation event")
+    }
+
+    /// isSameProfile 纯函数：业务字段相同 → true（fetchedAt 不同不影响）；
+    /// 任一业务字段不同 → false
+    @Test
+    func testIsSameProfileIgnoresFetchedAt() {
+        let base = APIProfileResponse(
+            username: "test", displayName: "T",
+            followersCount: 1000, followingCount: 100, mediaCount: 10,
+            totalLikes: 50, totalComments: 5, totalShares: 2, totalViews: 500,
+            engagementRate: 0.05, fetchedAt: Date(timeIntervalSince1970: 0)
+        )
+        // 业务字段相同、fetchedAt 不同 → 视为同一观测（时间元数据不参与比较）
+        let laterFetched = APIProfileResponse(
+            username: "test", displayName: "T",
+            followersCount: 1000, followingCount: 100, mediaCount: 10,
+            totalLikes: 50, totalComments: 5, totalShares: 2, totalViews: 500,
+            engagementRate: 0.05, fetchedAt: Date(timeIntervalSince1970: 9999)
+        )
+        #expect(IngestionService.isSameProfile(base, laterFetched),
+                "FetchedAt must not affect sameness")
+
+        // 任一业务字段变化 → 不同
+        let different = APIProfileResponse(
+            username: "test", displayName: "T",
+            followersCount: 1100, followingCount: 100, mediaCount: 10,
+            totalLikes: 50, totalComments: 5, totalShares: 2, totalViews: 500,
+            engagementRate: 0.05, fetchedAt: Date()
+        )
+        #expect(!IngestionService.isSameProfile(base, different),
+                "Changed business field must be treated as a new observation")
+    }
+
     // MARK: - Export Service
 
     /// JSON 导出 → 生成有效文件并可反序列化为 JSONExportData
