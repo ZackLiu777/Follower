@@ -249,10 +249,7 @@ private struct KeyMetricsSection: View {
                 .foregroundColor(theme.textPrimary)
 
             HStack(spacing: 0) {
-                miniMetric(icon: "eye.fill",
-                           label: loc(L10n.Dashboard.views),
-                           value: formatCompact(snapshot?.totalViews ?? 0))
-                Divider().padding(.vertical, 6)
+                // v0.14：总曝光（totalViews）已移除 — Instagram API 无可用浏览指标数据源，恒 0
                 miniMetric(icon: "heart.circle.fill",
                            label: loc(L10n.Dashboard.avgLikes),
                            value: formatCompact(avgLikes))

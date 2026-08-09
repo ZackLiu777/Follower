@@ -46,14 +46,14 @@ struct TrendsViewModelTests {
 
     // MARK: - visibleMetricTypes
 
-    /// visibleMetricTypes 应包含 5 个基础指标（v0.11：互动率已从图表移除）
+    /// visibleMetricTypes 应包含 4 个基础指标（v0.11 删互动率、v0.14 删浏览）
     @MainActor
     @Test
     func testVisibleMetricTypesCount() {
-        #expect(TrendsViewModel.visibleMetricTypes.count == 5)
+        #expect(TrendsViewModel.visibleMetricTypes.count == 4)
     }
 
-    /// visibleMetricTypes 应包含 followerGrowth, averageLikes, averageComments, averageShares, profileViews
+    /// visibleMetricTypes 应包含 followerGrowth, averageLikes, averageComments, averageShares
     @MainActor
     @Test
     func testVisibleMetricTypesContainsCore() {
@@ -62,7 +62,6 @@ struct TrendsViewModelTests {
         #expect(t.contains(.averageLikes))
         #expect(t.contains(.averageComments))
         #expect(t.contains(.averageShares))
-        #expect(t.contains(.profileViews))
     }
 
     /// visibleMetricTypes 不应包含 Premium 专用指标

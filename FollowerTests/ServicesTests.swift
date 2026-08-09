@@ -405,7 +405,7 @@ struct ServicesTests {
                 "Changed business field must be treated as a new observation")
     }
 
-    // MARK: - latestInsightValue（v0.13：totalViews 接入 impressions）
+    // MARK: - latestInsightValue（v0.13：totalViews 接入 views）
 
     /// 取指定指标的时间序列末值（最新一天）；多指标互不干扰
     @Test
@@ -415,21 +415,21 @@ struct ServicesTests {
                 IGInsightDataPoint(value: 100, endTime: nil),
                 IGInsightDataPoint(value: 110, endTime: nil),
             ], totalValue: nil),
-            IGInsightValue(name: "impressions", period: "day", values: [
+            IGInsightValue(name: "views", period: "day", values: [
                 IGInsightDataPoint(value: 5, endTime: nil),
             ], totalValue: nil),
         ]
         #expect(latestInsightValue("follower_count", from: insights) == 110,
                 "Must return the last (latest day) value")
-        #expect(latestInsightValue("impressions", from: insights) == 5)
+        #expect(latestInsightValue("views", from: insights) == 5)
     }
 
     /// 指标缺失 / 序列为空 → 0（开发模式 insights 返回空数组时行为安全）
     @Test
     func testLatestInsightValueMissingReturnsZero() {
-        #expect(latestInsightValue("impressions", from: []) == 0)
-        let empty = IGInsightValue(name: "impressions", period: "day", values: [], totalValue: nil)
-        #expect(latestInsightValue("impressions", from: [empty]) == 0)
+        #expect(latestInsightValue("views", from: []) == 0)
+        let empty = IGInsightValue(name: "views", period: "day", values: [], totalValue: nil)
+        #expect(latestInsightValue("views", from: [empty]) == 0)
     }
 
     // MARK: - Export Service

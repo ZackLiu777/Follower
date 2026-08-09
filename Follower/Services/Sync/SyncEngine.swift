@@ -116,11 +116,12 @@ final actor SyncEngine: SyncEngineProtocol {
 
             // 并行 3 次 API 调用
             async let igUser = client.fetchProfile(accessToken: token)
-            // v0.13：metrics 修正为 Instagram 合法指标名——原 "views" 无效（合法为
-            // impressions/reach/profile_views 等），即使权限齐全也取不到数据。
+            // v0.13 修正（回退）："views" 是合法指标（Meta 实测错误列表含 views、不含 impressions——
+            // 2026 年 API 已用 views 取代 impressions）。图表浏览为 0 的真因是开发模式
+            // insights 返回空数组（见 note 20），与指标名无关。
             async let igInsights = client.fetchInsights(
                 accessToken: token,
-                metrics: ["follower_count", "reach", "impressions"],
+                metrics: ["follower_count", "reach", "views"],
                 period: "day"
             )
             async let igMedia = client.fetchMedia(accessToken: token, limit: 25)
@@ -172,9 +173,9 @@ final actor SyncEngine: SyncEngineProtocol {
                 totalLikes: avgLikes,
                 totalComments: avgComments,
                 totalShares: 0,
-                // v0.13：账号级浏览计数接入 — 取 insights 最新一天的 impressions（展示次数）。
+                // v0.13：账号级浏览计数接入 — 取 insights 最新一天的 views（浏览量）。
                 // 原硬编码 0；开发模式 insights 返回空数组时保持 0（行为安全，不报错）。
-                totalViews: Int(latestInsightValue("impressions", from: insights)),
+                totalViews: Int(latestInsightValue("views", from: insights)),
                 engagementRate: engagementRate,
                 fetchedAt: Date()
             )
@@ -263,8 +264,7 @@ private func buildTrend(from insights: [IGInsightValue], username: String) -> AP
 
     let fSeries = parse("follower_count")
     let rSeries = parse("reach")
-    // v0.13：原 parse("views")——"views" 非合法指标名，修正为 impressions
-    let iSeries = parse("impressions")
+    let iSeries = parse("views")
     // 互动明细序列：真实 API 不请求 → 空 dict → 0；Mock 数据源提供 → 历史互动图表有数据
     let lSeries = parse("likes")
     let cSeries = parse("comments")
