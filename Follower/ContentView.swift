@@ -46,7 +46,8 @@ private struct ContentViewInner: View {
             aiService: container.aiAnalysisService,
             authenticityService: container.authenticityService,
             campaignComparisonService: container.campaignComparisonService,
-            engagementHeatmapService: container.engagementHeatmapService
+            engagementHeatmapService: container.engagementHeatmapService,
+            mediaKitService: container.mediaKitService
         ))
         _trendsVM = State(wrappedValue: TrendsViewModel(
             snapshotRepo: container.snapshotRepository, 

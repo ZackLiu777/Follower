@@ -349,7 +349,8 @@ struct PhiServicesTests {
             aiService: AIAnalysisService(),
             authenticityService: AuthenticityService(),
             campaignComparisonService: CampaignComparisonService(),
-            engagementHeatmapService: EngagementHeatmapService()
+            engagementHeatmapService: EngagementHeatmapService(),
+            mediaKitService: MediaKitService()
         )
         #expect(vm.authenticityResult == nil)
         #expect(vm.campaignResult == nil)
@@ -395,7 +396,8 @@ struct PhiServicesTests {
             aiService: AIAnalysisService(),
             authenticityService: AuthenticityService(),
             campaignComparisonService: CampaignComparisonService(),
-            engagementHeatmapService: EngagementHeatmapService()
+            engagementHeatmapService: EngagementHeatmapService(),
+            mediaKitService: MediaKitService()
         )
         vm.selectedAccountId = 1
         await vm.loadAllData()

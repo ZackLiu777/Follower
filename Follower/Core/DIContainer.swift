@@ -39,6 +39,8 @@ final class DIContainer {
 
     let exportService: ExportServiceProtocol
     let trialManager: TrialManagerProtocol
+    /// 媒体包 PDF 导出服务（Premium: mediaKitExport）
+    let mediaKitService: MediaKitServiceProtocol
 
     // MARK: - 发布助手 & 评论管理
 
@@ -120,6 +122,16 @@ final class DIContainer {
         )
 
         self.trialManager = TrialManager(premiumFeatureRepo: premiumRepo)
+
+        self.mediaKitService = MediaKitService(
+            provider: MediaKitDataProvider(
+                accountRepo: accountRepo,
+                snapshotRepo: snapshotRepo,
+                metricRepo: metricRepo,
+                mediaRepo: mediaPostRepo
+            ),
+            generator: MediaKitPDFGenerator()
+        )
 
         // 发布助手 & 评论管理
         self.postAssistantService = PostAssistantService()

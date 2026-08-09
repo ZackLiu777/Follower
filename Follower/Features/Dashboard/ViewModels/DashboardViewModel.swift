@@ -42,6 +42,8 @@ final class DashboardViewModel {
     private let campaignComparisonService: CampaignComparisonServiceProtocol
     /// 互动热力图服务（Premium - Phi）
     private let engagementHeatmapService: EngagementHeatmapServiceProtocol
+    /// 媒体包 PDF 服务（Premium: mediaKitExport）
+    private let mediaKitService: MediaKitServiceProtocol
 
     // MARK: - Published: 核心状态
 
@@ -109,6 +111,15 @@ final class DashboardViewModel {
     /// 互动热力图结果（Premium）
      var heatmapResult: EngagementHeatmapResult?
 
+    // MARK: - Published: 媒体包 PDF（Premium: mediaKitExport）
+
+    /// 当前选中的媒体包模板
+     var selectedMediaKitTemplate: MediaKitTemplate = .professional
+    /// 媒体包 PDF 生成结果 URL（非 nil 时展示 ShareLink）
+     var mediaKitURL: URL?
+    /// 生成中标记
+     var isGeneratingMediaKit: Bool = false
+
     // MARK: - Published: Premium Mock 数据（向后兼容，保留 mock 回退）
 
     /// 取关用户列表（Mock）
@@ -136,7 +147,8 @@ final class DashboardViewModel {
         aiService: AIAnalysisServiceProtocol,
         authenticityService: AuthenticityServiceProtocol,
         campaignComparisonService: CampaignComparisonServiceProtocol,
-        engagementHeatmapService: EngagementHeatmapServiceProtocol
+        engagementHeatmapService: EngagementHeatmapServiceProtocol,
+        mediaKitService: MediaKitServiceProtocol
     ) {
         self.snapshotRepo = snapshotRepo
         self.metricRepo = metricRepo
@@ -153,6 +165,7 @@ final class DashboardViewModel {
         self.authenticityService = authenticityService
         self.campaignComparisonService = campaignComparisonService
         self.engagementHeatmapService = engagementHeatmapService
+        self.mediaKitService = mediaKitService
 
         // 监听新账号创建通知，自动刷新列表
         NotificationCenter.default.addObserver(
@@ -208,6 +221,26 @@ final class DashboardViewModel {
 
     /// 切换选中账户并重新加载数据
     func selectAccount(_ id: Int64) { selectedAccountId = id; Task { await loadAllData() } }
+
+    // MARK: - 媒体包 PDF
+
+    /// 按当前选中模板生成媒体包 PDF（后台执行），完成后暴露 mediaKitURL 供 ShareLink 分享
+    func generateMediaKit() async {
+        guard let accountId = selectedAccountId else {
+            errorMessage = loc(L10n.Account.noAccountSelected)
+            return
+        }
+        isGeneratingMediaKit = true
+        defer { isGeneratingMediaKit = false }
+
+        do {
+            mediaKitURL = try await mediaKitService.generateMediaKit(
+                accountId: accountId, template: selectedMediaKitTemplate
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 
     // MARK: - Private
 
