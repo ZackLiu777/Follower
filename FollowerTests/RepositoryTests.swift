@@ -6,6 +6,7 @@
 
 import Testing
 import Foundation
+import GRDB
 @testable import Follower
 
 /// Unit tests for Repository layer — covers Account, Event, Snapshot, Metric, and PremiumFeature repositories
@@ -128,6 +129,88 @@ struct RepositoryTests {
         let m2 = Metric(accountId: accountId, metricType: .followerGrowth, value: 20, window: .day, observedAt: day, createdAt: Date())
         let r2 = try await metricRepo.upsert(m2)
         #expect(r1.id == r2.id, "Upsert should update existing metric")
+    }
+
+    /// 批量 upsert 同一复合键 3 次 → 仍只有 1 行（幂等，不依赖唯一索引存在）
+    /// 回归防护：INSERT OR REPLACE 在索引缺失时退化为 INSERT 会导致刷新后图表重复
+    @Test
+    func testMetricUpsertBatchIsIdempotent() async throws {
+        let memDB = DatabaseManager(inMemory: true)
+        let memAccountRepo = AccountRepository(db: memDB)
+        let memMetricRepo = MetricRepository(db: memDB)
+
+        let account = Account(platform: .instagram, username: "batch_\(UUID())", displayName: "B",
+                              authState: .authorized, createdAt: Date(), updatedAt: Date())
+        let saved = try await memAccountRepo.insert(account)
+        let accountId = try #require(saved.id)
+        let day = Calendar.current.startOfDay(for: Date())
+
+        let batch = [Metric(accountId: accountId, metricType: .followerGrowth, value: 100,
+                            window: .day, observedAt: day, createdAt: Date())]
+        _ = try await memMetricRepo.upsertBatch(batch)
+        _ = try await memMetricRepo.upsertBatch(batch)
+        _ = try await memMetricRepo.upsertBatch(batch)
+
+        let rows = try await memMetricRepo.fetch(accountId: accountId, metricType: .followerGrowth,
+                                                 window: .day, limit: 10)
+        #expect(rows.count == 1, "重复 upsertBatch 不应产生重复行，实际 \(rows.count)")
+    }
+
+    /// MigrationV5：清理同键重复行（模拟索引缺失时期的历史脏数据）+ 补齐唯一索引
+    @Test
+    func testMigrationV5DeduplicatesAndRebuildsIndex() async throws {
+        let memDB = DatabaseManager(inMemory: true)
+        let memAccountRepo = AccountRepository(db: memDB)
+
+        let account = Account(platform: .instagram, username: "v5_\(UUID())", displayName: "V5",
+                              authState: .authorized, createdAt: Date(), updatedAt: Date())
+        let saved = try await memAccountRepo.insert(account)
+        let accountId = try #require(saved.id)
+        let day = Calendar.current.startOfDay(for: Date())
+
+        // 1. 模拟索引缺失的历史库：DROP 唯一索引
+        try await memDB.write { db in
+            try db.execute(sql: "DROP INDEX IF EXISTS idx_metric_account_type_window")
+        }
+
+        // 2. 绕过 upsertBatch 直接 INSERT 同键 3 行（模拟旧版本 REPLACE 退化为 INSERT 的脏数据）
+        try await memDB.write { db in
+            for _ in 0..<3 {
+                try db.execute(
+                    sql: "INSERT INTO metric (accountId, metricType, value, window, observedAt, createdAt) VALUES (?,?,?,?,?,?)",
+                    arguments: [accountId, MetricType.followerGrowth.rawValue, 100, TimeWindow.day.rawValue, day, Date()]
+                )
+            }
+        }
+
+        // 3. 跑 v5 迁移：去重 + 建索引
+        try await memDB.write { db in
+            try MigrationV5.run(in: db)
+        }
+
+        // 4. 验证：同键只剩 1 行
+        let rows = try await memDB.read { db in
+            try Metric
+                .filter(Metric.Columns.accountId == accountId)
+                .filter(Metric.Columns.metricType == MetricType.followerGrowth)
+                .filter(Metric.Columns.window == TimeWindow.day)
+                .fetchAll(db)
+        }
+        #expect(rows.count == 1, "v5 去重后同键应只剩 1 行，实际 \(rows.count)")
+
+        // 5. 验证：唯一索引已重建 → 直接 INSERT 同键会抛唯一约束错误
+        let indexExists = try await memDB.read { db in
+            try db.indexes(on: "metric").contains { $0.name == "idx_metric_account_type_window" }
+        }
+        #expect(indexExists, "v5 应补齐唯一索引")
+        try await memDB.write { db in
+            #expect(throws: DatabaseError.self) {
+                try db.execute(
+                    sql: "INSERT INTO metric (accountId, metricType, value, window, observedAt, createdAt) VALUES (?,?,?,?,?,?)",
+                    arguments: [accountId, MetricType.followerGrowth.rawValue, 200, TimeWindow.day.rawValue, day, Date()]
+                )
+            }
+        }
     }
 
     // MARK: - Premium Feature Repository
