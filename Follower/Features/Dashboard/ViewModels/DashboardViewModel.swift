@@ -202,6 +202,8 @@ final class DashboardViewModel {
         isSyncing = true; defer { isSyncing = false }
         do {
             _ = try await syncEngine.sync(accountId: accountId)
+            // 广播同步完成：Trends 等 Tab 的 VM 存活于 TabView，需主动刷新（v0.15）
+            NotificationCenter.default.post(name: .syncCompleted, object: nil)
             await loadAllData()
         } catch { errorMessage = error.localizedDescription }
     }
@@ -213,6 +215,8 @@ final class DashboardViewModel {
         isSyncing = true; defer { isSyncing = false }
         do {
             _ = try await syncEngine.incrementalSync(accountId: accountId)
+            // 广播同步完成：Trends 等 Tab 的 VM 存活于 TabView，需主动刷新（v0.15）
+            NotificationCenter.default.post(name: .syncCompleted, object: nil)
             await loadAllData()
         } catch { errorMessage = error.localizedDescription }
     }

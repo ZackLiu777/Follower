@@ -396,6 +396,69 @@ struct TestAccountSyncIntegrationTests {
         #expect(recentAfterRestart.allSatisfy { $0.accountId == accountId })
     }
 
+    /// v0.15：sync 完成后 TrendsViewModel 经 .syncCompleted 通知自动刷新 —
+    /// 修复「Dashboard 同步后切回 Trends，日窗口仍是同步前的空态」的联动缺失。
+    /// 同步前日窗口空（无事件）→ sync 写事件 → 广播通知 → VM 自动重载 → 日窗口有采样点。
+    @MainActor
+    @Test
+    func testTrendsReloadsAfterSyncNotification() async throws {
+        let db = DatabaseManager(inMemory: true)
+        let accountRepo = AccountRepository(db: db)
+        let eventRepo = EventRepository(db: db)
+        let snapshotRepo = SnapshotRepository(db: db)
+        let metricRepo = MetricRepository(db: db)
+        let mediaRepo = MediaPostRepository(db: db)
+
+        let aggregation = AggregationService(
+            eventRepo: eventRepo, snapshotRepo: snapshotRepo, metricRepo: metricRepo
+        )
+        let ingestion = IngestionService(eventRepo: eventRepo, aggregationService: aggregation)
+        let mockClient = MockInstagramAPIClient()
+        let resolver = APIClientResolver(realClient: InstagramAPIClient(), mockClient: mockClient)
+        let tokenProv = RoutingTokenProvider(keychain: InMemoryTokenProvider(), accountRepo: accountRepo)
+
+        let sync = SyncEngine(
+            eventRepo: eventRepo, accountRepo: accountRepo,
+            ingestionService: ingestion, apiResolver: resolver, tokenProvider: tokenProv,
+            mediaRepo: mediaRepo
+        )
+
+        let account = Account(
+            platform: .instagram, username: "trends.sync", displayName: "Trends Sync",
+            authState: .authorized, accountType: "BUSINESS", isTest: true,
+            createdAt: Date(), updatedAt: Date()
+        )
+        let saved = try await accountRepo.insert(account)
+        let accountId = try #require(saved.id)
+        try await tokenProv.storeToken(accountId: accountId, accessToken: MockInstagramAPIClient.sentinelToken)
+
+        // TrendsViewModel 注入同一批 repo（模拟 ContentView 装配）
+        let trendsVM = TrendsViewModel(
+            snapshotRepo: snapshotRepo, metricRepo: metricRepo,
+            accountRepo: accountRepo, eventRepo: eventRepo
+        )
+
+        // 1. 同步前加载：今天无事件 → 日窗口空
+        await trendsVM.loadTrends(accountId: accountId)
+        #expect(trendsVM.hourlyData[.followerGrowth]?.isEmpty ?? true,
+                "同步前日窗口应为空")
+
+        // 2. 执行 sync（写 profileSnapshot 事件）
+        let result = try await sync.sync(accountId: accountId)
+        #expect(result.errors.isEmpty)
+
+        // 3. 广播同步完成 → VM 应自动重新加载（轮询等待通知投递 + 重载完成）
+        NotificationCenter.default.post(name: .syncCompleted, object: nil)
+        var deadline = Date().addingTimeInterval(2)
+        while trendsVM.hourlyData[.followerGrowth]?.isEmpty != false, Date() < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+
+        // 4. 日窗口现在有今天的真实采样点
+        let dayPoints = trendsVM.hourlyData[.followerGrowth] ?? []
+        #expect(!dayPoints.isEmpty, "同步完成后日窗口应有采样点")
+    }
+
     /// incrementalSync 60 秒节流：首次调用走真实同步（有 Event 产物），
     /// 紧随其后的第二次调用命中节流窗口 → 跳过网络链路，返回零结果
     @Test

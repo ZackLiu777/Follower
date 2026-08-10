@@ -24,18 +24,22 @@ struct FollowerGlassModifier: ViewModifier {
     var cornerRadius: CGFloat = 16
     /// false：静态半透明填充替代 ultraThinMaterial（滚动路径的小卡片建议开启，省每帧重采样）
     var usesMaterial: Bool = true
+    /// 填充覆盖（如 Premium 卡片的品牌色背景）— 传入时优先于 isDark 静态白色
+    var fillOverride: Color? = nil
 
     @Environment(\.theme) private var theme
 
     func body(content: Content) -> some View {
         content
-            // 1. 基础背景：毛玻璃材质（每帧重采样）或静态半透明填充（零采样）
+            // 1. 基础背景：fillOverride 优先（主题品牌色卡片背景，无视 usesMaterial）；
+            //    未传时回退毛玻璃材质（每帧重采样）或静态半透明填充（零采样）
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(
-                        usesMaterial
-                            ? AnyShapeStyle(.ultraThinMaterial)
-                            : AnyShapeStyle(theme.isDark ? Color.white.opacity(0.06) : Color.white.opacity(0.35))
+                        fillOverride.map { AnyShapeStyle($0) }
+                            ?? (usesMaterial
+                                ? AnyShapeStyle(.ultraThinMaterial)
+                                : AnyShapeStyle(theme.isDark ? Color.white.opacity(0.06) : Color.white.opacity(0.35)))
                     )
             )
             // 2. 玻璃微弱渐变
@@ -78,16 +82,19 @@ struct FollowerGlassModifier: ViewModifier {
 
 /// 圆角卡片 — Liquid Glass 玻璃 / 平铺 cardSurface 两分支
 struct DashboardCard: ViewModifier {
+    /// 背景填充覆盖 — 传入时（如 Recent Content 卡片主题色）替代材质 / cardSurface
+    var fill: Color? = nil
+
     @Environment(\.theme) private var theme
     @Environment(\.useLiquidGlass) private var useLiquidGlass
 
     func body(content: Content) -> some View {
         if useLiquidGlass {
-            content.followerGlassEffect(cornerRadius: 16)
+            content.followerGlassEffect(cornerRadius: 16, fill: fill)
         } else {
-            // 非 Liquid Glass (如 Mono Stone): 直接用 cardSurface
+            // 非 Liquid Glass (如 Mono Stone): fill 优先，否则 cardSurface
             content
-                .background(theme.cardSurface)
+                .background(fill ?? theme.cardSurface)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .shadow(color: .black.opacity(0.04), radius: 6, y: 2)
         }
@@ -144,10 +151,12 @@ struct LiquidGlassCardBackground: View {
 extension View {
     /// 应用 Liquid Glass 玻璃效果
     /// - Parameter usesMaterial: false 时用静态半透明填充替代毛玻璃材质（滚动路径小卡片建议开启）
-    func followerGlassEffect(cornerRadius: CGFloat = 16, usesMaterial: Bool = true) -> some View {
-        modifier(FollowerGlassModifier(cornerRadius: cornerRadius, usesMaterial: usesMaterial))
+    /// - Parameter fill: 填充覆盖色 — 传入时替代 isDark 静态白色（如 Premium 卡片品牌色背景）
+    func followerGlassEffect(cornerRadius: CGFloat = 16, usesMaterial: Bool = true, fill: Color? = nil) -> some View {
+        modifier(FollowerGlassModifier(cornerRadius: cornerRadius, usesMaterial: usesMaterial, fillOverride: fill))
     }
 
     /// 应用圆角 Liquid Glass 卡片样式
-    func dashboardCard() -> some View { modifier(DashboardCard()) }
+    /// - Parameter fill: 背景填充覆盖色 — 传入时替代材质 / cardSurface（主题品牌色场景）
+    func dashboardCard(fill: Color? = nil) -> some View { modifier(DashboardCard(fill: fill)) }
 }

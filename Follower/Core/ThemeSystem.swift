@@ -36,6 +36,14 @@ struct Theme: Sendable {
     let chartBarGradientEnd: Color
     let badgePremiumStart: Color
     let badgePremiumEnd: Color
+    /// Premium 卡片背景 — 各主题品牌色柔和半透明版（玻璃质感保留，仅替换静态填充色）
+    let premiumCardBackground: Color
+    /// Recent Content 卡片背景 — 主题品牌色低透明档（层次弱于 Premium，形成主次）
+    let recentContentCardBackground: Color
+    /// Dashboard Posts 卡片背景 — 与 Recent Content 同档（当前同值，可独立调整）
+    let postsCardBackground: Color
+    /// 决策时间线卡片背景 — 主题次品牌色低透明档
+    let decisionCardBackground: Color
     let badgeTrial: Color
     let badgeLocked: Color
     let buttonPrimaryBg: Color
@@ -100,6 +108,10 @@ struct Theme: Sendable {
             chartBarGradientEnd: appleSFCyan,
             badgePremiumStart: appleSFBlue,
             badgePremiumEnd: appleSFCyan,
+            premiumCardBackground: appleSFBlue.opacity(0.10),
+            recentContentCardBackground: appleSFBlue.opacity(0.07),
+            postsCardBackground: appleSFBlue.opacity(0.07),
+            decisionCardBackground: appleSFCyan.opacity(0.07),
             badgeTrial: appleSFBlue,
             badgeLocked: Color(.systemGray3),
             
@@ -139,13 +151,13 @@ struct Theme: Sendable {
             backgroundGradientEnd: instaBrightPink.opacity(0.12),
             
             // 卡片表面：保持 82% / 92% 的高不透明度白色基底，确保浅色毛玻璃下的文字清晰可读
-            cardSurface: Color.white.opacity(0.82),
-            cardElevated: Color.white.opacity(0.92),
+            cardSurface: Color.white.opacity(0.9),
+            cardElevated: Color.white.opacity(0.9),
             
             // 文本颜色
-            textPrimary: Color.black.opacity(0.92),
-            textSecondary: Color.black.opacity(0.72),
-            textTertiary: Color.black.opacity(0.50),
+            textPrimary: instaBrightPink,
+            textSecondary: instaBrightPink,
+            textTertiary: instaBrightPink,
             textInverted: .white,
             
             // 主强调色：使用高饱和活力鲜粉与霓虹暖橙作为双强调色
@@ -166,6 +178,10 @@ struct Theme: Sendable {
             chartBarGradientEnd: instaBrightPink,
             badgePremiumStart: instaOrange,
             badgePremiumEnd: instaBrightPink,
+            premiumCardBackground: Color.white,
+            recentContentCardBackground: Color.white,
+            postsCardBackground: Color.white,
+            decisionCardBackground: Color.white,
             badgeTrial: instaOrange,
             badgeLocked: Color(.systemGray3),
             
@@ -215,6 +231,10 @@ struct Theme: Sendable {
         chartBarGradientEnd: .indigo,
         badgePremiumStart: .orange,
         badgePremiumEnd: .pink,
+        premiumCardBackground: .orange.opacity(0.14),
+        recentContentCardBackground: .orange.opacity(0.10),
+        postsCardBackground: .orange.opacity(0.10),
+        decisionCardBackground: .pink.opacity(0.10),
         badgeTrial: .orange,
         badgeLocked: .gray.opacity(0.35),
         buttonPrimaryBg: .blue,
@@ -256,6 +276,10 @@ struct Theme: Sendable {
         chartBarGradientEnd: .green,
         badgePremiumStart: .mint,
         badgePremiumEnd: .green,
+        premiumCardBackground: .mint.opacity(0.12),
+        recentContentCardBackground: .mint.opacity(0.08),
+        postsCardBackground: .mint.opacity(0.08),
+        decisionCardBackground: .green.opacity(0.08),
         badgeTrial: .mint, badgeLocked: .gray.opacity(0.30),
         buttonPrimaryBg: .green,
         buttonDestructiveBg: .red,
@@ -297,6 +321,10 @@ struct Theme: Sendable {
         chartBarGradientEnd: .gray.opacity(0.45),
         badgePremiumStart: .black.opacity(0.60),
         badgePremiumEnd: .black.opacity(0.80),
+        premiumCardBackground: .black.opacity(0.06),
+        recentContentCardBackground: .black.opacity(0.05),
+        postsCardBackground: .black.opacity(0.05),
+        decisionCardBackground: .black.opacity(0.06),
         badgeTrial: .black.opacity(0.60), badgeLocked: .gray.opacity(0.35),
         buttonPrimaryBg: .black.opacity(0.75),
         buttonDestructiveBg: .gray.opacity(0.70),
@@ -347,6 +375,10 @@ struct Theme: Sendable {
         // Premium Badge：紫 → 粉
         badgePremiumStart: .purple,
         badgePremiumEnd: .pink,
+        premiumCardBackground: .purple.opacity(0.10),
+        recentContentCardBackground: .purple.opacity(0.07),
+        postsCardBackground: .purple.opacity(0.07),
+        decisionCardBackground: .pink.opacity(0.07),
         badgeTrial: .blue.opacity(0.8),
         badgeLocked: Color(.systemGray3),
         // Button
@@ -405,6 +437,10 @@ struct Theme: Sendable {
         // Premium Badge
         badgePremiumStart: .purple,
         badgePremiumEnd: .pink,
+        premiumCardBackground: .purple.opacity(0.14),
+        recentContentCardBackground: .purple.opacity(0.10),
+        postsCardBackground: .purple.opacity(0.10),
+        decisionCardBackground: .pink.opacity(0.10),
         badgeTrial: .purple.opacity(0.8),
         badgeLocked: Color.white.opacity(0.25),
         // Buttons
@@ -459,6 +495,10 @@ struct Theme: Sendable {
         chartBarGradientEnd: Color(red: 0.80, green: 0.65, blue: 0.45),
         badgePremiumStart: Color(red: 0.69, green: 0.53, blue: 0.35),
         badgePremiumEnd: Color(red: 0.80, green: 0.65, blue: 0.45),
+        premiumCardBackground: Color(red: 0.69, green: 0.53, blue: 0.35).opacity(0.12),
+        recentContentCardBackground: Color(red: 0.69, green: 0.53, blue: 0.35).opacity(0.08),
+        postsCardBackground: Color(red: 0.69, green: 0.53, blue: 0.35).opacity(0.08),
+        decisionCardBackground: Color(red: 0.80, green: 0.65, blue: 0.45).opacity(0.08),
         badgeTrial: Color(red: 0.69, green: 0.53, blue: 0.35),
         badgeLocked: Color(red: 0.80, green: 0.76, blue: 0.68),
         buttonPrimaryBg: Color(red: 0.69, green: 0.53, blue: 0.35),

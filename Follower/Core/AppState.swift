@@ -38,7 +38,7 @@ final class AppState {
     // MARK: - Published
 
     /// 当前主题 — didSet 触发状态机转移：transitioning → 广播 themeChanged → synced
-     var currentTheme: AppTheme = .instagramDark {
+     var currentTheme: AppTheme = .instagram {
         didSet {
             #if DEBUG
             print("[ThemeDebug] currentTheme changed: \(oldValue.rawValue) → \(currentTheme.rawValue)")
@@ -120,4 +120,7 @@ extension Notification.Name {
     static let premiumUnlocked = Notification.Name("com.follower.premiumUnlocked")
     static let accountCreated = Notification.Name("com.follower.accountCreated")
     static let themeChanged = Notification.Name("com.follower.themeChanged")
+    /// 同步完成通知 — Dashboard 同步成功后广播，Trends 等消费方据此刷新（TabView 中 VM 存活，
+    /// 仅靠 .task 首次加载会错过同步后的新观测）
+    static let syncCompleted = Notification.Name("com.follower.syncCompleted")
 }
