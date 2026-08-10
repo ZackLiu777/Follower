@@ -201,49 +201,68 @@ struct Theme: Sendable {
     }()
     
     // MARK: - Apple Dark（深黑 → 暗蓝渐变）
-    static let appleDark = Theme(
-        // 背景渐变（三色）：深靛蓝 → 暗蓝 → 近黑
+    static let appleDark =  Theme(
+        // 背景渐变（深灰阶跃，不带任何杂色蓝）
         backgroundGradientColors: [
-            .indigo.opacity(0.30),
-            .blue.opacity(0.15),
+            Color(red: 0.10, green: 0.10, blue: 0.12),
+            Color(red: 0.05, green: 0.05, blue: 0.07),
             .black
         ],
-        backgroundPrimary: .black,
-        backgroundSecondary: .gray.opacity(0.12),
+        backgroundPrimary: Color(red: 0.01, green: 0.01, blue: 0.02),
+        backgroundSecondary: Color(red: 0.06, green: 0.06, blue: 0.08),
         backgroundGrouped: .black,
-        backgroundGradientStart: .indigo.opacity(0.30),
+        backgroundGradientStart: Color(red: 0.10, green: 0.10, blue: 0.12),
         backgroundGradientEnd: .black,
-        cardSurface: .gray.opacity(0.15),
-        cardElevated: .gray.opacity(0.22),
+
+        // Liquid Glass 卡片：克制透明度，突出毛玻璃质感
+        cardSurface: Color.white.opacity(0.06),
+        cardElevated: Color.white.opacity(0.13),
+
+        // 文字灰度细腻递增
         textPrimary: .white,
-        textSecondary: .white.opacity(0.65),
-        textTertiary: .white.opacity(0.45),
+        textSecondary: Color.white.opacity(0.70),
+        textTertiary: Color.white.opacity(0.45),
         textInverted: .black,
-        accentPrimary: .blue,
-        accentSecondary: .cyan,
-        positiveGreen: .green,
-        negativeRed: .red,
-        warningOrange: .orange,
-        chartLine: .blue,
-        chartArea: .blue.opacity(0.15),
-        chartGrid: .gray.opacity(0.25),
-        chartBarGradientStart: .blue,
-        chartBarGradientEnd: .indigo,
-        badgePremiumStart: .orange,
-        badgePremiumEnd: .pink,
-        premiumCardBackground: .orange.opacity(0.14),
-        recentContentCardBackground: .orange.opacity(0.10),
-        postsCardBackground: .orange.opacity(0.10),
-        decisionCardBackground: .pink.opacity(0.10),
-        badgeTrial: .orange,
-        badgeLocked: .gray.opacity(0.35),
-        buttonPrimaryBg: .blue,
-        buttonDestructiveBg: .red,
-        buttonDisabledFg: .gray.opacity(0.35),
-        divider: .gray.opacity(0.25),
-        navigationBg: .black,
-        emptyStateIcon: .gray.opacity(0.5),
-        displayName: "Apple Dark", liquidGlassEnabled: true, isDark: true
+
+        // 核心：暖金作为唯一视觉锚点
+        accentPrimary: Color(red: 0.94, green: 0.72, blue: 0.30),   // 暖金
+        accentSecondary: Color(red: 0.55, green: 0.58, blue: 0.65), // 冷灰（平衡作用）
+
+        positiveGreen: Color(red: 0.20, green: 0.80, blue: 0.55),
+        negativeRed: Color(red: 0.95, green: 0.40, blue: 0.30),
+        warningOrange: Color(red: 0.95, green: 0.60, blue: 0.20),
+
+        // 图表全系跟随暖金
+        chartLine: Color(red: 0.94, green: 0.72, blue: 0.30),
+        chartArea: Color(red: 0.94, green: 0.72, blue: 0.30).opacity(0.12),
+        chartGrid: Color.white.opacity(0.10),
+        chartBarGradientStart: Color(red: 0.94, green: 0.72, blue: 0.30),
+        chartBarGradientEnd: Color(red: 0.70, green: 0.50, blue: 0.20),
+
+        // Badge 用渐变金
+        badgePremiumStart: Color(red: 0.94, green: 0.72, blue: 0.30),
+        badgePremiumEnd: Color(red: 0.85, green: 0.55, blue: 0.15),
+
+        // 卡片背景透明，彻底交给父层和 Liquid Glass
+        premiumCardBackground: .clear,
+        recentContentCardBackground: .clear,
+        postsCardBackground: .clear,
+        decisionCardBackground: .clear,
+
+        badgeTrial: Color(red: 0.94, green: 0.72, blue: 0.30),
+        badgeLocked: Color.white.opacity(0.25),
+
+        buttonPrimaryBg: Color(red: 0.94, green: 0.72, blue: 0.30),
+        buttonDestructiveBg: Color(red: 0.95, green: 0.40, blue: 0.30),
+        buttonDisabledFg: Color.white.opacity(0.25),
+
+        divider: Color.white.opacity(0.10),
+        navigationBg: Color(red: 0.01, green: 0.01, blue: 0.02),
+        emptyStateIcon: Color.white.opacity(0.40),
+
+        displayName: "Luxe Graphite",
+        liquidGlassEnabled: true,
+        isDark: true
     )
     // MARK: - Forest（鲜亮薄荷绿 → 柔白翠绿）
 
@@ -399,61 +418,60 @@ struct Theme: Sendable {
     /// Instagram Dark — 深夜创作者风格
     /// 深黑空间 + 紫色光晕 + 品红高光，延续 Instagram 品牌同时适配 OLED / Liquid Glass
     static let instagramDark = Theme(
-        // 背景渐变（三色）：深黑 → 靛紫 → 品红
+        // 背景渐变：极低饱和度的紫灰，不刺眼
         backgroundGradientColors: [
-            Color(red: 0.30, green: 0.06, blue: 0.20),
-            Color(red: 0.16, green: 0.05, blue: 0.25),
-            Color(red: 0.03, green: 0.02, blue: 0.08)
+            Color(red: 0.08, green: 0.04, blue: 0.06),
+            Color(red: 0.04, green: 0.02, blue: 0.07),
+            .black
         ],
-        // 深色系统背景
-        backgroundPrimary: Color(red: 0.015, green: 0.015, blue: 0.025),
-        backgroundSecondary: Color(red: 0.05, green: 0.04, blue: 0.08),
-        backgroundGrouped: Color(red: 0.07, green: 0.05, blue: 0.10),
-        // 背景光源：紫 → 粉
-        backgroundGradientStart: Color.purple.opacity(0.35),
-        backgroundGradientEnd: Color.pink.opacity(0.25),
-        // Liquid Glass 卡片
-        cardSurface: Color.white.opacity(0.08),
-        cardElevated: Color.white.opacity(0.14),
-        // Typography
+        backgroundPrimary: Color(red: 0.02, green: 0.01, blue: 0.03),
+        backgroundSecondary: Color(red: 0.06, green: 0.03, blue: 0.07),
+        backgroundGrouped: Color(red: 0.03, green: 0.02, blue: 0.05),
+        backgroundGradientStart: Color(red: 0.10, green: 0.05, blue: 0.08),
+        backgroundGradientEnd: .black,
+
+        cardSurface: Color.white.opacity(0.06),
+        cardElevated: Color.white.opacity(0.12),
+
         textPrimary: .white,
-        textSecondary: .white.opacity(0.65),
-        textTertiary: .white.opacity(0.45),
+        textSecondary: Color.white.opacity(0.70),
+        textTertiary: Color.white.opacity(0.45),
         textInverted: .black,
-        // Instagram Dark Accent
-        accentPrimary: .purple,
-        accentSecondary: .pink,
-        // 状态颜色
-        positiveGreen: Color.green.opacity(0.9),
-        negativeRed: Color.red.opacity(0.9),
-        warningOrange: Color.orange.opacity(0.9),
-        // Charts
-        chartLine: .pink,
-        chartArea: .pink.opacity(0.15),
-        chartGrid: .white.opacity(0.12),
-        // 数据柱状图：紫 → 粉
-        chartBarGradientStart: .purple,
-        chartBarGradientEnd: .pink,
-        // Premium Badge
-        badgePremiumStart: .purple,
-        badgePremiumEnd: .pink,
-        premiumCardBackground: .purple.opacity(0.14),
-        recentContentCardBackground: .purple.opacity(0.10),
-        postsCardBackground: .purple.opacity(0.10),
-        decisionCardBackground: .pink.opacity(0.10),
-        badgeTrial: .purple.opacity(0.8),
+
+        // 核心：玫瑰金（比粉色更灰、更暖），搭配薰衣草灰
+        accentPrimary: Color(red: 0.85, green: 0.55, blue: 0.50),   // 玫瑰金
+        accentSecondary: Color(red: 0.50, green: 0.40, blue: 0.50), // 薰衣草灰
+
+        positiveGreen: Color(red: 0.20, green: 0.80, blue: 0.55),
+        negativeRed: Color(red: 0.95, green: 0.40, blue: 0.30),
+        warningOrange: Color(red: 0.95, green: 0.60, blue: 0.20),
+
+        chartLine: Color(red: 0.85, green: 0.55, blue: 0.50),
+        chartArea: Color(red: 0.85, green: 0.55, blue: 0.50).opacity(0.12),
+        chartGrid: Color.white.opacity(0.10),
+        chartBarGradientStart: Color(red: 0.85, green: 0.55, blue: 0.50),
+        chartBarGradientEnd: Color(red: 0.60, green: 0.35, blue: 0.45),
+
+        badgePremiumStart: Color(red: 0.85, green: 0.55, blue: 0.50),
+        badgePremiumEnd: Color(red: 0.70, green: 0.45, blue: 0.55),
+
+        premiumCardBackground: .clear,
+        recentContentCardBackground: .clear,
+        postsCardBackground: .clear,
+        decisionCardBackground: .clear,
+
+        badgeTrial: Color(red: 0.85, green: 0.55, blue: 0.50),
         badgeLocked: Color.white.opacity(0.25),
-        // Buttons
-        buttonPrimaryBg: .pink,
-        buttonDestructiveBg: .red,
+
+        buttonPrimaryBg: Color(red: 0.85, green: 0.55, blue: 0.50),
+        buttonDestructiveBg: Color(red: 0.95, green: 0.40, blue: 0.30),
         buttonDisabledFg: Color.white.opacity(0.25),
-        // Divider
-        divider: .white.opacity(0.15),
-        // Navigation
-        navigationBg: Color(red: 0.02, green: 0.02, blue: 0.03),
-        // Empty State
-        emptyStateIcon: .white.opacity(0.45),
-        displayName: "Instagram Dark",
+
+        divider: Color.white.opacity(0.10),
+        navigationBg: Color(red: 0.02, green: 0.01, blue: 0.03),
+        emptyStateIcon: Color.white.opacity(0.40),
+
+        displayName: "Rose Noir",
         liquidGlassEnabled: true,
         isDark: true
     )
@@ -511,13 +529,63 @@ struct Theme: Sendable {
         liquidGlassEnabled: false,   // 纯色平铺（卡片 = 背景色）
         isDark: false
     )
+    // MARK: - Pure Black（纯黑背景 + 灰黑卡片 — 无任何额外风格）
+
+    /// 极简纯黑主题：纯黑背景 + 灰黑卡片，无渐变、无品牌色、无玻璃特效。
+    /// 强调/图表/徽章全部中性（白/灰）；绿红橙仅保留状态语义（授权/删除/警告）。
+    static let pureBlack = Theme(
+        // 背景：纯黑（无渐变 — 三色全黑）
+        backgroundGradientColors: [.black, .black, .black],
+        backgroundPrimary: .black,
+        backgroundSecondary: .black,
+        backgroundGrouped: .black,
+        backgroundGradientStart: .black,
+        backgroundGradientEnd: .black,
+        // 卡片：灰黑（比纯黑背景亮一档，形成区分度）
+        cardSurface: Color(UIColor.secondarySystemGroupedBackground),
+        cardElevated: Color(UIColor.secondarySystemGroupedBackground),
+        textPrimary: .white,
+        textSecondary: .white.opacity(0.65),
+        textTertiary: .white.opacity(0.45),
+        textInverted: .black,
+        // 强调：中性白/灰（无品牌色）
+        accentPrimary: .white,
+        accentSecondary: .gray,
+        // 语义色保留 — 状态含义必须可辨（授权绿 / 删除红 / 警告橙）
+        positiveGreen: .green,
+        negativeRed: .red,
+        warningOrange: .orange,
+        chartLine: .white,
+        chartArea: .white.opacity(0.12),
+        chartGrid: .gray.opacity(0.30),
+        chartBarGradientStart: .white,
+        chartBarGradientEnd: .gray,
+        badgePremiumStart: .white,
+        badgePremiumEnd: .gray,
+        // 卡片填充：灰黑纯色（Premium / Recent / Posts / 决策卡片同色 — 无品牌色分层）
+        premiumCardBackground: Color(UIColor.secondarySystemGroupedBackground),
+        recentContentCardBackground: Color(UIColor.secondarySystemGroupedBackground),
+        postsCardBackground: Color(UIColor.secondarySystemGroupedBackground),
+        decisionCardBackground: Color(UIColor.secondarySystemGroupedBackground),
+        badgeTrial: .white,
+        badgeLocked: .gray.opacity(0.40),
+        buttonPrimaryBg: .white,
+        buttonDestructiveBg: .red,
+        buttonDisabledFg: .gray.opacity(0.40),
+        divider: .gray.opacity(0.25),
+        navigationBg: .black,
+        emptyStateIcon: .gray.opacity(0.5),
+        displayName: "Pure Black",
+        liquidGlassEnabled: false,   // 纯色平铺 — 无毛玻璃，仅黑底 + 灰黑卡片
+        isDark: true
+    )
 }
 
 // MARK: - AppTheme
 
-/// 主题枚举 — 8 套可选主题，提供 theme / displayName 计算属性
+/// 主题枚举 — 9 套可选主题，提供 theme / displayName 计算属性
 enum AppTheme: String, CaseIterable {
-    case appleNative, instagram, appleDark, forest, monoStone, purple, instagramDark, cream
+    case appleNative, instagram, appleDark, forest, monoStone, purple, instagramDark, cream, pureBlack
 
     /// 将枚举值映射到对应的 Theme 实例
     var theme: Theme {
@@ -530,6 +598,7 @@ enum AppTheme: String, CaseIterable {
         case .purple:      .purple
         case .instagramDark: .instagramDark
         case .cream:         .cream
+        case .pureBlack:     .pureBlack
         }
     }
 
@@ -544,6 +613,7 @@ enum AppTheme: String, CaseIterable {
         case .purple:      loc(L10n.Settings.purple)
         case .instagramDark: loc(L10n.Settings.instagramDark)
         case .cream:         loc(L10n.Settings.cream)
+        case .pureBlack:     loc(L10n.Settings.pureBlack)
         }
     }
 }

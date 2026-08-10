@@ -20,7 +20,7 @@ struct DashboardView: View {
     @Bindable var viewModel: DashboardViewModel
     @Bindable var settingsViewModel: SettingsViewModel
     @Environment(\.theme) private var theme
-    @State private var showProfileSheet = false
+    @State private var showSettingsSheet = false
 
     var body: some View {
         NavigationStack {
@@ -116,32 +116,42 @@ struct DashboardView: View {
             }
             .navigationTitle(loc(L10n.Dashboard.title))
             .navigationBarTitleDisplayMode(.inline)
-            // 头像按钮置于 toolbar trailing — 与「仪表盘」标题同一水平线
+            // 设置按钮置于 toolbar trailing — 与「仪表盘」标题同一水平线
             // （纯简单视图：无 Spacer/Menu/sheet，避免 toolbar 布局 bug）
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    AccountBar { showProfileSheet = true }
-                        .frame(width: 32, height: 32)
+                    Button { showSettingsSheet = true } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(theme.textSecondary)
+                            .frame(width: 32, height: 32)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityIdentifier("dashboard_settings_button")
                 }
             }
             // 下拉刷新 = 增量同步（60 秒节流防 Instagram 配额耗尽）；
             // 账号列表由 .task 与 accountCreated 通知维护，不在此刷新
             .refreshable { await viewModel.incrementalSync() }
         }
-        // 个人资料弹窗由 Dashboard 根层级呈现（不挂 toolbar 内视图）
-        .sheet(isPresented: $showProfileSheet) {
-            AccountProfileSheet(
-                accounts: viewModel.accounts,
-                selectedAccountId: viewModel.selectedAccountId,
-                settingsViewModel: settingsViewModel,
-                onSelect: { id in viewModel.selectAccount(id) }
-            )
+        // 设置页由 Dashboard 根层级呈现（不挂 toolbar 内视图）
+        .sheet(isPresented: $showSettingsSheet) {
+            NavigationStack {
+                SettingsView(viewModel: settingsViewModel)
+            }
             // sheet presentation root：显式同步系统模式（sheet 不继承父层 colorScheme）
             .preferredColorScheme(appState.currentTheme.theme.isDark ? .dark : .light)
         }
         .task { await viewModel.loadAccounts() }
         .onChange(of: viewModel.selectedAccountId) { _, newId in
             appState.selectedAccountId = newId
+        }
+        // Profile tab 切换账号（直接写 appState.selectedAccountId）→ 仪表盘数据联动刷新。
+        // 幂等保护：Dashboard 自身切换时 VM 已同步，newId == viewModel.selectedAccountId 跳过
+        .onChange(of: appState.selectedAccountId) { _, newId in
+            if let newId, newId != viewModel.selectedAccountId {
+                viewModel.selectAccount(newId)
+            }
         }
         // syncState 由状态变化驱动（替代原 body 内无条件写入 — @Observable setter 无值比较，
         // 每次 body 求值都写会通知订阅者引起无谓重绘链）；值保护：相同状态不写

@@ -2,7 +2,7 @@
 //  ThemeTests.swift
 //  FollowerTests
 //
-//  Lambda-2: 6 主题测试 — isDark / gradient / liquidGlass。
+//  Lambda-2: 9 主题测试 — isDark / gradient / liquidGlass。
 //
 
 import Testing
@@ -11,9 +11,9 @@ import Testing
 /// Unit tests for Theme system — covers color tokens, dark mode, liquid glass, and AppTheme mapping
 struct ThemeTests {
 
-    static let allThemes: [Theme] = [.appleNative, .instagram, .appleDark, .forest, .monoStone, .purple, .instagramDark, .cream]
+    static let allThemes: [Theme] = [.appleNative, .instagram, .appleDark, .forest, .monoStone, .purple, .instagramDark, .cream, .pureBlack]
 
-    /// 遍历所有 6 个主题 → 每个颜色 token 和 displayName 均非空
+    /// 遍历所有 9 个主题 → 每个颜色 token 和 displayName 均非空
     @Test func testAllColorTokensNonNil() {
         for t in Self.allThemes {
             _ = t.backgroundGradientStart
@@ -42,27 +42,29 @@ struct ThemeTests {
         }
     }
 
-    /// 检查 isDark 属性 → 仅 appleDark 为 true，其余为 false
+    /// 检查 isDark 属性 → 深色主题（appleDark / pureBlack）为 true，浅色为 false
     @Test func testIsDarkCorrect() {
         #expect(!Theme.appleNative.isDark)
         #expect(!Theme.instagram.isDark)
         #expect(Theme.appleDark.isDark)
         #expect(!Theme.forest.isDark)
         #expect(!Theme.monoStone.isDark)
+        #expect(Theme.pureBlack.isDark)
     }
 
-    /// 检查 liquidGlassEnabled → 仅 monoStone 为 false，其余为 true
+    /// 检查 liquidGlassEnabled → 平铺主题（monoStone / pureBlack）为 false，其余为 true
     @Test func testLiquidGlassEnablement() {
         #expect(Theme.appleNative.liquidGlassEnabled)
         #expect(Theme.instagram.liquidGlassEnabled)
         #expect(Theme.appleDark.liquidGlassEnabled)
         #expect(Theme.forest.liquidGlassEnabled)
         #expect(!Theme.monoStone.liquidGlassEnabled)
+        #expect(!Theme.pureBlack.liquidGlassEnabled)
     }
 
-    /// AppTheme 枚举计数 → allCases.count == 8
+    /// AppTheme 枚举计数 → allCases.count == 9
     @Test func testAppThemeCount() {
-        #expect(AppTheme.allCases.count == 8)
+        #expect(AppTheme.allCases.count == 9)
     }
 
     /// 每个 AppTheme 映射到 Theme → displayName 均非空

@@ -38,6 +38,7 @@ enum L10n {
         static let trends = "tab.trends"
         static let settings = "tab.settings"
         static let my = "tab.my"
+        static let profile = "tab.profile"
     }
     
     // MARK: Dashboard
@@ -119,6 +120,7 @@ enum L10n {
         static let purple = "settings.purple"
         static let instagramDark = "settings.instagramDark"
         static let cream = "settings.cream"
+        static let pureBlack = "settings.pureBlack"
         static let dataExport = "settings.dataExport"
         static let format = "settings.format"
         static let exportData = "settings.exportData"

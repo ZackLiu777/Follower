@@ -34,16 +34,20 @@ enum ThemeSyncPhase: Equatable, Sendable {
 final class AppState {
     let databaseManager: DatabaseManager
     let container: DIContainer
+    /// 主题偏好持久化 — 启动加载 + 切换保存（退出重进保持上次主题）
+    private let themeStore = ThemePreferenceStore()
 
     // MARK: - Published
 
     /// 当前主题 — didSet 触发状态机转移：transitioning → 广播 themeChanged → synced
-     var currentTheme: AppTheme = .instagram {
+     var currentTheme: AppTheme = .appleDark {
         didSet {
             #if DEBUG
             print("[ThemeDebug] currentTheme changed: \(oldValue.rawValue) → \(currentTheme.rawValue)")
             #endif
             guard oldValue != currentTheme else { return }
+            // 持久化 — 退出重进保持上次选择
+            themeStore.saveTheme(currentTheme)
             // 状态机转移：进入切换中
             themeSyncPhase = .transitioning
             // 广播给所有注入点（sheet 内容等无法靠 environment 传播的视图）
@@ -89,10 +93,13 @@ final class AppState {
         }
     }
 
-    /// 初始化：创建 DI 容器、监听 Premium 解锁通知、首次加载标志位
+    /// 初始化：创建 DI 容器、从存储恢复主题、监听 Premium 解锁通知、首次加载标志位
     init(databaseManager: DatabaseManager) {
         self.databaseManager = databaseManager
         self.container = DIContainer(databaseManager: databaseManager)
+        // 从存储恢复上次主题 — init 中赋值不触发 didSet，首次启动不误写存储
+        currentTheme = themeStore.loadTheme(fallback: .appleDark)
+        lightThemePreference = themeStore.loadLightTheme(fallback: .instagram)
         // 监听 Premium 解锁通知，刷新标志位
         NotificationCenter.default.addObserver(forName: .premiumUnlocked, object: nil, queue: .main) { [weak self] _ in
             self?.refreshPremiumFlags()
@@ -107,10 +114,12 @@ final class AppState {
         currentLanguage = language
     }
 
-    /// 记录浅色主题偏好 — 主题选择器选择浅色主题时调用，「深色模式」开关关闭时恢复
+    /// 记录浅色主题偏好 — 主题选择器选择浅色主题时调用，「深色模式」开关关闭时恢复。
+    /// 持久化：重启后深色模式开关的恢复目标保持上次选择
     func rememberLightTheme(_ theme: AppTheme) {
         if !theme.theme.isDark {
             lightThemePreference = theme
+            themeStore.saveLightTheme(theme)
         }
     }
 }

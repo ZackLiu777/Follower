@@ -56,7 +56,8 @@ struct FollowerGlassModifier: ViewModifier {
                         )
                     )
             )
-            // 3. 边缘白线（实线层，无 blur）— 仅深色主题显示；浅色主题取消
+            // 3. 边缘白线（实线层，无 blur）— 仅深色主题显示；浅色主题取消。
+            //    底部白线淡化至 0.09（柔和微光，不再突兀）
             .overlay {
                 if theme.isDark {
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -66,7 +67,7 @@ struct FollowerGlassModifier: ViewModifier {
                                     .init(color: Color.white.opacity(0.25), location: 0.0),
                                     .init(color: Color.white.opacity(0.02), location: 0.18),
                                     .init(color: Color.white.opacity(0.02), location: 0.82),
-                                    .init(color: Color.white.opacity(0.25), location: 1.0)
+                                    .init(color: Color.white.opacity(0.09), location: 1.0)
                                 ],
                                 startPoint: .top,
                                 endPoint: .bottom
@@ -117,7 +118,7 @@ struct LiquidGlassCardBackground: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.09),
+                            Color.white.opacity(0.15),
                             Color.white.opacity(0.01)
                         ],
                         startPoint: .top,
@@ -125,7 +126,8 @@ struct LiquidGlassCardBackground: View {
                     )
                 )
         }
-        // 边缘白线（实线层，无 blur 光晕 — 性能：去每帧 blur 重渲）— 仅深色主题
+        // 边缘白线（实线层，无 blur 光晕 — 性能：去每帧 blur 重渲）— 仅深色主题。
+        // 底部白线淡化至 0.09（与 FollowerGlassModifier 一致）
         .overlay {
             if theme.isDark {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -135,7 +137,7 @@ struct LiquidGlassCardBackground: View {
                                 .init(color: Color.white.opacity(0.55), location: 0.0),
                                 .init(color: Color.white.opacity(0.02), location: 0.18),
                                 .init(color: Color.white.opacity(0.02), location: 0.82),
-                                .init(color: Color.white.opacity(0.28), location: 1.0)
+                                .init(color: Color.white.opacity(0.15), location: 1.0)
                             ],
                             startPoint: .top,
                             endPoint: .bottom
