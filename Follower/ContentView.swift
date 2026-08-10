@@ -88,6 +88,13 @@ private struct ContentViewInner: View {
                         systemImage: selectedTab == 2 ? "sparkle.magnifyingglass" : "magnifyingglass")
                 }
                 .tag(2).accessibilityIdentifier("tab_decisions")
+            // 个人 Profile Tab — 个人资料 + 账号管理（复用 SettingsViewModel 数据源）
+            ProfileView(settingsViewModel: settingsVM)
+                .tabItem {
+                    Label(loc(L10n.Tab.profile),
+                        systemImage: selectedTab == 3 ? "person.crop.circle.fill" : "person.crop.circle")
+                }
+                .tag(3).accessibilityIdentifier("tab_profile")
         }
         // 主题同步状态机：实时注入 theme + tint（含 themeChanged 通知强制重绘）
         .themeSynced()

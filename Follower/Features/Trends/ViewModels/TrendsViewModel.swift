@@ -45,6 +45,11 @@ final class TrendsViewModel {
      var isLoading: Bool = false
      var errorMessage: String?
 
+    /// 同步完成通知监听器（Dashboard 同步后刷新趋势数据）。
+    /// nonisolated(unsafe)：deinit 为 nonisolated 上下文，observer 只是引用句柄，
+    /// 跨隔离访问安全（注册/移除均在 init/deinit 内各一次）
+    nonisolated(unsafe) private var syncObserver: NSObjectProtocol?
+
     // ── 年份维度（详情页 year 模式）──
     /// 当前选中年份（详情页 year 窗口切换）
      var selectedYear: Int = Calendar.current.component(.year, from: Date())
@@ -79,6 +84,26 @@ final class TrendsViewModel {
         self.metricRepo = metricRepo
         self.accountRepo = accountRepo
         self.eventRepo = eventRepo
+        // v0.15：监听同步完成通知 — Dashboard 同步后重新加载趋势数据。
+        // TabView 中 VM 存活，仅靠 View 的 .task 首次加载会错过同步后的新观测，
+        // 日窗口会一直显示同步前的空态（"No trend data yet"）。
+        syncObserver = NotificationCenter.default.addObserver(
+            forName: .syncCompleted, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in await self?.reloadAfterSync() }
+        }
+    }
+
+    deinit {
+        if let syncObserver {
+            NotificationCenter.default.removeObserver(syncObserver)
+        }
+    }
+
+    /// 同步完成后刷新当前账号趋势数据（幂等：无选中账号或数据未变时无害重载）
+    private func reloadAfterSync() async {
+        guard let accountId = selectedAccountId else { return }
+        await loadTrends(accountId: accountId)
     }
 
     /// 页面首次加载 — 获取首个账号 ID（供 fallback），实际数据由 View 层传入

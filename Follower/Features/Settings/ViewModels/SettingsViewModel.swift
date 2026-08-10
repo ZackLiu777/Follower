@@ -32,7 +32,7 @@ final class SettingsViewModel {
 
      var isTrialActive: Bool = false
      var trialRemainingTime: String = ""
-     var currentTheme: AppTheme = .instagramDark
+     var currentTheme: AppTheme = .appleDark
      var selectedAccountId: Int64?
      var accounts: [Account] = []
 

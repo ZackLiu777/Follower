@@ -375,8 +375,8 @@ private struct TimelineCardRow: View {
             .padding(.leading, 42)
         }
         .padding(16)
-        // Liquid Glass 玻璃卡片（与 Dashboard 相同实现/参数）
-        .followerGlassEffect(cornerRadius: 8)
+        // Liquid Glass 玻璃卡片 — fill 用主题 decisionCardBackground（品牌色低透明档）
+        .followerGlassEffect(cornerRadius: 8, usesMaterial: false, fill: theme.decisionCardBackground)
     }
 
     // MARK: Helpers

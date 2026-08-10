@@ -33,7 +33,7 @@ struct FollowerApp: App {
                     .task { await appState.container.trialManager.startTrialIfNeeded() }
 
                 if showSplash && !skipSplash {
-                    SplashView {
+                    SplashView(theme: appState.currentTheme.theme) {
                         withAnimation(.easeOut(duration: 0.6)) {
                             showSplash = false
                         }

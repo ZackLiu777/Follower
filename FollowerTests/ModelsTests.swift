@@ -175,10 +175,10 @@ struct ModelsTests {
         #expect(AppLanguage.allCases.contains(.japanese))
     }
 
-    /// AppTheme allCases → 共 8 种主题，包含 appleDark
+    /// AppTheme allCases → 共 9 种主题，包含 appleDark
     @Test
     func testAppThemeAllCases() {
-        #expect(AppTheme.allCases.count == 8)
+        #expect(AppTheme.allCases.count == 9)
         #expect(AppTheme.allCases.contains(.appleDark))
     }
 

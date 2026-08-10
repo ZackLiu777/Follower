@@ -20,7 +20,7 @@ struct DashboardView: View {
     @Bindable var viewModel: DashboardViewModel
     @Bindable var settingsViewModel: SettingsViewModel
     @Environment(\.theme) private var theme
-    @State private var showProfileSheet = false
+    @State private var showSettingsSheet = false
 
     var body: some View {
         NavigationStack {
@@ -116,32 +116,42 @@ struct DashboardView: View {
             }
             .navigationTitle(loc(L10n.Dashboard.title))
             .navigationBarTitleDisplayMode(.inline)
-            // 头像按钮置于 toolbar trailing — 与「仪表盘」标题同一水平线
+            // 设置按钮置于 toolbar trailing — 与「仪表盘」标题同一水平线
             // （纯简单视图：无 Spacer/Menu/sheet，避免 toolbar 布局 bug）
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    AccountBar { showProfileSheet = true }
-                        .frame(width: 32, height: 32)
+                    Button { showSettingsSheet = true } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(theme.textSecondary)
+                            .frame(width: 32, height: 32)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityIdentifier("dashboard_settings_button")
                 }
             }
             // 下拉刷新 = 增量同步（60 秒节流防 Instagram 配额耗尽）；
             // 账号列表由 .task 与 accountCreated 通知维护，不在此刷新
             .refreshable { await viewModel.incrementalSync() }
         }
-        // 个人资料弹窗由 Dashboard 根层级呈现（不挂 toolbar 内视图）
-        .sheet(isPresented: $showProfileSheet) {
-            AccountProfileSheet(
-                accounts: viewModel.accounts,
-                selectedAccountId: viewModel.selectedAccountId,
-                settingsViewModel: settingsViewModel,
-                onSelect: { id in viewModel.selectAccount(id) }
-            )
+        // 设置页由 Dashboard 根层级呈现（不挂 toolbar 内视图）
+        .sheet(isPresented: $showSettingsSheet) {
+            NavigationStack {
+                SettingsView(viewModel: settingsViewModel)
+            }
             // sheet presentation root：显式同步系统模式（sheet 不继承父层 colorScheme）
             .preferredColorScheme(appState.currentTheme.theme.isDark ? .dark : .light)
         }
         .task { await viewModel.loadAccounts() }
         .onChange(of: viewModel.selectedAccountId) { _, newId in
             appState.selectedAccountId = newId
+        }
+        // Profile tab 切换账号（直接写 appState.selectedAccountId）→ 仪表盘数据联动刷新。
+        // 幂等保护：Dashboard 自身切换时 VM 已同步，newId == viewModel.selectedAccountId 跳过
+        .onChange(of: appState.selectedAccountId) { _, newId in
+            if let newId, newId != viewModel.selectedAccountId {
+                viewModel.selectAccount(newId)
+            }
         }
         // syncState 由状态变化驱动（替代原 body 内无条件写入 — @Observable setter 无值比较，
         // 每次 body 求值都写会通知订阅者引起无谓重绘链）；值保护：相同状态不写
@@ -260,7 +270,8 @@ private struct KeyMetricsSection: View {
             }
         }
         .padding(16)
-        .dashboardCard()
+        // fill：主题 postsCardBackground（品牌色低透明档，同 Recent Content 档位）
+        .dashboardCard(fill: theme.postsCardBackground)
     }
 
     /// 平均赞/帖（媒体数为 0 时返回 0）
@@ -367,7 +378,8 @@ private struct RecentPostsSection: View {
                 }
             }
         }
-        .dashboardCard()
+        // fill：主题 recentContentCardBackground（品牌色低透明档）
+        .dashboardCard(fill: theme.recentContentCardBackground)
     }
 }
 
@@ -393,65 +405,39 @@ private struct PremiumInsightsSection: View {
     private var allPremiumItems: [PremiumTileItem] {
         if isUnlocked {
             return [
-                .init(icon: "chart.line.uptrend.xyaxis.circle", label: loc(L10n.Premium.followerPrediction),
-                      value: viewModel.predictionResult.map {
-                          "~\(Int($0.predictedValue).formatted(.number)) \(loc(L10n.Premium.in30Days))"
-                      } ?? loc(L10n.Premium.analyzing), locked: false),
-                .init(icon: "bolt.fill", label: loc(L10n.Premium.activityAnalysis),
-                      value: viewModel.activityResult.map {
-                          "\($0.label) · \($0.activeDays)/\($0.totalDays) \(loc(L10n.Premium.daysActive))"
-                      } ?? loc(L10n.Premium.analyzing), locked: false),
-                .init(icon: "star.fill", label: loc(L10n.Premium.engagementQuality),
-                      value: viewModel.qualityScore.map {
-                          "Score: \(String(format: "%.1f", $0.score)) — \($0.label)"
-                      } ?? loc(L10n.Premium.analyzing), locked: false),
-                .init(icon: "person.2.fill", label: loc(L10n.Premium.retentionChurn),
-                      value: viewModel.retentionResult.map {
-                          "Growth: \(String(format: "%+.1f%%", $0.netGrowthRate)) · Risk: \($0.churnRiskLevel)"
-                      } ?? loc(L10n.Premium.analyzing), locked: false),
-                .init(icon: "arrow.left.arrow.right", label: loc(L10n.Premium.longTermComparison),
-                      value: viewModel.comparisonResult.map {
-                          "\($0.direction.rawValue) · \(String(format: "%+.2f", $0.absoluteChange))"
-                      } ?? loc(L10n.Premium.analyzing), locked: false),
-                .init(icon: "person.2.slash", label: loc(L10n.Premium.whoUnfollowedYou),
-                      value: "\(viewModel.unfollowList.count) \(loc(L10n.Premium.peopleThisWeek))", locked: false),
-                .init(icon: "clock.fill", label: loc(L10n.Premium.bestTimeToPost),
-                      value: viewModel.activityResult?.mostActiveDay != nil
-                          ? "\(loc(L10n.Premium.mostActiveDay)) \(viewModel.activityResult!.mostActiveDay!)"
-                          : viewModel.bestPostingTime, locked: false),
-                .init(icon: "lightbulb.fill", label: loc(L10n.Premium.contentStrategy),
-                      value: viewModel.aiSummary.isEmpty ? viewModel.contentTip : viewModel.aiSummary, locked: false),
+                .init(icon: "chart.line.uptrend.xyaxis.circle", label: loc(L10n.Premium.followerPrediction), locked: false),
+                .init(icon: "bolt.fill", label: loc(L10n.Premium.activityAnalysis), locked: false),
+                .init(icon: "star.fill", label: loc(L10n.Premium.engagementQuality), locked: false),
+                .init(icon: "person.2.fill", label: loc(L10n.Premium.retentionChurn), locked: false),
+                .init(icon: "arrow.left.arrow.right", label: loc(L10n.Premium.longTermComparison), locked: false),
+                .init(icon: "person.2.slash", label: loc(L10n.Premium.whoUnfollowedYou), locked: false),
+                .init(icon: "clock.fill", label: loc(L10n.Premium.bestTimeToPost), locked: false),
+                .init(icon: "lightbulb.fill", label: loc(L10n.Premium.contentStrategy), locked: false),
                 // Phi: 三大人群画像 Premium 功能
-                .init(icon: "chart.bar.fill", label: loc(L10n.Premium.competitorComparison),
-                      value: viewModel.comparisonResult.map { "\($0.direction.rawValue) · \(String(format: "%+.0f", $0.absoluteChange))" } ?? loc(L10n.Premium.analyzing), locked: false),
-                .init(icon: "checkmark.shield.fill", label: loc(L10n.Premium.authenticityAssessment),
-                      value: viewModel.authenticityResult.map { "Score: \(Int($0.score))/100 · \($0.growthPattern)" } ?? loc(L10n.Premium.analyzing), locked: false),
-                .init(icon: "doc.richtext.fill", label: loc(L10n.Premium.mediaKitExport),
-                      value: "3 templates · PDF export", locked: false),
-                .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking),
-                      value: viewModel.campaignResult.map { String(format: "%+.1f%% growth", $0.followerGrowthRate) } ?? loc(L10n.Premium.analyzing), locked: false),
-                .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap),
-                      value: viewModel.heatmapResult.map { "Peak: \($0.peakDescription)" } ?? loc(L10n.Premium.analyzing), locked: false),
-                .init(icon: "calendar.badge.plus", label: loc(L10n.Premium.contentScheduling),
-                      value: viewModel.activityResult.map { "\($0.activeDays)/\($0.totalDays) \(loc(L10n.Premium.daysActive))" } ?? loc(L10n.Premium.analyzing), locked: false),
+                .init(icon: "chart.bar.fill", label: loc(L10n.Premium.competitorComparison), locked: false),
+                .init(icon: "checkmark.shield.fill", label: loc(L10n.Premium.authenticityAssessment), locked: false),
+                .init(icon: "doc.richtext.fill", label: loc(L10n.Premium.mediaKitExport), locked: false),
+                .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking), locked: false),
+                .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap), locked: false),
+                .init(icon: "calendar.badge.plus", label: loc(L10n.Premium.contentScheduling), locked: false),
             ]
         } else {
             return [
-                .init(icon: "chart.line.uptrend.xy", label: loc(L10n.Premium.followerPrediction), value: "", locked: true),
-                .init(icon: "bolt.fill", label: loc(L10n.Premium.activityAnalysis), value: "", locked: true),
-                .init(icon: "star.fill", label: loc(L10n.Premium.engagementQuality), value: "", locked: true),
-                .init(icon: "person.2.fill", label: loc(L10n.Premium.retentionChurn), value: "", locked: true),
-                .init(icon: "arrow.left.arrow.right", label: loc(L10n.Premium.longTermComparison), value: "", locked: true),
-                .init(icon: "person.2.slash", label: loc(L10n.Premium.whoUnfollowedYou), value: "", locked: true),
-                .init(icon: "clock.fill", label: loc(L10n.Premium.bestTimeToPost), value: "", locked: true),
-                .init(icon: "lightbulb.fill", label: loc(L10n.Premium.contentStrategy), value: "", locked: true),
+                .init(icon: "chart.line.uptrend.xy", label: loc(L10n.Premium.followerPrediction), locked: true),
+                .init(icon: "bolt.fill", label: loc(L10n.Premium.activityAnalysis), locked: true),
+                .init(icon: "star.fill", label: loc(L10n.Premium.engagementQuality), locked: true),
+                .init(icon: "person.2.fill", label: loc(L10n.Premium.retentionChurn), locked: true),
+                .init(icon: "arrow.left.arrow.right", label: loc(L10n.Premium.longTermComparison), locked: true),
+                .init(icon: "person.2.slash", label: loc(L10n.Premium.whoUnfollowedYou), locked: true),
+                .init(icon: "clock.fill", label: loc(L10n.Premium.bestTimeToPost), locked: true),
+                .init(icon: "lightbulb.fill", label: loc(L10n.Premium.contentStrategy), locked: true),
                 // Phi: 三大人群画像 Premium 功能
-                .init(icon: "chart.bar.fill", label: loc(L10n.Premium.competitorComparison), value: "", locked: true),
-                .init(icon: "checkmark.shield.fill", label: loc(L10n.Premium.authenticityAssessment), value: "", locked: true),
-                .init(icon: "doc.richtext.fill", label: loc(L10n.Premium.mediaKitExport), value: "", locked: true),
-                .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking), value: "", locked: true),
-                .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap), value: "", locked: true),
-                .init(icon: "calendar.badge.plus", label: loc(L10n.Premium.contentScheduling), value: "", locked: true),
+                .init(icon: "chart.bar.fill", label: loc(L10n.Premium.competitorComparison), locked: true),
+                .init(icon: "checkmark.shield.fill", label: loc(L10n.Premium.authenticityAssessment), locked: true),
+                .init(icon: "doc.richtext.fill", label: loc(L10n.Premium.mediaKitExport), locked: true),
+                .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking), locked: true),
+                .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap), locked: true),
+                .init(icon: "calendar.badge.plus", label: loc(L10n.Premium.contentScheduling), locked: true),
             ]
         }
     }
@@ -492,18 +478,19 @@ private struct PremiumInsightsSection: View {
             if item.locked {
                 lockedTile(icon: item.icon, label: item.label)
             } else {
-                unlockedTile(icon: item.icon, label: item.label, value: item.value, globalIndex: globalIndex)
+                unlockedTile(icon: item.icon, label: item.label, globalIndex: globalIndex)
             }
         }
     }
 
     /// 解锁态 Tile
     @ViewBuilder
-    private func unlockedTile(icon: String, label: String, value: String, globalIndex: Int) -> some View {
+    private func unlockedTile(icon: String, label: String, globalIndex: Int) -> some View {
         let destination = destinationFor(index: globalIndex)
         NavigationLink(destination: destination) {
-            // 统一居中布局：图标居中，文字与图标对齐（水平居中）
+            // 统一居中布局：图标与标题在卡片内水平 + 垂直居中（上下 Spacer 均分留白）
             VStack(spacing: 8) {
+                Spacer(minLength: 0)
                 Image(systemName: icon)
                     .font(.system(size: 16))
                     .foregroundColor(theme.accentPrimary)
@@ -518,13 +505,6 @@ private struct PremiumInsightsSection: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
 
-                Text(value.isEmpty ? "—" : value)
-                    .font(.system(size: 11))
-                    .foregroundColor(theme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity)
@@ -532,15 +512,17 @@ private struct PremiumInsightsSection: View {
             .frame(maxWidth: .infinity, minHeight: 110)
             // 静态填充版 glass：tile 是滚动路径数量最多的卡片（16 张），
             // material 每帧重采样是深色模式掉帧主因 — 用静态半透明填充替代
-            .followerGlassEffect(cornerRadius: 12, usesMaterial: false)
+            // fill：主题 premiumCardBackground（品牌色半透明）
+            .followerGlassEffect(cornerRadius: 12, usesMaterial: false, fill: theme.premiumCardBackground)
         }
         .buttonStyle(.plain)
     }
 
     /// 锁定态 Tile
     private func lockedTile(icon: String, label: String) -> some View {
-        // 统一居中布局：图标居中（与解锁态一致），lock 徽章覆盖右上角
+        // 统一居中布局：图标与标题水平 + 垂直居中（与解锁态一致），lock 徽章覆盖右上角
         VStack(spacing: 8) {
+            Spacer(minLength: 0)
             Image(systemName: icon)
                 .font(.system(size: 16))
                 .foregroundColor(theme.textTertiary)
@@ -555,11 +537,6 @@ private struct PremiumInsightsSection: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
 
-            Text("—")
-                .font(.system(size: 11))
-                .foregroundColor(theme.textTertiary.opacity(0.5))
-                .multilineTextAlignment(.center)
-
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
@@ -572,7 +549,8 @@ private struct PremiumInsightsSection: View {
                 .padding(8)
         }
         // 静态填充版 glass（同 unlockedTile — 滚动路径性能）
-        .followerGlassEffect(cornerRadius: 12, usesMaterial: false)
+        // fill：主题 premiumCardBackground（品牌色半透明）
+        .followerGlassEffect(cornerRadius: 12, usesMaterial: false, fill: theme.premiumCardBackground)
     }
 
     /// 根据全局 index 返回对应跳转页面
@@ -604,7 +582,6 @@ private struct PremiumInsightsSection: View {
 private struct PremiumTileItem {
     let icon: String
     let label: String
-    let value: String
     let locked: Bool
 }
 
