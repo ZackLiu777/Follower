@@ -39,28 +39,11 @@ final class DashboardUITests: XCTestCase {
         }
     }
 
-    // MARK: - Phi: TrendChart on Dashboard
+    // MARK: - Dashboard 内容区（v4 重构后结构：Recent Content → Posts → Premium Insights）
 
-    /// Dashboard 中应展示粉丝周线 TrendChart（标题 "Followers"）
-    func testDashboardShowsFollowerTrendChart() {
-        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
-        // 确保在 Dashboard Tab
-        let tabs = app.tabBars.buttons
-        guard tabs.count >= 1 else {
-            XCTFail("Expected at least 1 tab")
-            return
-        }
-        tabs.element(boundBy: 0).tap()
-        sleep(3)
-
-        // Dashboard 中应有 "Followers" 标题的 TrendChart
-        let followersTitle = app.staticTexts["Followers"]
-        let exists = followersTitle.waitForExistence(timeout: 10)
-        XCTAssertTrue(exists, "Dashboard should display 'Followers' TrendChart")
-    }
-
-    /// 点击 Dashboard 的 TrendChart 应跳转到详情页
-    func testDashboardTrendChartNavigatesToDetail() {
+    /// Dashboard 应展示核心内容区 — 最近内容 / 查看全部 / Premium Insights
+    /// （v4 起 Dashboard 不再内置 "Followers" TrendChart，图表移入 Trends Tab）
+    func testDashboardShowsCoreSections() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
         let tabs = app.tabBars.buttons
         guard tabs.count >= 1 else {
@@ -70,20 +53,51 @@ final class DashboardUITests: XCTestCase {
         tabs.element(boundBy: 0).tap()
         sleep(3)
 
-        // 点击 "Followers" 标题
-        let followersTitle = app.staticTexts["Followers"]
-        if followersTitle.waitForExistence(timeout: 10) {
-            followersTitle.tap()
-            sleep(2)
+        XCTAssertTrue(app.staticTexts["Recent Content"].waitForExistence(timeout: 10),
+                      "Dashboard should show Recent Content section")
+        XCTAssertTrue(app.staticTexts["View All"].exists,
+                      "View All entry should be in Recent Content header row")
 
-            // 应跳转到 TrendDetailView — 导航栏存在
-            let navBar = app.navigationBars.firstMatch
-            XCTAssertTrue(navBar.waitForExistence(timeout: 10), "Should navigate to TrendDetailView")
+        // Premium Insights 区在下方 — 滚动查找
+        let premiumHeader = app.staticTexts["Premium Insights"]
+        for _ in 0..<5 {
+            if premiumHeader.exists { break }
+            app.swipeUp()
+            sleep(1)
         }
+        XCTAssertTrue(premiumHeader.exists, "Dashboard should show Premium Insights section")
     }
 
-    /// Dashboard 账户切换 → AccountBar 存在且可交互
-    func testDashboardAccountBarExists() {
+    /// 点击 Dashboard 的 Premium 预测卡片应跳转到预测详情页
+    func testDashboardPremiumTileNavigatesToPredictionDetail() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
+        let tabs = app.tabBars.buttons
+        guard tabs.count >= 1 else {
+            XCTFail("Expected at least 1 tab")
+            return
+        }
+        tabs.element(boundBy: 0).tap()
+        sleep(3)
+
+        // 滚动到 Follower Prediction 卡片并点击
+        let predictionTile = app.staticTexts["Follower Prediction"]
+        for _ in 0..<6 {
+            if predictionTile.exists { break }
+            app.swipeUp()
+            sleep(1)
+        }
+        XCTAssertTrue(predictionTile.waitForExistence(timeout: 10),
+                      "Follower Prediction tile should exist on Dashboard")
+        predictionTile.tap()
+        sleep(2)
+
+        // 应跳转到 PredictionDetailView — 导航栏标题存在
+        XCTAssertTrue(app.navigationBars["Follower Prediction"].waitForExistence(timeout: 10),
+                      "Should navigate to PredictionDetailView")
+    }
+
+    /// Dashboard 工具栏应有设置按钮（齿轮，dashboard_settings_button — 位置在导航栏 trailing）
+    func testDashboardToolbarSettingsButton() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
         let tabs = app.tabBars.buttons
         guard tabs.count >= 1 else {
@@ -93,8 +107,12 @@ final class DashboardUITests: XCTestCase {
         tabs.element(boundBy: 0).tap()
         sleep(2)
 
-        // AccountBar 应显示用户名（如 @testuser）
-        let userLabel = app.staticTexts.firstMatch
-        XCTAssertTrue(userLabel.exists, "AccountBar should display some user info")
+        let gear = app.buttons["dashboard_settings_button"]
+        XCTAssertTrue(gear.waitForExistence(timeout: 10),
+                      "Settings gear button should exist in Dashboard toolbar")
+
+        // 位于导航栏区域（topBarTrailing）
+        XCTAssertTrue(app.navigationBars["Dashboard"].exists,
+                      "Dashboard nav bar should exist with the gear button in it")
     }
 }

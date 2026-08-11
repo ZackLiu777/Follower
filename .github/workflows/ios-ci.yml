@@ -59,6 +59,11 @@ jobs:
             -only-testing:FollowerTests/SimulationCalibrationTests \
             -only-testing:FollowerTests/TestHelpers \
             -only-testing:FollowerTests/DashboardAutoSyncTests \
+            -only-testing:FollowerTests/ActionCardTemplateTests \
+            -only-testing:FollowerTests/FeatureExtractorTests \
+            -only-testing:FollowerTests/PostAssistantServiceTests \
+            -only-testing:FollowerTests/PostQueueViewModelTests \
+            -only-testing:FollowerTests/PostQueueViewModelTests \
             -derivedDataPath /tmp/FollowerDD CODE_SIGNING_ALLOWED=NO
 
       - name: Run Flaky Tests (shared DB / @MainActor VM / UI timing — allowed to fail)
@@ -79,6 +84,9 @@ jobs:
             -only-testing:FollowerTests/MockInstagramAPIClientTests \
             -only-testing:FollowerTests/MediaKitTests \
             -only-testing:FollowerTests/MediaPostRepositoryTests \
+            -only-testing:FollowerTests/MockDraftPostRepository \
+            -only-testing:FollowerTests/SeededRandomTests \
+            -only-testing:FollowerTests/MockFollowerListGeneratorTests \
             -derivedDataPath /tmp/FollowerDD CODE_SIGNING_ALLOWED=NO || true
 
   ui-tests:
@@ -124,4 +132,6 @@ jobs:
             -only-testing:FollowerUITests/ThemeAndLanguageUITests \
             -only-testing:FollowerUITests/PremiumUITests \
             -only-testing:FollowerUITests/FollowerUITests \
+            -only-testing:FollowerUITests/PostsUITests \
+            -only-testing:FollowerUITests/PredictionChartUITests \
             -derivedDataPath /tmp/FollowerDD CODE_SIGNING_ALLOWED=NO || true

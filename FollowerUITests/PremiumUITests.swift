@@ -18,48 +18,43 @@ final class PremiumUITests: XCTestCase {
         app.launch()
     }
 
-    // MARK: - Unlock button in navigation bar
+    // MARK: - Unlock entry in Settings
 
-    /// Premium 解锁按钮 → 设置页导航栏应存在按钮
-    func testPremiumUnlockButtonExistsInToolbar() {
+    /// Premium 解锁入口 → 设置页应存在「Unlock All Premium」主开关
+    /// （v4 重构后从 Dashboard 工具栏齿轮按钮进入设置页，原
+    ///  account_avatar_button / profile_settings_link 标识已不存在）
+    func testPremiumUnlockEntryExistsInSettings() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
-        // Dashboard avatar → profile sheet → settings
-        let avatar = app.buttons["account_avatar_button"]
-        XCTAssertTrue(avatar.waitForExistence(timeout: 10), "Avatar button should exist on dashboard")
-        avatar.tap()
-        sleep(2)
-        let settingsLink = app.buttons["profile_settings_link"]
-        XCTAssertTrue(settingsLink.waitForExistence(timeout: 10), "Profile sheet settings link should exist")
-        settingsLink.tap()
+        // Dashboard 工具栏齿轮 → 设置页
+        let gear = app.buttons["dashboard_settings_button"]
+        XCTAssertTrue(gear.waitForExistence(timeout: 10), "Gear button should exist on dashboard")
+        gear.tap()
         sleep(3)
 
-        // Settings navigation bar should exist with back button
-        let navBar = app.navigationBars.firstMatch
-        XCTAssertTrue(navBar.waitForExistence(timeout: 10), "Navigation bar should exist")
-        let crownButton = navBar.buttons["crown.fill"]  // SF Symbol accessibility identifier
-        // Fallback: any navigation bar button (back)
-        let hasButton = crownButton.exists || navBar.buttons.count >= 1
-        XCTAssertTrue(hasButton, "Settings nav bar should have buttons")
+        // 设置页应显示 Premium 主开关（crown.fill）
+        let navBar = app.navigationBars["Settings"]
+        XCTAssertTrue(navBar.waitForExistence(timeout: 10), "Settings navigation bar should exist")
+        let masterToggle = app.staticTexts["Unlock All Premium"]
+        XCTAssertTrue(masterToggle.waitForExistence(timeout: 10),
+                      "Settings should show the Premium unlock master toggle")
     }
 
-    /// 解锁按钮 → 可点击且不崩溃
-    func testUnlockButtonIsTappable() {
+    /// 解锁开关 → 可点击且不崩溃
+    func testUnlockToggleIsTappable() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
-        let avatar = app.buttons["account_avatar_button"]
-        XCTAssertTrue(avatar.waitForExistence(timeout: 10))
-        avatar.tap()
-        sleep(2)
-        let settingsLink = app.buttons["profile_settings_link"]
-        if settingsLink.waitForExistence(timeout: 5) {
-            settingsLink.tap()
-            sleep(3)
-        }
+        let gear = app.buttons["dashboard_settings_button"]
+        XCTAssertTrue(gear.waitForExistence(timeout: 10))
+        gear.tap()
+        sleep(3)
 
-        // Tap first nav bar button if exists
-        let navBar = app.navigationBars.firstMatch
+        // 点击 Premium 主开关（switches.firstMatch — 页面首个开关）
+        let navBar = app.navigationBars["Settings"]
         if navBar.waitForExistence(timeout: 5) {
-            let btn = navBar.buttons.firstMatch
-            if btn.exists { btn.tap(); sleep(2) }
+            let toggle = app.switches.firstMatch
+            if toggle.exists {
+                toggle.tap()
+                sleep(2)
+            }
         }
         XCTAssertTrue(app.tabBars.firstMatch.exists)
     }
