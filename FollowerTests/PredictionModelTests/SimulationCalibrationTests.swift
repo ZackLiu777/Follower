@@ -32,10 +32,13 @@ struct SimulationCalibrationTests {
 
         for (index, trial) in Self.trials.enumerated() {
             // 每组固定派生 seed → 完全确定性
+            // 系数取小值（momentum/accel 为原始量纲特征 ≈ 日均增长 10~30）：
+            // 0.05·20 ≈ 1 → μ ≈ 27；系数过大（0.35·20 = 7）→ 正反馈超指数爆炸
+            // （特征数千 → Hessian ~1e9 → 数值共线 → fit nil）
             var rng = TestRNG(seed: UInt64(1_000 + index * 37))
             let points = makeSyntheticGrowthPoints(
                 rng: &rng, count: 230, startFollowers: trial.start,
-                beta: [log(10), 0.35, 0.05, 0.0, 0.0], phi: trial.phi
+                beta: [log(10), 0.05, 0.005, 0.0, 0.0], phi: trial.phi
             )
 
             // 训练：前 200 点；真实未来：后 30 点的累计增长（生成过程 y ≥ 0）

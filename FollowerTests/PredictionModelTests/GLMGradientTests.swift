@@ -262,7 +262,9 @@ struct GLMGradientTests {
         for k in 1..<5 {
             #expect(abs(H[k, k] + 1) < 1e-10, "β\(k) 先验曲率应为 −1")
         }
-        #expect(abs(H[5, 5] + 0.1 * 10.0) < 1e-10)  // −rate·φ = −1
+        // −rate·φ = −1；logφ 维用中心差分（h=1e-4），FD 噪声 h²·f'''/6 ≈ 1.7e-9，
+        // 容差取 1e-8（其余条目为线性/常数 → 差分精确，仍可用 1e-10）
+        #expect(abs(H[5, 5] + 0.1 * 10.0) < 1e-8)
         // 非对角全 0（先验无交叉项）
         #expect(abs(H[1, 2]) < 1e-10 && abs(H[3, 5]) < 1e-10)
     }

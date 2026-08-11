@@ -46,7 +46,9 @@ struct PredictionServiceTests {
         #expect(abs(r.predictionDate.timeIntervalSince(expectedDate)) < 1)
     }
 
-    /// 恒定粉丝数 → 增长预测接近 0（模型应学出 μ ≈ 0）
+    /// 恒定粉丝数（全部 target = 0）→ 无增长信号：对数后验只有上确界
+    /// （β0 → −∞ 且永不收敛），fit 返回 nil → predictLinear 返回 nil。
+    /// 产品行为：无信号 → 不提供预测，调用方走"显示当前粉丝数"兜底。
     @MainActor
     @Test
     func testFlatDataPredictsNearZero() async {
@@ -55,8 +57,7 @@ struct PredictionServiceTests {
             (Date(timeIntervalSince1970: 1_700_000_000 + Double(i) * 86_400), 5_000.0)
         }
         let result = await service.predictLinear(dataPoints: data, daysAhead: 30)
-        #expect(result != nil)
-        #expect(result!.predictedValue < 100)  // 30 天累计应接近 0
+        #expect(result == nil)
     }
 
     /// 数据点 < 3 → nil（保留原行为）

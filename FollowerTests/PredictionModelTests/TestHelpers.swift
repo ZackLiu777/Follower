@@ -57,7 +57,11 @@ func makeSyntheticGrowthPoints(
                 levels[t] - levels[t - 1],
             ]
         }
-        let mu = exp(beta[0] + dot(beta, features))
+        // 注意：dot 已含截距 beta[0]（与模型 log μ = β·x̃ 一致）。
+        // 历史 bug：此处曾写 exp(beta[0] + dot(...)) —— 截距被双加 → 合成数据
+        // 的 μ 放大 e^β0 倍（特征上百/上千 → 平滑增长期近共线 → 牛顿迭代 0
+        // 步 A=−H 数值不定 → fit nil，LaplaceTests/SimCal 全部失败）。
+        let mu = exp(dot(beta, features))
         let y = sampleNegBinomial(mu: mu, phi: phi, using: &rng)
         levels.append(levels[t] + Double(y))
     }

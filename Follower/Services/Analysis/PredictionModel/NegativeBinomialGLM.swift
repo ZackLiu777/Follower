@@ -111,10 +111,11 @@ enum NegativeBinomialGLM {
 
     // MARK: - Internal 纯函数（单元测试直接覆盖，@testable import）
 
-    /// 点积（x 前插截距 1）
+    /// 点积（x 前插截距 1）。
+    /// 防御：x 维度不足（如空特征 = 仅截距项）时只累加可用维度，不越界崩溃。
     static func dot(_ beta: [Double], augmented x: [Double]) -> Double {
         var sum = beta[0]
-        for k in 0..<(beta.count - 1) {
+        for k in 0..<min(beta.count - 1, x.count) {
             sum += beta[k + 1] * x[k]
         }
         return sum

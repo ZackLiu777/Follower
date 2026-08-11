@@ -13,12 +13,15 @@ import Foundation
 
 struct LaplaceTests {
 
-    /// 真值参数：截距 log(8)，momentum 系数 0.5，其余 0；φ=10
+    /// 真值参数：截距 log(8)，momentum 系数 0.05，其余 0；φ=10
+    /// 注意：momentum/accel/lag 为原始量纲特征（≈ 日均增长 10~20），
+    /// 系数必须小（0.05·14 ≈ 0.7 → μ ≈ 16）；0.5·14 = 7 → μ = 8·e⁷ 正反馈
+    /// 超指数爆炸（特征数千 → Hessian ~1e9 → 数值共线 → fit nil）。
     private func makeData(count: Int, seed: UInt64) -> [GrowthPoint] {
         var rng = TestRNG(seed: seed)
         return makeSyntheticGrowthPoints(
             rng: &rng, count: count, startFollowers: 10_000,
-            beta: [log(8), 0.5, 0.0, 0.0, 0.0], phi: 10
+            beta: [log(8), 0.05, 0.0, 0.0, 0.0], phi: 10
         )
     }
 
@@ -49,8 +52,8 @@ struct LaplaceTests {
 
         // β0 截距 ≈ log(8) = 2.079（容差放宽）
         #expect(abs(posterior.mean[0] - log(8)) < 1.0)
-        // β1 (momentum) ≈ 0.5
-        #expect(abs(posterior.mean[1] - 0.5) < 0.3)
+        // β1 (momentum) ≈ 0.05
+        #expect(abs(posterior.mean[1] - 0.05) < 0.3)
         // 零系数特征被正则先验拉向 0
         for k in 2..<5 {
             #expect(abs(posterior.mean[k]) < 0.5)

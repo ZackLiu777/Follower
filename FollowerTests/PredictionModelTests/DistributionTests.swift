@@ -35,13 +35,14 @@ struct DistributionTests {
         }
     }
 
-    /// 极小正参数：logΓ(x) ≈ −log(x) − γ（γ 为欧拉常数；x → 0+ 首阶展开）
+    /// 极小正参数：logΓ(x) ≈ −log(x) − γ·x（γ 为欧拉常数；x → 0+ 首阶展开，
+    /// 误差 O(x²) ≈ 1e-12）
     @Test
     func testLogGammaTinyPositive() {
         let eulerGamma = 0.5772156649015329
         let x = 1e-6
-        let approx = -log(x) - eulerGamma
-        #expect(abs(logGamma(x) - approx) < 1e-3)
+        let approx = -log(x) - eulerGamma * x
+        #expect(abs(logGamma(x) - approx) < 1e-6)
         #expect(logGamma(x).isFinite)
     }
 
@@ -67,12 +68,13 @@ struct DistributionTests {
         }
     }
 
-    /// 大参数渐近：ψ(x) ≈ log(x) − 1/(2x)（x = 100、1000）
+    /// 大参数渐近：ψ(x) ≈ log(x) − 1/(2x) − 1/(12x²)（x = 100、1000；
+    /// 实现为 5 项级数，截断误差 1/(120x⁴) << 容差）
     @Test
     func testDigammaLargeArgument() {
         for x in [100.0, 1000.0] {
-            let approx = log(x) - 0.5 / x
-            #expect(abs(digamma(x) - approx) < 1e-8 * log(x), "x=\(x)")
+            let approx = log(x) - 0.5 / x - 1.0 / (12 * x * x)
+            #expect(abs(digamma(x) - approx) < 1e-8, "x=\(x)")
         }
     }
 
@@ -105,9 +107,10 @@ struct DistributionTests {
         }
         #expect(abs(normalCDF(-6) - 0) < 1e-8)
         #expect(abs(normalCDF(6) - 1) < 1e-8)
-        // 中段近似线性（0 附近斜率为 1/√(2π)）
+        // 中段近似线性：Φ(0.5) − Φ(−0.5) = 0.382925（区间平均密度，
+        // 略低于中心密度 1/√(2π) = 0.39894）
         let slope = (normalCDF(0.5) - normalCDF(-0.5)) / 1.0
-        #expect(abs(slope - 1 / sqrt(2 * .pi)) < 1e-3)
+        #expect(abs(slope - 0.382925) < 1e-4)
     }
 
     // MARK: - negBinomialLogPDF 手算

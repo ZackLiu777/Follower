@@ -76,21 +76,22 @@ struct FeatureEngineTests {
             GrowthPoint(date: d0, followers: 4),
             GrowthPoint(date: d2, followers: 7),
         ]
-        let rows = FeatureEngine.buildRows(points: points)
-        // 9 点 → 无行，但通过 target 检查日期排序与覆盖：用 10 点补足
-        _ = rows
+        // 5 点去重后剩 3 点；再补 7 个唯一日期 → 10 点 → t ∈ 7...8 → 2 行
         let padded = points + [
             GrowthPoint(date: Date(timeIntervalSince1970: 259_200), followers: 8),
             GrowthPoint(date: Date(timeIntervalSince1970: 345_600), followers: 9),
             GrowthPoint(date: Date(timeIntervalSince1970: 432_000), followers: 10),
             GrowthPoint(date: Date(timeIntervalSince1970: 518_400), followers: 11),
             GrowthPoint(date: Date(timeIntervalSince1970: 604_800), followers: 12),
+            GrowthPoint(date: Date(timeIntervalSince1970: 691_200), followers: 13),
+            GrowthPoint(date: Date(timeIntervalSince1970: 777_600), followers: 14),
         ]
         let full = FeatureEngine.buildRows(points: padded)
-        #expect(full.count == 3)
-        // t=7 对应去重后的第 7 个点：日期 d1 的保留值 6（后到覆盖）
+        #expect(full.count == 2)
+        // 排序后序列（去重 3 点 + 7 个新日期，升序）：
+        let f = [4.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0]
+        // t=7 对应去重后的第 7 个点：日期 d1 的保留值 6（后到覆盖）→ f[7] = 12
         let t7Features = full[0].features
-        let f = [4.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]
         #expect(abs(t7Features[0] - log(f[7])) < 1e-9)
         #expect(abs(t7Features[1] - (f[7] - f[0]) / 7) < 1e-9)
         #expect(abs(t7Features[3] - (f[7] - f[6])) < 1e-9)
@@ -228,7 +229,8 @@ struct FeatureEngineTests {
 
     // MARK: - deduplicate 直接测试（internal）
 
-    /// 同日期多条 → 保留最后一次；输出保持原顺序
+    /// 同日期多条 → 保留最后一次；输出顺序 = 原输入中首次出现顺序
+    /// （d1 首次出现在索引 0，d0 在索引 1 → 输出 [d1, d0]；buildRows 会再按日期排序）
     @Test
     func testDeduplicateKeepsLastAndOrder() {
         let d0 = Date(timeIntervalSince1970: 0)
@@ -242,8 +244,8 @@ struct FeatureEngineTests {
         ]
         let out = FeatureEngine.deduplicate(input)
         #expect(out.count == 2)
-        #expect(out[0].date == d0 && out[0].followers == 5)
-        #expect(out[1].date == d1 && out[1].followers == 4)
+        #expect(out[0].date == d1 && out[0].followers == 4)  // 首次出现顺序
+        #expect(out[1].date == d0 && out[1].followers == 5)
     }
 
     /// 全同日期 → 只剩一个；无重复 → 原样返回
