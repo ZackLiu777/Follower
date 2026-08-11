@@ -48,6 +48,17 @@ jobs:
             -only-testing:FollowerTests/PhiServicesTests \
             -only-testing:FollowerTests/AppStateTests \
             -only-testing:FollowerTests/FollowerTests \
+            -only-testing:FollowerTests/PredictionModelTests/DistributionTests \
+            -only-testing:FollowerTests/PredictionModelTests/FeatureEngineTests \
+            -only-testing:FollowerTests/PredictionModelTests/GLMGradientTests \
+            -only-testing:FollowerTests/PredictionModelTests/LaplaceTests \
+            -only-testing:FollowerTests/PredictionModelTests/MatrixTests \
+            -only-testing:FollowerTests/PredictionModelTests/MockDataForecastTests \
+            -only-testing:FollowerTests/PredictionModelTests/PredictionServiceTests \
+            -only-testing:FollowerTests/PredictionModelTests/RollingForecastTests \
+            -only-testing:FollowerTests/PredictionModelTests/SimulationCalibrationTests \
+            -only-testing:FollowerTests/PredictionModelTests/TestHelpers \
+            -only-testing:FollowerTests/DashboardAutoSyncTests \
             -derivedDataPath /tmp/FollowerDD CODE_SIGNING_ALLOWED=NO
 
       - name: Run Flaky Tests (shared DB / @MainActor VM / UI timing — allowed to fail)

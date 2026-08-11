@@ -213,7 +213,12 @@ final class AccountViewModel {
                 accountId: accountId,
                 accessToken: MockInstagramAPIClient.sentinelToken
             )
-            _ = try? await syncEngine.sync(accountId: accountId)
+            // v0.15.1: sync 失败不再静默吞掉 — 用户能看到测试数据未写入的原因
+            do {
+                _ = try await syncEngine.sync(accountId: accountId)
+            } catch {
+                errorMessage = "测试账号同步失败：\(error.localizedDescription)"
+            }
             NotificationCenter.default.post(name: .accountCreated, object: nil)
             await loadAccounts()
             shouldDismiss = true

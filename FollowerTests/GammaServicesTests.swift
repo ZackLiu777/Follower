@@ -113,18 +113,25 @@ struct GammaServicesTests {
         #expect(results.isEmpty)
     }
 
-    /// 30 个线性递增数据点 → 线性回归应产生 "Linear" 方法非 nil 结果
+    /// 50 个线性递增数据点 → 贝叶斯回归产生 "Bayesian" 结果，含可信区间与增长概率
     @MainActor
     @Test
     func testLinearRegressionProducesPrediction() async {
         let service = PredictionService()
-        let data = (0..<30).map { i in
+        let data = (0..<50).map { i in
             (Calendar.current.date(byAdding: .day, value: -i, to: Date()) ?? Date(), Double(100 + i * 5))
         }
         let result = await service.predictLinear(dataPoints: data, daysAhead: 7)
         #expect(result != nil)
         #expect(result!.predictedValue > 0)
-        #expect(result!.method == "Linear")
+        #expect(result!.method == "Bayesian")
+        #expect(result!.confidence == 0.95)
+        // 新字段：95% ETI + 增长概率 + 采样
+        #expect(result!.lowerBound != nil && result!.upperBound != nil)
+        #expect(result!.lowerBound! <= result!.upperBound!)
+        #expect(result!.probabilityPositive != nil)
+        #expect(result!.probabilityPositive! >= 0 && result!.probabilityPositive! <= 1)
+        #expect(result!.growthSamples?.count == RollingForecast.sampleCount)
     }
 
     /// 数据点不足 → 线性回归返回 nil
@@ -135,6 +142,25 @@ struct GammaServicesTests {
         let data = [(Date(), 100.0), (Date(), 200.0)]
         let result = await service.predictLinear(dataPoints: data, daysAhead: 7)
         #expect(result == nil)
+    }
+
+    /// 冷启动：特征行 < 30（38 点以下）→ nil（调用方保持兜底）
+    @MainActor
+    @Test
+    func testBayesianColdStartReturnsNil() async {
+        let service = PredictionService()
+        // 37 个点 → 29 特征行 < 30 → nil
+        let data = (0..<37).map { i in
+            (Calendar.current.date(byAdding: .day, value: -i, to: Date()) ?? Date(), Double(100 + i * 5))
+        }
+        let result = await service.predictLinear(dataPoints: data, daysAhead: 7)
+        #expect(result == nil)
+        // 38 个点 → 30 特征行 → 非 nil
+        let enough = (0..<38).map { i in
+            (Calendar.current.date(byAdding: .day, value: -i, to: Date()) ?? Date(), Double(100 + i * 5))
+        }
+        let ok = await service.predictLinear(dataPoints: enough, daysAhead: 7)
+        #expect(ok != nil)
     }
 
     // MARK: - Helpers

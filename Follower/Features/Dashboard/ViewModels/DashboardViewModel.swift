@@ -68,6 +68,10 @@ final class DashboardViewModel {
      var followerDeltaPercent: Double = 0
     /// 粉丝趋势 Mini 折线图数据
      var sparklineData: [Double] = []
+    /// 带日期历史粉丝点（升序）— 详情页区间时序图数据源（v0.15-alpha）
+    var historyPoints: [(Date, Double)] = []
+    /// 90 天窗口内快照天数 — 冷启动诊断显示（v0.15.1）
+    var predictionDataDays: Int = 0
     /// 粉丝周线趋势数据（供 TrendChart 使用）
      var followerWeeklyData: [TrendDataPoint] = []
 
@@ -189,11 +193,37 @@ final class DashboardViewModel {
         guard let accountId = selectedAccountId else { return }
         isLoading = true; defer { isLoading = false }
         do {
+            // v0.15.1: 测试账号数据不足（< 30 天）时自动补一次全量同步 —
+            // 旧版（8/7 前）创建的测试账号只有静态快照，无法满足贝叶斯冷启动线。
+            // 仅 isTest 账号触发（mock 同步零成本）；真实账号不自动 sync（保护 API 配额）。
+            // 同步后重新读取 latestSnapshot，保证下方数据链路使用最新数据。
+            if let account = try? await accountRepo.fetch(id: accountId),
+               Self.needsAutoSyncForTestAccount(
+                   isTest: account.isTest,
+                   snapshotDays: await recentSnapshotCount(accountId: accountId),
+                   isSyncing: isSyncing
+               ) {
+                _ = try? await syncEngine.sync(accountId: accountId)
+            }
             latestSnapshot = try await snapshotRepo.latest(accountId: accountId)
             await computeDeltas(accountId: accountId)
             await loadPosts()
             await loadPremiumInsights()
         } catch { errorMessage = error.localizedDescription }
+    }
+
+    /// 90 天窗口内快照天数（自动补同步与冷启动诊断共用）
+    private func recentSnapshotCount(accountId: Int64) async -> Int {
+        let cutoff = Date().addingTimeInterval(-90 * 86_400)
+        return (try? await snapshotRepo.fetch(accountId: accountId, from: cutoff, to: Date()))?.count ?? 0
+    }
+
+    /// 判定是否需要为测试账号自动补同步（纯函数，可单测）：
+    /// isTest 账号 + 90 天窗口快照不足冷启动线 + 未在同步中。
+    /// 输入：账号测试语义 / 90 天快照天数 / 是否正在同步。
+    /// 输出：是否需要触发一次全量 sync（mock 数据保证）。
+    static func needsAutoSyncForTestAccount(isTest: Bool, snapshotDays: Int, isSyncing: Bool) -> Bool {
+        isTest && !isSyncing && snapshotDays < LaplaceApproximation.minRows
     }
 
     /// 触发同步引擎拉取最新数据，完成后刷新 UI
@@ -293,6 +323,7 @@ final class DashboardViewModel {
         // 快照数据 — 多个 Premium 服务共用
         let cutOff = Date().addingTimeInterval(-90 * 86_400)
         let snapshots = (try? await snapshotRepo.fetch(accountId: accountId, from: cutOff, to: Date())) ?? []
+        predictionDataDays = snapshots.count  // 冷启动诊断显示（v0.15.1）
         let snap = latestSnapshot
 
         // 无真实 API 数据时（followers=0），跳过 Premium 服务调用
@@ -308,13 +339,15 @@ final class DashboardViewModel {
             return
         }
 
-        // 趋势预测（Linear Regression，30 天预测）
+        // 趋势预测（贝叶斯负二项回归，30 天预测）
         if !snapshots.isEmpty {
             let dataPoints = snapshots.map { ($0.observedAt, Double($0.followersCount)) }
+            historyPoints = dataPoints.sorted { $0.0 < $1.0 }
             predictionResult = await predictionService.predictLinear(dataPoints: dataPoints, daysAhead: 30)
         } else if let snap {
             let today = Date()
             let dataPoints = [(today, Double(snap.followersCount))]
+            historyPoints = []
             predictionResult = await predictionService.predictLinear(dataPoints: dataPoints, daysAhead: 30)
         }
 
@@ -377,7 +410,9 @@ final class DashboardViewModel {
         unfollowList = computeUnfollowList(snapshots: snapshots)
         bestPostingTime = computeBestPostingTime()
         contentTip = computeContentTip()
-        predictedFollowers = predictionResult.map { Int($0.predictedValue) } ?? (latestSnapshot?.followersCount ?? 0)
+        // v0.15-alpha: predictedValue 为累计增长量（贝叶斯模型）→ 预测总数 = 当前粉丝 + 累计增长
+        let growth = predictionResult.map { Int($0.predictedValue) } ?? 0
+        predictedFollowers = growth + (latestSnapshot?.followersCount ?? 0)
     }
 
     // MARK: - Premium Derived Computations
