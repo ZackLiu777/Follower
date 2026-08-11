@@ -154,7 +154,10 @@ private func samplePredictionChartData() -> (
     let base = historical.last!.1
 
     // 预测：逐日累计增长中位（每天 ~4.2 略加速），带宽分层（50/80/95%）
-    let median = (0...30).map { 4.2 * Double($0) + 0.05 * Double($0 * $0) }
+    let median: [Double] = (0...30).map { x -> Double in
+            let d = Double(x)
+            return 4.2 * d + 0.05 * d * d
+        }
     let q25 = median.map { $0 - 12 }
     let q75 = median.map { $0 + 12 }
     let q10 = median.map { $0 - 30 }
