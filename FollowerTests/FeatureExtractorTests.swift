@@ -200,14 +200,20 @@ struct FeatureExtractorTests {
     }
 
     /// 疲劳惩罚有界：fatigued 时 penalty ∈ (0, 0.5]
+    /// （单类型时 avg = recentPosts → threshold = 1.2×recentPosts 永不疲劳，
+    ///   必须至少两类拉开差距才能触发 fatigued）
     @Test
     func testExtractFatiguePenaltyBounded() {
         let perf: [ContentType: ContentStats] = [
             .reel: ContentStats(type: .reel, avgEngagement: 0.05, totalPosts: 60, recentPosts: 30, growthRate: -0.2),
+            .photo: ContentStats(type: .photo, avgEngagement: 0.05, totalPosts: 60, recentPosts: 2, growthRate: 0.1),
         ]
         let fatigue = FeatureExtractor.extractFatigue(performance: perf)
+        // avg = 16 → threshold = max(2, 19.2) = 19.2 → reel 疲劳
         let penalty = fatigue[.reel]?.penalty ?? 0
         #expect(penalty > 0.0)
         #expect(penalty <= 0.5)
+        // 未疲劳类型 penalty = 0
+        #expect(fatigue[.photo]?.penalty == 0.0)
     }
 }
