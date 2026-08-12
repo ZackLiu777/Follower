@@ -42,6 +42,10 @@ final class DashboardViewModel {
     private let campaignComparisonService: CampaignComparisonServiceProtocol
     /// 互动热力图服务（Premium - Phi）
     private let engagementHeatmapService: EngagementHeatmapServiceProtocol
+    /// 帖子数据仓库（Premium 最佳发帖时间数据源）
+    private let mediaPostRepository: MediaPostRepositoryProtocol
+    /// 最佳发帖时间服务（Premium — 基于 MediaPost，与热力图数据源分离）
+    private let bestPostingTimeService: BestPostingTimeServiceProtocol
     /// 媒体包 PDF 服务（Premium: mediaKitExport）
     private let mediaKitService: MediaKitServiceProtocol
 
@@ -112,6 +116,8 @@ final class DashboardViewModel {
      var campaignResult: CampaignResult?
     /// 互动热力图结果（Premium）
      var heatmapResult: EngagementHeatmapResult?
+    /// 最佳发帖时间结果（Premium — MediaPost 聚合）
+     var bestPostingTimeResult: BestPostingTimeResult?
 
     // MARK: - Published: 媒体包 PDF（Premium: mediaKitExport）
 
@@ -126,8 +132,6 @@ final class DashboardViewModel {
 
     /// 取关用户列表（Mock）
      var unfollowList: [UnfollowEntry] = []
-    /// 推荐最佳发帖时间（Mock）
-     var bestPostingTime: String = ""
     /// 内容策略建议（Mock）
      var contentTip: String = ""
     /// 预测下月粉丝数（Mock）
@@ -150,6 +154,8 @@ final class DashboardViewModel {
         authenticityService: AuthenticityServiceProtocol,
         campaignComparisonService: CampaignComparisonServiceProtocol,
         engagementHeatmapService: EngagementHeatmapServiceProtocol,
+        mediaPostRepository: MediaPostRepositoryProtocol,
+        bestPostingTimeService: BestPostingTimeServiceProtocol,
         mediaKitService: MediaKitServiceProtocol
     ) {
         self.snapshotRepo = snapshotRepo
@@ -167,6 +173,8 @@ final class DashboardViewModel {
         self.authenticityService = authenticityService
         self.campaignComparisonService = campaignComparisonService
         self.engagementHeatmapService = engagementHeatmapService
+        self.mediaPostRepository = mediaPostRepository
+        self.bestPostingTimeService = bestPostingTimeService
         self.mediaKitService = mediaKitService
 
         // 监听新账号创建通知，自动刷新列表
@@ -333,7 +341,8 @@ final class DashboardViewModel {
             predictionResult = nil; activityResult = nil; retentionResult = nil
             qualityScore = nil; comparisonResult = nil; geoDistribution = nil
             aiSummary = ""; authenticityResult = nil; campaignResult = nil; heatmapResult = nil
-            unfollowList = []; bestPostingTime = "N/A"
+            bestPostingTimeResult = nil
+            unfollowList = []
             contentTip = "Share your first post to get content tips."
             predictedFollowers = 0
             return
@@ -400,15 +409,20 @@ final class DashboardViewModel {
             )
         }
 
-        // 互动热力图 — 基于 Event 时间分布
+        // 互动热力图 — Event 加权 + 快照互动增量双通道（v0.16）
         if let events = try? await eventRepo.fetch(accountId: accountId, from: cutOff, to: Date()),
-           !events.isEmpty {
-            heatmapResult = await engagementHeatmapService.generate(from: events)
+           !events.isEmpty || !snapshots.isEmpty {
+            heatmapResult = await engagementHeatmapService.generate(from: events, snapshots: snapshots)
+        }
+
+        // 最佳发帖时间 — MediaPost 聚合（与热力图数据源分离，v0.16）
+        if let posts = try? await mediaPostRepository.fetchRecent(accountId: accountId, limit: 100),
+           !posts.isEmpty {
+            bestPostingTimeResult = await bestPostingTimeService.analyze(from: posts)
         }
 
         // Mock 回退 — 保持向后兼容，现有 UI 继续工作
         unfollowList = computeUnfollowList(snapshots: snapshots)
-        bestPostingTime = computeBestPostingTime()
         contentTip = computeContentTip()
         // v0.15-alpha: predictedValue 为累计增长量（贝叶斯模型）→ 预测总数 = 当前粉丝 + 累计增长
         let growth = predictionResult.map { Int($0.predictedValue) } ?? 0
@@ -432,10 +446,6 @@ final class DashboardViewModel {
             )]
         }
         return []
-    }
-
-    private func computeBestPostingTime() -> String {
-        return "N/A"  // computed when real media data is available
     }
 
     private func computeContentTip() -> String {

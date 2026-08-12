@@ -94,7 +94,8 @@ struct PremiumViewModelTests {
         snapshots: [Snapshot] = [],
         latestSnapshot: Snapshot? = nil,
         events: [Event] = [],
-        accounts: [Account] = []
+        accounts: [Account] = [],
+        mediaPosts: [MediaPost] = []
     ) -> DashboardViewModel {
         let snapshotRepo = MockSnapshotRepository()
         snapshotRepo.snapshots = snapshots
@@ -105,6 +106,9 @@ struct PremiumViewModelTests {
 
         let eventRepo = MockEventRepository()
         eventRepo.events = events
+
+        let mediaPostRepo = MockMediaPostRepository()
+        mediaPostRepo.posts = mediaPosts
 
         return DashboardViewModel(
             snapshotRepo: snapshotRepo,
@@ -122,6 +126,8 @@ struct PremiumViewModelTests {
             authenticityService: AuthenticityService(),
             campaignComparisonService: CampaignComparisonService(),
             engagementHeatmapService: EngagementHeatmapService(),
+            mediaPostRepository: mediaPostRepo,
+            bestPostingTimeService: BestPostingTimeService(),
             mediaKitService: MediaKitService()
         )
     }
@@ -170,6 +176,16 @@ struct PremiumViewModelTests {
         )
     }
 
+    /// 创建测试用 MediaPost（供最佳发帖时间流程使用）
+    private func makePost(likes: Int, comments: Int = 0, hour: Int = 10) -> MediaPost {
+        let date = Calendar.current.date(byAdding: .hour, value: -hour, to: Date()) ?? Date()
+        return MediaPost(
+            id: 0, accountId: 1, igMediaID: "vm-test-\(hour)",
+            type: .image, date: date, likes: likes, comments: comments,
+            caption: "", mediaURL: nil, permalink: nil
+        )
+    }
+
     // MARK: - Initial State
 
     /// VM 初始化 → Premium 属性初始为 nil / 默认值（通过 NoAccount 测试间接验证）
@@ -196,12 +212,17 @@ struct PremiumViewModelTests {
         let events = (0..<5).map { makeEvent(daysAgo: $0) }
 
         let account = makeAccount()
+        let posts = [
+            makePost(likes: 40, comments: 10, hour: 19),
+            makePost(likes: 15, comments: 5, hour: 20),
+        ]
 
         let vm = makeViewModel(
             snapshots: snapshots,
             latestSnapshot: latest,
             events: events,
-            accounts: [account]
+            accounts: [account],
+            mediaPosts: posts
         )
         vm.selectedAccountId = 1
 
@@ -218,7 +239,9 @@ struct PremiumViewModelTests {
 
         // Mock 回退也应填充
         #expect(!vm.unfollowList.isEmpty, "Unfollow list mock should be populated")
-        #expect(!vm.bestPostingTime.isEmpty, "Best posting time mock should be populated")
+        #expect(vm.bestPostingTimeResult?.totalPosts == posts.count,
+                "Best posting time should aggregate the provided posts")
+        #expect(vm.bestPostingTimeResult?.avgEngagementPerPost == 35, "(50+20)/2")
         #expect(!vm.contentTip.isEmpty, "Content tip mock should be populated")
         #expect(vm.predictedFollowers > 0, "Predicted followers mock should be > 0")
     }

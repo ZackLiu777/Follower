@@ -393,10 +393,14 @@ enum L10n {
         static let tipStable = "premium.tipStable"
 
         // MARK: Best Time
-        static let yourBestPostingTime = "premium.yourBestPostingTime"
-        static let hourlyHeatmap = "premium.hourlyHeatmap"
-        static let lowEngagement = "premium.lowEngagement"
-        static let highEngagement = "premium.highEngagement"
+        static let hourlyEngagement = "premium.hourlyEngagement"
+        static let dailyEngagement = "premium.dailyEngagement"
+        static let bubbleMatrix = "premium.bubbleMatrix"
+        static let bubbleLegend = "premium.bubbleLegend"
+        static let basedOnPosts = "premium.basedOnPosts"
+        static let avgEngagementPerPost = "premium.avgEngagementPerPost"
+        static let noDataBestTime = "premium.noDataBestTime"
+        static let noDataBestTimeDesc = "premium.noDataBestTimeDesc"
 
         // MARK: Prediction
         static let predictedFollowersNext = "premium.predictedFollowersNext"
@@ -413,6 +417,9 @@ enum L10n {
         static let dayThu = "premium.dayThu"
         static let dayFri = "premium.dayFri"
         static let daySat = "premium.daySat"
+        static let scheduledAt = "premium.scheduledAt"
+        static let breakdown = "premium.breakdown"
+        static let regionsWithAudience = "premium.regionsWithAudience"
 
         // MARK: Existing keys (keep for backward compatibility)
         static let premiumFeature = "premium.feature"
@@ -431,6 +438,7 @@ enum L10n {
         static let benefit5 = "premium.benefit5"
         static let unlockAll = "premium.unlockAll"
         static let unlocked = "premium.unlocked"
+        static let unfollowed = "premium.unfollowed"
 
         // MARK: - Phi: 三大人群画像 Premium 功能
         static let competitorComparison = "premium.competitorComparison"
@@ -447,6 +455,7 @@ enum L10n {
         static let competitorYou = "premium.competitorYou"
         static let competitorPeersAvg = "premium.competitorPeersAvg"
         static let competitorDesc = "premium.competitorDesc"
+        static let trend = "premium.trend"
         static let followers = "premium.followers"
         static let engagement = "premium.engagement"
 
@@ -479,8 +488,16 @@ enum L10n {
         static let growthRate = "premium.growthRate"
         static let campaignDesc = "premium.campaignDesc"
 
-        static let peakEngagementTime = "premium.peakEngagementTime"
         static let heatmapDesc = "premium.heatmapDesc"
+
+        static let activityDistribution = "premium.activityDistribution"
+        static let periodDistribution = "premium.periodDistribution"
+        static let weekdayDistribution = "premium.weekdayDistribution"
+        static let totalEvents = "premium.totalEvents"
+        static let periodNight = "premium.periodNight"
+        static let periodMorning = "premium.periodMorning"
+        static let periodAfternoon = "premium.periodAfternoon"
+        static let periodEvening = "premium.periodEvening"
 
         static let next3Days = "premium.next3Days"
         static let reasonPeakEngagement = "premium.reasonPeakEngagement"
@@ -505,6 +522,17 @@ enum L10n {
         static let strategyHashtagDesc = "premium.strategyHashtagDesc"
         static let strategyEngage = "premium.strategyEngage"
         static let strategyEngageDesc = "premium.strategyEngageDesc"
+
+        // MARK: - Detail views (v0.16 补缺：其余详情页 key 见上方各 Detail 分组)
+        static let likelyRange80 = "premium.likelyRange80"
+        static let growthProbability = "premium.growthProbability"
+        static let predictionUnavailable = "premium.predictionUnavailable"
+        static let predictionNeedsData = "premium.predictionNeedsData"
+        static let comparisonUp = "premium.comparisonUp"
+        static let comparisonDown = "premium.comparisonDown"
+        static let comparisonStable = "premium.comparisonStable"
+        static let anomalies = "premium.anomalies"
+        static let activeDaysOf = "premium.activeDaysOf"
     }
 
     // MARK: MediaKit（媒体包 PDF 导出）

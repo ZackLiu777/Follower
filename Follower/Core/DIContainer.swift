@@ -62,6 +62,7 @@ final class DIContainer {
     let authenticityService: AuthenticityServiceProtocol
     let campaignComparisonService: CampaignComparisonServiceProtocol
     let engagementHeatmapService: EngagementHeatmapServiceProtocol
+    let bestPostingTimeService: BestPostingTimeServiceProtocol
 
     // MARK: - Init
 
@@ -148,5 +149,6 @@ final class DIContainer {
         self.authenticityService = AuthenticityService()
         self.campaignComparisonService = CampaignComparisonService()
         self.engagementHeatmapService = EngagementHeatmapService()
+        self.bestPostingTimeService = BestPostingTimeService()
     }
 }

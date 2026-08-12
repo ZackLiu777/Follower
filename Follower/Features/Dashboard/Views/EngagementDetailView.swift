@@ -37,23 +37,23 @@ struct EngagementDetailView: View {
                     VStack(spacing: 4) {
                         Text(String(format: "%.1f%%", engagementRate * 100))
                             .font(.system(size: 48, weight: .bold, design: .rounded))
-                        Text("Engagement Rate").font(.subheadline).foregroundColor(.secondary)
+                        Text(loc(L10n.Premium.engagementRate)).font(.subheadline).foregroundColor(.secondary)
                     }
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(.regularMaterial)
+                    .background(theme.cardSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 20))
                     .padding(.horizontal)
 
                     // Breakdown 分解条
                     VStack(spacing: 12) {
-                        Text("Breakdown").font(.headline)
-                        engagementBar(label: "Likes", value: likes, total: views, color: theme.accentPrimary)
-                        engagementBar(label: "Comments", value: comments, total: views, color: theme.positiveGreen)
-                        engagementBar(label: "Shares", value: shares, total: views, color: theme.chartLine)
+                        Text(loc(L10n.Premium.breakdown)).font(.headline)
+                        engagementBar(label: loc(L10n.Premium.likes), value: likes, total: views, color: theme.accentPrimary)
+                        engagementBar(label: loc(L10n.Premium.comments), value: comments, total: views, color: theme.positiveGreen)
+                        engagementBar(label: loc(L10n.Premium.shares), value: shares, total: views, color: theme.chartLine)
                     }
                     .padding()
-                    .background(.regularMaterial)
+                    .background(theme.cardSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .padding(.horizontal)
 
@@ -63,7 +63,7 @@ struct EngagementDetailView: View {
             }
             .scrollContentBackground(.hidden)
         }
-        .navigationTitle("Engagement")
+        .navigationTitle(loc(L10n.Premium.engagement))
         .navigationBarTitleDisplayMode(.inline)
     }
 
