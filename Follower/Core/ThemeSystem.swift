@@ -214,9 +214,9 @@ struct Theme: Sendable {
         backgroundGradientStart: Color(red: 0.10, green: 0.10, blue: 0.12),
         backgroundGradientEnd: .black,
 
-        // Liquid Glass 卡片：克制透明度，突出毛玻璃质感
-        cardSurface: Color.white.opacity(0.06),
-        cardElevated: Color.white.opacity(0.13),
+        // 卡片：Apple 深色模式标准卡片色（#1C1C1E / #2C2C2E）
+        cardSurface: Color(UIColor.secondarySystemGroupedBackground),
+        cardElevated: Color(UIColor.tertiarySystemGroupedBackground),
 
         // 文字灰度细腻递增
         textPrimary: .white,
@@ -430,8 +430,8 @@ struct Theme: Sendable {
         backgroundGradientStart: Color(red: 0.10, green: 0.05, blue: 0.08),
         backgroundGradientEnd: .black,
 
-        cardSurface: Color.white.opacity(0.06),
-        cardElevated: Color.white.opacity(0.12),
+        cardSurface: Color(UIColor.secondarySystemGroupedBackground),
+        cardElevated: Color(UIColor.tertiarySystemGroupedBackground),
 
         textPrimary: .white,
         textSecondary: Color.white.opacity(0.70),

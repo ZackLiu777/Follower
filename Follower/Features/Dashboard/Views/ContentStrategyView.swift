@@ -42,7 +42,7 @@ struct ContentStrategyView: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal)
                     }
@@ -58,7 +58,7 @@ struct ContentStrategyView: View {
                             Spacer()
                         }
                         .padding()
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .padding(.horizontal)
                     }

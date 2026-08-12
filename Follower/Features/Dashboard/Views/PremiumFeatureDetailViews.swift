@@ -27,33 +27,33 @@ struct CompetitorDetailView: View {
                 if let result = comparisonResult {
                     VStack(spacing: 20) {
                         VStack(spacing: 4) {
-                            Text(String(format: "%+.2f", result.absoluteChange))
-                                .font(.system(size: 48, weight: .bold, design: .rounded))
-                                .foregroundColor(result.absoluteChange >= 0 ? theme.positiveGreen : theme.negativeRed)
+                            HStack(spacing: 8) {
+                                Image(systemName: competitorIcon(for: result.direction))
+                                    .font(.system(size: 36, weight: .semibold))
+                                    .foregroundColor(competitorColor(for: result.direction))
+                                Text(String(format: "%+.2f", result.absoluteChange))
+                                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                                    .foregroundColor(competitorColor(for: result.direction))
+                            }
                             Text(loc(L10n.Premium.competitorGrowth))
                                 .font(.subheadline).foregroundColor(.secondary)
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                         .padding(.horizontal)
 
-                        HStack(spacing: 16) {
-                            compareCard(
-                                title: loc(L10n.Premium.competitorYou),
-                                value: "\(Int(result.absoluteChange))",
-                                label: loc(L10n.Premium.followers),
-                                color: theme.accentPrimary
-                            )
-                            compareCard(
-                                title: loc(L10n.Premium.competitorPeersAvg),
-                                value: result.direction.rawValue,
-                                label: "Trend",
-                                color: theme.textSecondary
-                            )
-                        }
-                        .padding(.horizontal)
+                        // 前/当前周期均值双条对比
+                        DualBarCompareView(
+                            title: loc(L10n.Premium.competitorPeersAvg),
+                            leftLabel: loc(L10n.Premium.previousPeriod),
+                            leftValue: result.previousAvg,
+                            leftColor: theme.textSecondary,
+                            rightLabel: loc(L10n.Premium.currentPeriod),
+                            rightValue: result.currentAvg,
+                            rightColor: competitorColor(for: result.direction)
+                        )
 
                         Text(loc(L10n.Premium.competitorDesc))
                             .font(.caption).foregroundColor(.secondary)
@@ -70,16 +70,22 @@ struct CompetitorDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func compareCard(title: String, value: String, label: String, color: Color) -> some View {
-        VStack(spacing: 8) {
-            Text(title).font(.headline).foregroundColor(color)
-            Text(value).font(.title2).fontWeight(.bold)
-            Text(label).font(.caption2).foregroundColor(.secondary)
+    /// 根据对比方向返回 SF Symbol 图标名
+    private func competitorIcon(for direction: ComparisonDirection) -> String {
+        switch direction {
+        case .up: return "arrow.up.right"
+        case .down: return "arrow.down.right"
+        case .flat: return "equal"
         }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    /// 根据对比方向返回颜色
+    private func competitorColor(for direction: ComparisonDirection) -> Color {
+        switch direction {
+        case .up: return theme.positiveGreen
+        case .down: return theme.negativeRed
+        case .flat: return theme.textSecondary
+        }
     }
 
     private var noDataView: some View {
@@ -109,35 +115,35 @@ struct AuthenticityDetailView: View {
             ScrollView {
                 if let result = result {
                     VStack(spacing: 20) {
-                        VStack(spacing: 4) {
-                            Text("\(Int(result.score))/100")
-                                .font(.system(size: 48, weight: .bold, design: .rounded))
-                                .foregroundColor(scoreColor(result.score))
+                        VStack(spacing: 8) {
+                            ScoreGaugeView(score: result.score, size: 140)
                             Text(loc(L10n.Premium.authenticityScore))
                                 .font(.subheadline).foregroundColor(.secondary)
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                         .padding(.horizontal)
 
                         VStack(spacing: 12) {
                             scoreRow(label: loc(L10n.Premium.engagementQuality),
-                                     value: "\(Int(result.engagementQuality))/100",
-                                     color: scoreColor(result.engagementQuality))
+                                     value: "",
+                                     color: scoreColor(result.engagementQuality),
+                                     score: result.engagementQuality)
                             scoreRow(label: loc(L10n.Premium.growthPattern),
                                      value: result.growthPattern,
                                      color: result.growthPattern == "Natural" ? theme.positiveGreen : theme.warningOrange)
                             scoreRow(label: loc(L10n.Premium.followerAuthenticity),
-                                     value: "\(Int(result.followerAuthenticity))/100",
-                                     color: scoreColor(result.followerAuthenticity))
+                                     value: "",
+                                     color: scoreColor(result.followerAuthenticity),
+                                     score: result.followerAuthenticity)
                             scoreRow(label: loc(L10n.Premium.anomalyDetection),
-                                     value: result.hasAnomalies ? result.anomalyDescription ?? "Anomalies" : loc(L10n.Premium.noAnomalies),
+                                     value: result.hasAnomalies ? result.anomalyDescription ?? loc(L10n.Premium.anomalies) : loc(L10n.Premium.noAnomalies),
                                      color: result.hasAnomalies ? theme.warningOrange : theme.textSecondary)
                         }
                         .padding()
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal)
 
@@ -156,19 +162,31 @@ struct AuthenticityDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func scoreRow(label: String, value: String, color: Color) -> some View {
-        HStack {
+    /// 分数行：小环形仪表 + 标签 + 分数；无分数时退化为纯文本值
+    private func scoreRow(label: String, value: String, color: Color, score: Double? = nil) -> some View {
+        HStack(spacing: 10) {
+            if let score {
+                ScoreGaugeView(score: score, size: 36, centerText: String(format: "%.0f", score))
+            }
             Text(label).font(.subheadline).foregroundColor(.primary)
             Spacer()
-            Text(value).font(.subheadline).fontWeight(.semibold).foregroundColor(color)
+            if let score {
+                Text("\(Int(score))/100")
+                    .font(.subheadline).fontWeight(.semibold).foregroundColor(color)
+            } else {
+                Text(value).font(.subheadline).fontWeight(.semibold).foregroundColor(color)
+            }
         }
     }
 
+    /// 分数档位颜色 — 与 ScoreGaugeView 的 ScoreTier 标准一致（≥80 / ≥60 / ≥40 / <40）
     private func scoreColor(_ score: Double) -> Color {
-        if score >= 80 { return theme.positiveGreen }
-        if score >= 50 { return theme.accentPrimary }
-        if score >= 30 { return theme.warningOrange }
-        return theme.negativeRed
+        switch ScoreTier.tier(for: score) {
+        case .excellent: return theme.positiveGreen
+        case .good: return theme.accentPrimary
+        case .fair: return theme.warningOrange
+        case .poor: return theme.negativeRed
+        }
     }
 
     private var noDataView: some View {
@@ -203,7 +221,7 @@ struct MediaKitDetailView: View {
                         Text(loc(L10n.Premium.readyToExport)).font(.subheadline).foregroundColor(.secondary)
                     }
                     .padding().frame(maxWidth: .infinity)
-                    .background(.regularMaterial)
+                    .background(theme.cardSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 20)).padding(.horizontal)
 
                     // 模板选择：segmented + 当前模板说明
@@ -233,7 +251,7 @@ struct MediaKitDetailView: View {
                         }
                     }
                     .padding().frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.regularMaterial)
+                    .background(theme.cardSurface)
                     .clipShape(RoundedRectangle(cornerRadius: 16)).padding(.horizontal)
 
                     // 生成 + 分享
@@ -314,7 +332,7 @@ struct CampaignDetailView: View {
                             }
                         }
                         .padding().frame(maxWidth: .infinity)
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 16)).padding(.horizontal)
 
                         Text(loc(L10n.Premium.campaignDesc))
@@ -344,7 +362,7 @@ struct CampaignDetailView: View {
             }
         }
         .padding().frame(maxWidth: .infinity)
-        .background(.regularMaterial)
+        .background(theme.cardSurface)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
@@ -372,7 +390,9 @@ struct CampaignDetailView: View {
 
 // MARK: - 互动热力图详情
 
-/// Premium 详情页：基于 Event 时间戳的 7×24 互动热力图
+/// Premium 详情页：互动热力图 — 分布分析视角（与「最佳发帖时间」的决策视角互补）。
+/// 展示总事件数、活跃时段分布、一周分布 + 7×24 密度网格；
+/// 分布数据由 EngagementHeatmapService 聚合，View 只做展示。
 struct HeatmapDetailView: View {
     @Environment(\.theme) private var theme
     let result: EngagementHeatmapResult?
@@ -381,6 +401,22 @@ struct HeatmapDetailView: View {
         [loc(L10n.Premium.daySun), loc(L10n.Premium.dayMon), loc(L10n.Premium.dayTue),
          loc(L10n.Premium.dayWed), loc(L10n.Premium.dayThu), loc(L10n.Premium.dayFri),
          loc(L10n.Premium.daySat)]
+    }
+
+    /// 时段标签（与 periodDistribution 顺序一致：凌晨/上午/下午/晚上）
+    private var periodLabels: [String] {
+        [loc(L10n.Premium.periodNight), loc(L10n.Premium.periodMorning),
+         loc(L10n.Premium.periodAfternoon), loc(L10n.Premium.periodEvening)]
+    }
+
+    /// Sun-first 7×24 密度矩阵（行序与 dayLabels 一致，供 HeatmapGrid 使用）
+    private var sunFirstRows: [[Double]] {
+        guard let result, !result.cells.isEmpty else {
+            return Array(repeating: Array(repeating: 0.0, count: 24), count: 7)
+        }
+        return (1...7).map { wd in
+            (0..<24).map { hour in result.density(weekday: wd, hour: hour) }
+        }
     }
 
     var body: some View {
@@ -393,42 +429,10 @@ struct HeatmapDetailView: View {
             ScrollView {
                 if let result = result, !result.cells.isEmpty {
                     VStack(spacing: 20) {
-                        VStack(spacing: 4) {
-                            Text(result.peakDescription)
-                                .font(.system(size: 36, weight: .bold, design: .rounded))
-                                .foregroundColor(theme.accentPrimary)
-                            Text(loc(L10n.Premium.peakEngagementTime))
-                                .font(.subheadline).foregroundColor(.secondary)
-                        }
-                        .padding().frame(maxWidth: .infinity)
-                        .background(.regularMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 20)).padding(.horizontal)
-
-                        VStack(spacing: 2) {
-                            ForEach(1...7, id: \.self) { wd in
-                                HStack(spacing: 2) {
-                                    Text(dayLabels[wd - 1])
-                                        .font(.caption2).frame(width: 30, alignment: .leading)
-                                        .foregroundColor(.secondary)
-                                    ForEach(0..<24, id: \.self) { hour in
-                                        Rectangle()
-                                            .fill(theme.accentPrimary.opacity(result.density(weekday: wd, hour: hour)))
-                                            .frame(height: 20)
-                                    }
-                                }
-                            }
-                            HStack(spacing: 2) {
-                                Color.clear.frame(width: 30)
-                                ForEach(0..<24, id: \.self) { hour in
-                                    if hour % 6 == 0 {
-                                        Text("\(hour)").font(.system(size: 8))
-                                            .foregroundColor(.secondary).frame(maxWidth: .infinity)
-                                    } else { Color.clear }
-                                }
-                            }
-                        }
-                        .padding().background(.regularMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 16)).padding(.horizontal)
+                        distributionCard(result)
+                        HeatmapGrid(rows: sunFirstRows, dayLabels: dayLabels)
+                            .padding().background(theme.cardSurface)
+                            .clipShape(RoundedRectangle(cornerRadius: 16)).padding(.horizontal)
 
                         Text(loc(L10n.Premium.heatmapDesc))
                             .font(.caption).foregroundColor(.secondary).padding(.horizontal)
@@ -448,6 +452,79 @@ struct HeatmapDetailView: View {
         .navigationTitle(loc(L10n.Premium.engagementHeatmap))
         .navigationBarTitleDisplayMode(.inline)
     }
+
+    /// 互动分布卡片：总事件数 + 时段分布条 + 一周分布条
+    private func distributionCard(_ result: EngagementHeatmapResult) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(loc(L10n.Premium.activityDistribution)).font(.headline)
+                Spacer()
+                Text(String(format: loc(L10n.Premium.totalEvents), result.totalEvents))
+                    .font(.caption).foregroundColor(.secondary)
+            }
+            Text(loc(L10n.Premium.periodDistribution))
+                .font(.subheadline).foregroundColor(.secondary)
+            periodBar(values: result.periodDistribution, labels: periodLabels)
+            Text(loc(L10n.Premium.weekdayDistribution))
+                .font(.subheadline).foregroundColor(.secondary)
+            weekdayBar(values: result.dayDistribution, labels: dayLabels)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.cardSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal)
+    }
+
+    /// 时段分布条：4 段水平条，宽度按占比，最高段高亮
+    private func periodBar(values: [Double], labels: [String]) -> some View {
+        let maxValue = values.max() ?? 0
+        return VStack(spacing: 6) {
+            HStack(spacing: 6) {
+                ForEach(0..<values.count, id: \.self) { i in
+                    let isMax = values[i] > 0 && values[i] >= maxValue
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule().fill(theme.divider)
+                            Capsule()
+                                .fill(isMax ? theme.accentPrimary : theme.accentPrimary.opacity(0.35))
+                                .frame(width: max(geo.size.width * values[i], values[i] > 0 ? 3 : 0))
+                        }
+                    }
+                    .frame(height: 10)
+                }
+            }
+            HStack {
+                ForEach(0..<values.count, id: \.self) { i in
+                    Text("\(labels[i]) \(Int(values[i] * 100))%")
+                        .font(.caption2).foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+        }
+    }
+
+    /// 一周分布条：7 根竖条，高度按占比，最高日高亮
+    private func weekdayBar(values: [Double], labels: [String]) -> some View {
+        let maxValue = values.max() ?? 0
+        let barHeight: CGFloat = 44
+        return HStack(alignment: .bottom, spacing: 6) {
+            ForEach(0..<values.count, id: \.self) { i in
+                let isMax = values[i] > 0 && values[i] >= maxValue
+                VStack(spacing: 4) {
+                    ZStack(alignment: .bottom) {
+                        Capsule().fill(theme.divider).frame(height: barHeight)
+                        Capsule()
+                            .fill(isMax ? theme.accentPrimary : theme.accentPrimary.opacity(0.35))
+                            .frame(height: max(3, barHeight * values[i]))
+                    }
+                    Text(labels[i])
+                        .font(.caption2).foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
 }
 
 // MARK: - 内容排期详情
@@ -459,12 +536,14 @@ struct ContentSchedulingDetailView: View {
 
     private var recommendations: [(day: String, time: String, reason: String)] {
         guard let result = activityResult else { return [] }
-        let dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-        let day = result.mostActiveDay.map { $0 >= 1 && $0 <= 7 ? dayNames[$0 - 1] : "Mon" } ?? "Mon"
+        let dayNames = [loc(L10n.Premium.daySun), loc(L10n.Premium.dayMon), loc(L10n.Premium.dayTue),
+                        loc(L10n.Premium.dayWed), loc(L10n.Premium.dayThu), loc(L10n.Premium.dayFri),
+                        loc(L10n.Premium.daySat)]
+        let day = result.mostActiveDay.map { $0 >= 1 && $0 <= 7 ? dayNames[$0 - 1] : loc(L10n.Premium.dayMon) } ?? loc(L10n.Premium.dayMon)
         return [
             (day, "19:00", loc(L10n.Premium.reasonPeakEngagement)),
             (day, "12:00", loc(L10n.Premium.reasonLunchtime)),
-            ("Mon", "20:00", loc(L10n.Premium.reasonStartOfWeek)),
+            (loc(L10n.Premium.dayMon), "20:00", loc(L10n.Premium.reasonStartOfWeek)),
         ]
     }
 
@@ -486,14 +565,14 @@ struct ContentSchedulingDetailView: View {
                         ForEach(Array(recommendations.enumerated()), id: \.offset) { index, rec in
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("\(rec.day) at \(rec.time)").font(.title3).fontWeight(.bold)
+                                    Text(String(format: loc(L10n.Premium.scheduledAt), rec.day, rec.time)).font(.title3).fontWeight(.bold)
                                     Text(rec.reason).font(.caption).foregroundColor(.secondary)
                                 }
                                 Spacer()
                                 Image(systemName: "\(index + 1).circle.fill")
                                     .font(.title2).foregroundColor(theme.accentPrimary)
                             }
-                            .padding().background(.regularMaterial)
+                            .padding().background(theme.cardSurface)
                             .clipShape(RoundedRectangle(cornerRadius: 16)).padding(.horizontal)
                         }
 
@@ -593,7 +672,7 @@ struct CommentManagementDetailView: View {
                                 }
                             }
                             .padding()
-                            .background(.regularMaterial)
+                            .background(theme.cardSurface)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                             .padding(.horizontal)
                         }
@@ -613,7 +692,7 @@ struct CommentManagementDetailView: View {
             Text(label).font(.caption2).foregroundColor(.secondary)
         }
         .padding().frame(maxWidth: .infinity)
-        .background(.regularMaterial)
+        .background(theme.cardSurface)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 

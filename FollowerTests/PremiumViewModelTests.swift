@@ -122,6 +122,8 @@ struct PremiumViewModelTests {
             authenticityService: AuthenticityService(),
             campaignComparisonService: CampaignComparisonService(),
             engagementHeatmapService: EngagementHeatmapService(),
+            mediaPostRepository: MediaPostRepository(db: DatabaseManager.shared),
+            bestPostingTimeService: BestPostingTimeService(),
             mediaKitService: MediaKitService()
         )
     }

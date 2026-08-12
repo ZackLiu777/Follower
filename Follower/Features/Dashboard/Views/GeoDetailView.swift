@@ -35,18 +35,18 @@ struct GeoDetailView: View {
                                 Text(String(format: "%.1f%%", top.percentage))
                                     .font(.headline)
                                     .foregroundColor(theme.accentPrimary)
-                                Text("Top Region").font(.caption).foregroundColor(.secondary)
+                                Text(loc(L10n.Premium.topRegion)).font(.caption).foregroundColor(.secondary)
                             }
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(.regularMaterial)
+                            .background(theme.cardSurface)
                             .clipShape(RoundedRectangle(cornerRadius: 20))
                             .padding(.horizontal)
                         }
 
                         // 地区分布列表
                         VStack(spacing: 12) {
-                            Text("Distribution by Region")
+                            Text(loc(L10n.Premium.distributionByRegion))
                                 .font(.headline)
                                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -55,12 +55,12 @@ struct GeoDetailView: View {
                             }
                         }
                         .padding()
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal)
 
                         // 地区总数
-                        Text("\(result.totalRegions) regions with measurable audience")
+                        Text(String(format: loc(L10n.Premium.regionsWithAudience), result.totalRegions))
                             .font(.caption).foregroundColor(.secondary)
                             .padding(.horizontal)
                     }
@@ -70,9 +70,9 @@ struct GeoDetailView: View {
             } else {
                 // 无数据占位
                 ContentUnavailableView(
-                    "No Data Available",
+                    loc(L10n.Premium.noDataAvailable),
                     systemImage: "globe",
-                    description: Text("Geo distribution data will appear here once available.")
+                    description: Text(loc(L10n.Premium.noDataGeoDesc))
                 )
             }
         }

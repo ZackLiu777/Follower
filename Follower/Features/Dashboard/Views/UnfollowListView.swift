@@ -39,7 +39,7 @@ struct UnfollowListView: View {
                     VStack(alignment: .trailing) {
                         Text(f.date.formatted(.dateTime.day().month(.abbreviated)))
                             .font(.caption).foregroundColor(.secondary)
-                        Text("Unfollowed").font(.caption2).foregroundColor(theme.negativeRed)
+                        Text(loc(L10n.Premium.unfollowed)).font(.caption2).foregroundColor(theme.negativeRed)
                     }
                 }
                 .padding(.vertical, 4)

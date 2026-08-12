@@ -11,7 +11,7 @@
 import SwiftUI
 import Charts  // chartLegend(.hidden) — 图表修饰符来自 Charts 模块
 
-/// Premium 详情页：贝叶斯粉丝预测 — 区间时序图 + 关键数字 + 说明文字
+/// Premium 详情页：粉丝预测 — 区间时序图 + 关键数字
 struct PredictionDetailView: View {
     @Environment(\.theme) private var theme
 
@@ -86,11 +86,11 @@ struct PredictionDetailView: View {
     private var heroCard: some View {
         VStack(spacing: 4) {
             Text("~\(predicted.formatted(.number))").font(.system(size: 40, weight: .bold, design: .rounded))
-            Text("Predicted Followers Next Month").font(.subheadline).foregroundColor(.secondary)
+            Text(loc(L10n.Premium.predictedFollowersNext)).font(.subheadline).foregroundColor(.secondary)
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(.regularMaterial)
+        .background(theme.cardSurface)
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .padding(.horizontal)
     }
@@ -121,7 +121,7 @@ struct PredictionDetailView: View {
             Image(systemName: "chart.xyaxis.line")
                 .font(.system(size: 28))
                 .foregroundColor(theme.textTertiary)
-            Text("Prediction unavailable — need at least 30 days of data (currently \(dataDays) days).")
+            Text(String(format: loc(L10n.Premium.predictionUnavailable), 30, dataDays))
                 .font(.subheadline)
                 .foregroundColor(theme.textTertiary)
                 .multilineTextAlignment(.center)
@@ -141,19 +141,19 @@ struct PredictionDetailView: View {
         VStack(spacing: 12) {
             HStack {
                 figureBlock(
-                    title: "80% Likely Range",
+                    title: loc(L10n.Premium.likelyRange80),
                     value: "\(Int(q10).formatted(.number)) – \(Int(q90).formatted(.number))"
                 )
                 Divider().frame(height: 36)
                 figureBlock(
-                    title: "Growth Probability",
+                    title: loc(L10n.Premium.growthProbability),
                     value: probability.formatted(.percent.precision(.fractionLength(0)))
                 )
             }
             .padding(.vertical, 12)
             .padding(.horizontal, 16)
             .frame(maxWidth: .infinity)
-            .background(.regularMaterial)
+            .background(theme.cardSurface)
             .clipShape(RoundedRectangle(cornerRadius: 16))
             .padding(.horizontal)
         }
@@ -172,18 +172,17 @@ struct PredictionDetailView: View {
         .frame(maxWidth: .infinity)
     }
 
-    /// 底部说明文字
+    /// 底部说明文字 — 仅冷启动（无预测数据）时提示数据不足；
+    /// 有预测数据时不显示任何技术性说明（v0.16：模型名称/可信区间说明已移除）
     private var captionText: some View {
         Group {
-            if hasForecast {
-                Text("Bayesian negative binomial model · 30-day forecast · shaded bands show 50/80/95% credible intervals.")
-            } else {
-                Text("Not enough historical data yet — predictions appear after roughly 30 days of snapshots.")
+            if !hasForecast {
+                Text(loc(L10n.Premium.predictionNeedsData))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
             }
         }
-        .font(.caption)
-        .foregroundColor(.secondary)
-        .multilineTextAlignment(.center)
-        .padding(.horizontal)
     }
 }

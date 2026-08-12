@@ -2,17 +2,17 @@
 //  PredictionChartUITests.swift
 //  FollowerUITests
 //
-//  预测图表 UI 测试 — 验证贝叶斯预测图表是否真正加载：
-//  Dashboard 预测主卡片（跨双列 + 内嵌紧凑区间图 + 一句话摘要）与
-//  详情页（Hero 数字 / 三层区间图 / 关键数字行 / 模型说明文字）。
-//  注意：摘要行、关键数字、模型说明仅在 hasForecast（预测数据加载成功）
-//  时才渲染 —— 它们是图表加载成功的可见信号。
+//  预测图表 UI 测试 — 验证预测图表是否真正加载：
+//  Dashboard 预测 tile（图标 + 标题入口，v0.16 起不再内嵌图表/摘要文字）与
+//  详情页（Hero 数字 / 三层区间图 / 关键数字行）。
+//  注意：关键数字仅在 hasForecast（预测数据加载成功）时才渲染 —
+//  它是图表加载成功的可见信号；模型名称文字已按要求移除并加回归断言。
 //
 
 import XCTest
 
-/// UI tests for the Bayesian prediction chart — tile presence, chart-data
-/// rendering signals (summary / key figures / model caption), back navigation
+/// UI tests for the prediction chart — tile presence, chart-data
+/// rendering signals (hero card / key figures), back navigation
 final class PredictionChartUITests: XCTestCase {
     var app: XCUIApplication!
 
@@ -52,22 +52,23 @@ final class PredictionChartUITests: XCTestCase {
         sleep(2)
     }
 
-    // MARK: - Dashboard 主卡片
+    // MARK: - Dashboard 预测 tile
 
-    /// Dashboard 应显示预测主卡片 —— 标题 + 一句话摘要
-    /// （摘要 "30d forecast ~…" 仅在预测数据加载成功时渲染 = 图表数据加载信号）
-    func testDashboardShowsPredictionTileWithSummary() {
+    /// Dashboard 预测 tile —— 只保留图标 + 标题入口，不直接展示图表或数据文字
+    /// （v0.16：内嵌区间图与 "30d forecast" 摘要已移入详情页，此处回归断言其不出现）
+    func testDashboardPredictionTileShowsNoChartData() {
         openDashboard()
 
         let tile = app.staticTexts["Follower Prediction"]
         scrollTo(tile)
         XCTAssertTrue(tile.exists, "Follower Prediction tile should exist on Dashboard")
 
+        // 卡片不再内嵌图表摘要文字（"30d forecast ~…" 已移除）
         let summary = app.staticTexts.matching(
             NSPredicate(format: "label BEGINSWITH %@", "30d forecast")
         ).firstMatch
-        XCTAssertTrue(summary.waitForExistence(timeout: 10),
-                      "Prediction tile should show the '30d forecast' summary line — chart data must be loaded")
+        sleep(2)
+        XCTAssertFalse(summary.exists, "Dashboard tile should NOT show forecast summary text")
     }
 
     // MARK: - 详情页加载
@@ -80,8 +81,10 @@ final class PredictionChartUITests: XCTestCase {
         let navBar = app.navigationBars["Follower Prediction"]
         XCTAssertTrue(navBar.waitForExistence(timeout: 10), "Prediction detail nav bar should exist")
 
-        // Hero 卡片：大号 "~N" 数值 + 副标题
-        XCTAssertTrue(app.staticTexts["Predicted Followers Next Month"].exists,
+        // Hero 卡片：大号 "~N" 数值 + 副标题（本地化 key premium.predictedFollowersNext）
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "Predicted Followers")
+        ).firstMatch.exists,
                       "Hero card subtitle should exist")
         let heroValue = app.staticTexts.matching(
             NSPredicate(format: "label BEGINSWITH %@", "~")
@@ -106,16 +109,21 @@ final class PredictionChartUITests: XCTestCase {
         XCTAssertTrue(rangeValue.exists, "80% range should show a numeric interval")
     }
 
-    /// 详情页模型说明文字 —— 仅在图表真实渲染（hasForecast）时出现，
-    /// 是"预测图表加载正确"的最强可见信号
-    func testPredictionDetailShowsModelCaptionWhenChartRendered() {
+    /// 详情页不出现模型名称 —— 关键数字存在 = 图表已渲染（hasForecast），
+    /// 同时模型名称（"Bayesian …"）不得出现（v0.16 已移除）
+    func testPredictionDetailShowsNoModelName() {
         navigateToPredictionDetail()
 
+        // 关键数字行存在 → 图表数据已加载（替代原 caption 作为渲染信号）
+        XCTAssertTrue(app.staticTexts["80% Likely Range"].waitForExistence(timeout: 10),
+                      "Key figures row should exist — chart data loaded")
+
+        // 模型名称不得出现在详情页
         let caption = app.staticTexts.matching(
-            NSPredicate(format: "label BEGINSWITH %@", "Bayesian negative binomial model")
+            NSPredicate(format: "label BEGINSWITH %@", "Bayesian")
         ).firstMatch
-        XCTAssertTrue(caption.waitForExistence(timeout: 10),
-                      "Model caption should appear — prediction chart must be rendered (hasForecast)")
+        sleep(2)
+        XCTAssertFalse(caption.exists, "Detail page should NOT show the model name")
     }
 
     // MARK: - 返回导航

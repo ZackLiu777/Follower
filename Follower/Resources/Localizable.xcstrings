@@ -10,12 +10,22 @@
     "@%@" : {
 
     },
-    "%@ at %@" : {
+    "%@ %@ · %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "%1$@ at %2$@"
+            "value" : "%1$@ %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "%@ %lld%%" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$lld%%"
           }
         }
       }
@@ -46,16 +56,6 @@
     "%lld" : {
 
     },
-    "%lld of %lld days" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld of %2$lld days"
-          }
-        }
-      }
-    },
     "%lld people this week" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -85,13 +85,13 @@
         }
       }
     },
-    "%lld regions with measurable audience" : {
-
-    },
     "%lld:00" : {
 
     },
     "%lld/100" : {
+
+    },
+    "%lld%%" : {
 
     },
     "•" : {
@@ -133,9 +133,6 @@
 
     },
     "📅 %@" : {
-
-    },
-    "📅 Wednesday 7 PM" : {
 
     },
     "1. 在「快捷指令」App 中新建一条指令：\n   取剪贴板 → 打开 Instagram" : {
@@ -204,19 +201,6 @@
           }
         }
       }
-    },
-    "30d forecast ~%@ · 80%% range %@–%@ · P(growth>0) %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "30d forecast ~%1$@ · 80%% range %2$@–%3$@ · P(growth>0) %4$@"
-          }
-        }
-      }
-    },
-    "Absolute Change" : {
-
     },
     "Access Token (IGAA...)" : {
 
@@ -772,34 +756,10 @@
         }
       }
     },
-    "Active Days Ratio" : {
-
-    },
-    "Activity data will appear here once enough events are recorded." : {
-
-    },
-    "Activity Level" : {
-
-    },
     "All Posts" : {
 
     },
-    "Avg Daily Change" : {
-
-    },
-    "Bayesian negative binomial model · 30-day forecast · shaded bands show 50/80/95% credible intervals." : {
-
-    },
-    "Breakdown" : {
-
-    },
     "Caption" : {
-
-    },
-    "Churn detected — consecutive decline" : {
-
-    },
-    "Churn Risk Level" : {
 
     },
     "Client ID (App ID)" : {
@@ -895,6 +855,35 @@
         }
       }
     },
+    "common.error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エラー"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "错误"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "錯誤"
+          }
+        }
+      }
+    },
     "common.loading" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -982,6 +971,35 @@
         }
       }
     },
+    "common.share" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共有"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分享"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分享"
+          }
+        }
+      }
+    },
     "common.syncNow" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1010,9 +1028,6 @@
           }
         }
       }
-    },
-    "Comparison data will appear here once enough historical data is recorded." : {
-
     },
     "Connecting..." : {
 
@@ -3580,9 +3595,6 @@
         }
       }
     },
-    "Distribution by Region" : {
-
-    },
     "Engage Back" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3612,12 +3624,6 @@
         }
       }
     },
-    "Engagement" : {
-
-    },
-    "Engagement Rate" : {
-
-    },
     "Followed" : {
 
     },
@@ -3625,9 +3631,6 @@
 
     },
     "Followers" : {
-
-    },
-    "Geo distribution data will appear here once available." : {
 
     },
     "Growth Decisions" : {
@@ -3672,9 +3675,6 @@
 
     },
     "Hour" : {
-
-    },
-    "How each interaction type contributes to your quality score" : {
 
     },
     "Login with Instagram" : {
@@ -4977,12 +4977,6 @@
     "Month" : {
 
     },
-    "Net Growth Rate" : {
-
-    },
-    "No Data Available" : {
-
-    },
     "No decisions yet" : {
 
     },
@@ -5014,9 +5008,6 @@
           }
         }
       }
-    },
-    "Not enough historical data yet — predictions appear after roughly 30 days of snapshots." : {
-
     },
     "OAuth" : {
 
@@ -5055,12 +5046,6 @@
           }
         }
       }
-    },
-    "Predicted Followers Next Month" : {
-
-    },
-    "Prediction unavailable — need at least 30 days of data (currently %lld days)." : {
-
     },
     "PREMIUM" : {
 
@@ -5123,6 +5108,35 @@
         }
       }
     },
+    "premium.activeDaysOf" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active %d of %d days"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d日中%d日アクティブ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "活跃 %d/%d 天"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "活躍 %d/%d 天"
+          }
+        }
+      }
+    },
     "premium.activeDaysRatio" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5181,6 +5195,35 @@
         }
       }
     },
+    "premium.activityDistribution" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activity Distribution"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アクティビティ分布"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "互动分布"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "互動分布"
+          }
+        }
+      }
+    },
     "premium.activityLevel" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5235,6 +5278,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "分析中…"
+          }
+        }
+      }
+    },
+    "premium.anomalies" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anomalies"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "異常"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "异常"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "異常"
           }
         }
       }
@@ -5384,6 +5456,35 @@
         }
       }
     },
+    "premium.avgEngagementPerPost" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avg %@ engagement/post"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均 %@ エンゲージメント/投稿"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均互动 %@/帖"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均互動 %@/帖"
+          }
+        }
+      }
+    },
     "premium.avgEventsPerDay" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -5409,6 +5510,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "日均事件數"
+          }
+        }
+      }
+    },
+    "premium.basedOnPosts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Based on %d posts"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "投稿 %d 件に基づく"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "基于 %d 篇帖子"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "基於 %d 篇貼文"
           }
         }
       }
@@ -5612,6 +5742,94 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "最佳發文時間"
+          }
+        }
+      }
+    },
+    "premium.breakdown" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Engagement Breakdown"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "内訳"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "互动构成"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "互動構成"
+          }
+        }
+      }
+    },
+
+    "premium.bubbleLegend" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Circle size = avg engagement · Number = posts"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "円の大きさ = 平均エンゲージメント・数字 = 投稿数"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "圆大小 = 平均互动 · 数字 = 帖子数"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "圓大小 = 平均互動 · 數字 = 貼文數"
+          }
+        }
+      }
+    },
+    "premium.bubbleMatrix" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Engagement Bubble Matrix"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エンゲージメントバブルマトリックス"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "互动气泡矩阵"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "互動氣泡矩陣"
           }
         }
       }
@@ -6022,6 +6240,93 @@
         }
       }
     },
+    "premium.comparisonDown" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Down %.0f%% vs last period"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前期比 %.0f%% 低下"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "较前周期 -%.0f%%"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "較前期間 -%.0f%%"
+          }
+        }
+      }
+    },
+    "premium.comparisonStable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stable vs last period"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前期と同水準"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "与前周期持平"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "與前期間持平"
+          }
+        }
+      }
+    },
+    "premium.comparisonUp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up %.0f%% vs last period"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前期比 %.0f%% 上昇"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "较前周期 +%.0f%%"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "較前期間 +%.0f%%"
+          }
+        }
+      }
+    },
     "premium.competitorComparison" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6250,6 +6555,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "當前週期"
+          }
+        }
+      }
+    },
+    "premium.dailyEngagement" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Engagement by Day"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "曜日別エンゲージメント"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每天互动"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每天互動"
           }
         }
       }
@@ -7037,6 +7371,35 @@
         }
       }
     },
+    "premium.growthProbability" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Growth Probability"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "成長確率"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "增长概率"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "增長概率"
+          }
+        }
+      }
+    },
     "premium.growthRate" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7095,35 +7458,6 @@
         }
       }
     },
-    "premium.highEngagement" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "High Engagement"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "高エンゲージメント"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "高互动"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "高互動"
-          }
-        }
-      }
-    },
     "premium.highlyActive" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7153,31 +7487,31 @@
         }
       }
     },
-    "premium.hourlyHeatmap" : {
+    "premium.hourlyEngagement" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hourly Heatmap"
+            "value" : "Engagement by Hour"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "時間別ヒートマップ"
+            "value" : "時間別エンゲージメント"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "每小时热力图"
+            "value" : "每小时互动"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "每小時熱力圖"
+            "value" : "每小時互動"
           }
         }
       }
@@ -7298,6 +7632,35 @@
         }
       }
     },
+    "premium.likelyRange80" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "80%% Likely Range"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "80%%の確からしい範囲"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "80%% 可能区间"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "80%% 可能區間"
+          }
+        }
+      }
+    },
     "premium.likes" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7381,35 +7744,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "較低"
-          }
-        }
-      }
-    },
-    "premium.lowEngagement" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Low Engagement"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "低エンゲージメント"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "低互动"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "低互動"
           }
         }
       }
@@ -7907,6 +8241,64 @@
         }
       }
     },
+    "premium.noDataBestTime" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Post Data Yet"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "投稿データがまだありません"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无帖子数据"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫無貼文資料"
+          }
+        }
+      }
+    },
+    "premium.noDataBestTimeDesc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync your account to analyze which posting times get the most engagement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウントを同期すると、最もエンゲージメントが高い投稿時間を分析できます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步账号后即可分析哪个发帖时段互动最高。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同步帳號後即可分析哪個發文時段互動最高。"
+          }
+        }
+      }
+    },
     "premium.noDataComparison" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8284,6 +8676,151 @@
         }
       }
     },
+    "premium.periodAfternoon" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afternoon"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "午後"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下午"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下午"
+          }
+        }
+      }
+    },
+    "premium.periodDistribution" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Period Distribution"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "時間帯分布"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "时段分布"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "時段分布"
+          }
+        }
+      }
+    },
+    "premium.periodEvening" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Evening"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "夕方"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "晚上"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "晚上"
+          }
+        }
+      }
+    },
+    "premium.periodMorning" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Morning"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "朝"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上午"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上午"
+          }
+        }
+      }
+    },
+    "premium.periodNight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Night"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "深夜"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "凌晨"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "凌晨"
+          }
+        }
+      }
+    },
     "premium.postCampaign" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8396,6 +8933,64 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "基於你的歷史增長趨勢"
+          }
+        }
+      }
+    },
+    "premium.predictionNeedsData" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Need more data for prediction"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "予測にはさらにデータが必要"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要更多数据才能预测"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要更多數據才能預測"
+          }
+        }
+      }
+    },
+    "premium.predictionUnavailable" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prediction unavailable (needs %d days, have %d)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "予測不可（%d日必要、現在%d日）"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预测不可用（需要 %d 天数据，当前 %d 天）"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "預測不可用（需要 %d 天數據，目前 %d 天）"
           }
         }
       }
@@ -8574,6 +9169,35 @@
         }
       }
     },
+    "premium.regionsWithAudience" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audience in %d regions"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d地域にオーディエンス"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 %d 个地区有受众"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 %d 個地區有受眾"
+          }
+        }
+      }
+    },
     "premium.replied" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -8628,6 +9252,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "留存與流失"
+          }
+        }
+      }
+    },
+    "premium.scheduledAt" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ at %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %@に投稿"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %@ 发布"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ %@ 發布"
           }
         }
       }
@@ -9618,6 +10271,64 @@
         }
       }
     },
+    "premium.totalEvents" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%d events total"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "合計 %d 件"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共 %d 个事件"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共 %d 個事件"
+          }
+        }
+      }
+    },
+    "premium.trend" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trend"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "トレンド"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "趋势"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "趨勢"
+          }
+        }
+      }
+    },
     "premium.trialActive" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9730,6 +10441,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "剩餘 %d:%02d"
+          }
+        }
+      }
+    },
+    "premium.unfollowed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unfollowed"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フォロー解除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已取关"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已退追蹤"
           }
         }
       }
@@ -9850,6 +10590,35 @@
         }
       }
     },
+    "premium.weekdayDistribution" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weekday Distribution"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "曜日分布"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "星期分布"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "星期分布"
+          }
+        }
+      }
+    },
     "premium.weightBreakdown" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9937,41 +10706,6 @@
         }
       }
     },
-    "premium.yourBestPostingTime" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your Best Posting Time"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "あなたのベスト投稿時間"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "你的最佳发帖时间"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "你的最佳發文時間"
-          }
-        }
-      }
-    },
-    "Quality Score" : {
-
-    },
-    "Quality scores will appear here once enough engagement data is recorded." : {
-
-    },
     "Recent Activity" : {
 
     },
@@ -10007,8 +10741,34 @@
     "Redirect URI" : {
 
     },
-    "Retention data will appear here once enough snapshots are recorded." : {
-
+    "settings.accounts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accounts"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウント"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "账号"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "帳號"
+          }
+        }
+      }
     },
     "settings.activityStatus" : {
       "extractionState" : "manual",
@@ -11272,9 +12032,6 @@
     "Token" : {
 
     },
-    "Top Region" : {
-
-    },
     "Track Your Growth" : {
 
     },
@@ -11863,9 +12620,6 @@
           }
         }
       }
-    },
-    "Weight Breakdown" : {
-
     },
     "Window" : {
 

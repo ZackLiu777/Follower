@@ -31,13 +31,42 @@ struct PhiServicesTests {
         )
     }
 
-    private func makeEvent(daysAgo: Int, hour: Int = 12) -> Event {
+    private func makeEvent(daysAgo: Int, hour: Int = 12, type: EventType = .postInteraction) -> Event {
         let cal = Calendar.current
         var date = cal.date(byAdding: .day, value: -daysAgo, to: Date()) ?? Date()
         date = cal.date(bySettingHour: hour, minute: 0, second: 0, of: date) ?? date
         return Event(
-            accountId: 1, eventType: .profileSnapshot,
+            accountId: 1, eventType: type,
             payload: Data(), source: .api,
+            observedAt: date, createdAt: date
+        )
+    }
+
+    /// 固定日期构造 Event（与运行日期无关，weekday 确定）：
+    /// 2020-01-06 = 周一，2020-01-07 = 周二，2020-01-08 = 周三
+    private func makeEvent(on year: Int, month: Int, day: Int, hour: Int, type: EventType = .postInteraction) -> Event {
+        var comps = DateComponents()
+        comps.year = year; comps.month = month; comps.day = day; comps.hour = hour
+        let date = Calendar.current.date(from: comps) ?? Date()
+        return Event(
+            accountId: 1, eventType: type,
+            payload: Data(), source: .api,
+            observedAt: date, createdAt: date
+        )
+    }
+
+    /// 固定日期构造 Snapshot（与运行日期无关，weekday 确定）：
+    /// 2020-01-06 = 周一，2020-01-07 = 周二，2020-01-08 = 周三
+    private func makeSnapshot(on year: Int, month: Int, day: Int, hour: Int,
+                              likes: Int = 0, comments: Int = 0, shares: Int = 0) -> Snapshot {
+        var comps = DateComponents()
+        comps.year = year; comps.month = month; comps.day = day; comps.hour = hour
+        let date = Calendar.current.date(from: comps) ?? Date()
+        return Snapshot(
+            accountId: 1, followersCount: 1000, followingCount: 10,
+            mediaCount: 5, engagementRate: 0,
+            totalLikes: likes, totalComments: comments,
+            totalShares: shares, totalViews: 500,
             observedAt: date, createdAt: date
         )
     }
@@ -255,7 +284,7 @@ struct PhiServicesTests {
                 makeEvent(daysAgo: day, hour: hour)
             }
         }
-        let result = await service.generate(from: events)
+        let result = await service.generate(from: events, snapshots: [])
         #expect(result.cells.count == 168, "Should generate exactly 7 × 24 = 168 cells")
     }
 
@@ -272,7 +301,7 @@ struct PhiServicesTests {
         events.append(makeEvent(daysAgo: 1, hour: 10))
         events.append(makeEvent(daysAgo: 3, hour: 8))
 
-        let result = await service.generate(from: events)
+        let result = await service.generate(from: events, snapshots: [])
         #expect(!result.peakDescription.isEmpty)
         #expect(result.bestHour == 19, "Peak hour should be 19")
         let peakDensity = result.density(weekday: result.bestDay, hour: result.bestHour)
@@ -283,7 +312,7 @@ struct PhiServicesTests {
     @Test
     func testHeatmapEmptyEvents() async {
         let service = EngagementHeatmapService()
-        let result = await service.generate(from: [])
+        let result = await service.generate(from: [], snapshots: [])
         #expect(result.cells.isEmpty)
         #expect(result.peakDescription == "No data")
         #expect(result.bestDay == 0)
@@ -294,7 +323,7 @@ struct PhiServicesTests {
     func testHeatmapSingleEvent() async {
         let service = EngagementHeatmapService()
         let event = makeEvent(daysAgo: 0, hour: 15)
-        let result = await service.generate(from: [event])
+        let result = await service.generate(from: [event], snapshots: [])
         #expect(result.cells.count == 168)
         #expect(result.bestHour == 15)
         let density = result.density(weekday: result.bestDay, hour: 15)
@@ -305,7 +334,7 @@ struct PhiServicesTests {
     @Test
     func testHeatmapDensityMissingCellReturnsZero() async {
         let service = EngagementHeatmapService()
-        let result = await service.generate(from: [])
+        let result = await service.generate(from: [], snapshots: [])
         let d = result.density(weekday: 1, hour: 0)
         #expect(d == 0)
     }
@@ -315,11 +344,115 @@ struct PhiServicesTests {
     func testHeatmapUniformDistribution() async {
         let service = EngagementHeatmapService()
         let events = (0..<7).map { day in makeEvent(daysAgo: day, hour: 12) }
-        let result = await service.generate(from: events)
+        let result = await service.generate(from: events, snapshots: [])
         for cell in result.cells {
             #expect(cell.density >= 0 && cell.density <= 1.0,
                      "Density must be in [0, 1], got \(cell.density)")
         }
+    }
+
+    /// 分布字段：totalEvents 与星期分布（3 个周一 + 1 个周二 → 周一为峰值日）
+    @Test
+    func testHeatmapDayDistribution() async {
+        let service = EngagementHeatmapService()
+        let events = [
+            makeEvent(on: 2020, month: 1, day: 6, hour: 9),   // Mon
+            makeEvent(on: 2020, month: 1, day: 6, hour: 10),  // Mon
+            makeEvent(on: 2020, month: 1, day: 6, hour: 11),  // Mon
+            makeEvent(on: 2020, month: 1, day: 7, hour: 9),   // Tue
+        ]
+        let result = await service.generate(from: events, snapshots: [])
+        #expect(result.totalEvents == 4)
+        #expect(result.dayDistribution.count == 7)
+        #expect(result.dayDistribution[1] == 1.0, "Monday (index 1) should be the peak day")
+        #expect(abs(result.dayDistribution[2] - 1.0 / 3.0) < 0.001, "Tuesday should be 1/3 of Monday")
+        #expect(result.dayDistribution[0] == 0, "Sunday should be 0")
+    }
+
+    /// 时段分布：上午(6-11) 与 晚上(18-23) 有事件 → 上午为峰值时段
+    @Test
+    func testHeatmapPeriodDistribution() async {
+        let service = EngagementHeatmapService()
+        let events = [
+            makeEvent(on: 2020, month: 1, day: 6, hour: 8),   // 上午
+            makeEvent(on: 2020, month: 1, day: 7, hour: 9),   // 上午
+            makeEvent(on: 2020, month: 1, day: 8, hour: 22),  // 晚上
+        ]
+        let result = await service.generate(from: events, snapshots: [])
+        #expect(result.totalEvents == 3)
+        #expect(result.periodDistribution.count == 4)
+        #expect(result.periodDistribution[1] == 1.0, "Morning (index 1) should be the peak period")
+        #expect(result.periodDistribution[3] > 0 && result.periodDistribution[3] < 1)
+        #expect(result.periodDistribution[0] == 0, "Late night should be 0")
+        #expect(result.periodDistribution[2] == 0, "Afternoon should be 0")
+    }
+
+    /// 空结果：分布数组全零
+    @Test
+    func testHeatmapEmptyDistribution() async {
+        let service = EngagementHeatmapService()
+        let result = await service.generate(from: [], snapshots: [])
+        #expect(result.totalEvents == 0)
+        #expect(result.dayDistribution.allSatisfy { $0 == 0 })
+        #expect(result.periodDistribution.allSatisfy { $0 == 0 })
+    }
+
+    /// 事件权重（v0.16 双通道）：真互动 1.0 / followerChange 0.3 / profileSnapshot 0
+    @Test
+    func testHeatmapEventWeights() {
+        #expect(EngagementHeatmapService.eventWeight(for: .postInteraction) == 1.0)
+        #expect(EngagementHeatmapService.eventWeight(for: .storyView) == 1.0)
+        #expect(EngagementHeatmapService.eventWeight(for: .engagementUpdate) == 1.0)
+        #expect(EngagementHeatmapService.eventWeight(for: .followerChange) == 0.3)
+        #expect(EngagementHeatmapService.eventWeight(for: .profileSnapshot) == 0,
+                 "profileSnapshot is covered by the snapshot-delta channel")
+    }
+
+    /// 快照互动增量通道：likes 环比增长归入第二快照所在 (weekday, hour)，按最大增量归一化
+    @Test
+    func testHeatmapSnapshotDeltaChannel() async {
+        let service = EngagementHeatmapService()
+        let snapshots = [
+            makeSnapshot(on: 2020, month: 1, day: 6, hour: 9, likes: 100),   // Mon 09:00（首点无增量）
+            makeSnapshot(on: 2020, month: 1, day: 7, hour: 10, likes: 400),  // Tue 10:00 → Δ300
+            makeSnapshot(on: 2020, month: 1, day: 8, hour: 11, likes: 550),  // Wed 11:00 → Δ150
+        ]
+        let result = await service.generate(from: [], snapshots: snapshots)
+
+        let cal = Calendar.current
+        let tue = cal.date(from: DateComponents(year: 2020, month: 1, day: 7, hour: 10))!
+        let wed = cal.date(from: DateComponents(year: 2020, month: 1, day: 8, hour: 11))!
+        #expect(result.density(weekday: cal.component(.weekday, from: tue),
+                               hour: cal.component(.hour, from: tue)) == 1.0,
+                 "Δ300 is the max delta → density 1.0")
+        #expect(result.density(weekday: cal.component(.weekday, from: wed),
+                               hour: cal.component(.hour, from: wed)) == 0.5,
+                 "Δ150 normalized to 0.5")
+        #expect(result.totalEvents == 0, "No events passed")
+    }
+
+    /// 只有快照、没有事件 → 快照通道单独也能生成 7×24 网格
+    @Test
+    func testHeatmapSnapshotOnly() async {
+        let service = EngagementHeatmapService()
+        let snapshots = [makeSnapshot(on: 2020, month: 1, day: 6, hour: 9, likes: 100)]
+        let result = await service.generate(from: [], snapshots: snapshots)
+        #expect(result.cells.count == 168)
+    }
+
+    /// followerChange 弱信号参与事件通道（0.3 权重）
+    @Test
+    func testHeatmapFollowerChangeWeighted() async {
+        let service = EngagementHeatmapService()
+        // 5 个 followerChange 事件 → 权重合计 1.5
+        let events = (0..<5).map { i in
+            makeEvent(on: 2020, month: 1, day: 6, hour: 9, type: .followerChange)
+        }
+        let result = await service.generate(from: events, snapshots: [])
+        let cal = Calendar.current
+        let mon = cal.date(from: DateComponents(year: 2020, month: 1, day: 6, hour: 9))!
+        let wd = cal.component(.weekday, from: mon)
+        #expect(result.density(weekday: wd, hour: 9) == 1.0, "Only cell → density 1.0")
     }
 
     // MARK: - DashboardViewModel Phi Integration
@@ -350,6 +483,8 @@ struct PhiServicesTests {
             authenticityService: AuthenticityService(),
             campaignComparisonService: CampaignComparisonService(),
             engagementHeatmapService: EngagementHeatmapService(),
+            mediaPostRepository: MediaPostRepository(db: DatabaseManager.shared),
+            bestPostingTimeService: BestPostingTimeService(),
             mediaKitService: MediaKitService()
         )
         #expect(vm.authenticityResult == nil)
@@ -397,6 +532,8 @@ struct PhiServicesTests {
             authenticityService: AuthenticityService(),
             campaignComparisonService: CampaignComparisonService(),
             engagementHeatmapService: EngagementHeatmapService(),
+            mediaPostRepository: MediaPostRepository(db: DatabaseManager.shared),
+            bestPostingTimeService: BestPostingTimeService(),
             mediaKitService: MediaKitService()
         )
         vm.selectedAccountId = 1

@@ -26,12 +26,10 @@ struct QualityDetailView: View {
             if let result = result {
                 ScrollView {
                     VStack(spacing: 20) {
-                        // 质量评分 Hero 卡片
-                        VStack(spacing: 4) {
-                            Text(String(format: "%.0f", result.score))
-                                .font(.system(size: 72, weight: .bold, design: .rounded))
-                                .foregroundColor(qualityColor(for: result.score))
-                            Text("Quality Score").font(.subheadline).foregroundColor(.secondary)
+                        // 质量评分 Hero 卡片：环形仪表 + 评级胶囊
+                        VStack(spacing: 8) {
+                            ScoreGaugeView(score: result.score, size: 140)
+                            Text(loc(L10n.Premium.qualityScore)).font(.subheadline).foregroundColor(.secondary)
                             Text(result.label)
                                 .font(.headline)
                                 .foregroundColor(qualityColor(for: result.score))
@@ -42,35 +40,48 @@ struct QualityDetailView: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                         .padding(.horizontal)
 
-                        // 互动率
-                        VStack(spacing: 4) {
-                            Text("Engagement Rate")
-                                .font(.subheadline).foregroundColor(.secondary)
-                            Text(String(format: "%.2f%%", result.engagementRate * 100))
-                                .font(.title).fontWeight(.semibold)
+                        // 互动率：数字 + 占比条
+                        VStack(spacing: 10) {
+                            HStack {
+                                Text(loc(L10n.Premium.engagementRate))
+                                    .font(.subheadline).foregroundColor(.secondary)
+                                Spacer()
+                                Text(String(format: "%.2f%%", result.engagementRate * 100))
+                                    .font(.title3).fontWeight(.semibold)
+                                    .foregroundColor(qualityColor(for: result.score))
+                            }
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 4).fill(theme.divider)
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(qualityColor(for: result.score))
+                                        .frame(width: geo.size.width * min(max(result.engagementRate, 0), 1))
+                                }
+                            }
+                            .frame(height: 10)
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal)
 
                         // 权重分解
                         VStack(spacing: 12) {
-                            Text("Weight Breakdown").font(.headline)
-                            Text("How each interaction type contributes to your quality score")
+                            Text(loc(L10n.Premium.weightBreakdown)).font(.headline)
+                            Text(loc(L10n.Premium.weightBreakdownDesc))
                                 .font(.caption).foregroundColor(.secondary)
 
-                            weightRow(icon: "heart.fill", label: "Likes", weight: result.likesWeight, color: theme.accentPrimary)
-                            weightRow(icon: "text.bubble.fill", label: "Comments", weight: result.commentsWeight, color: theme.positiveGreen)
-                            weightRow(icon: "arrowshape.turn.up.forward.fill", label: "Shares", weight: result.sharesWeight, color: theme.chartLine)
+                            weightRow(icon: "heart.fill", label: loc(L10n.Premium.likes), weight: result.likesWeight, color: theme.accentPrimary)
+                            weightRow(icon: "text.bubble.fill", label: loc(L10n.Premium.comments), weight: result.commentsWeight, color: theme.positiveGreen)
+                            weightRow(icon: "arrowshape.turn.up.forward.fill", label: loc(L10n.Premium.shares), weight: result.sharesWeight, color: theme.chartLine)
                         }
                         .padding()
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal)
 
@@ -85,9 +96,9 @@ struct QualityDetailView: View {
             } else {
                 // 无数据占位
                 ContentUnavailableView(
-                    "No Data Available",
+                    loc(L10n.Premium.noDataAvailable),
                     systemImage: "star.slash",
-                    description: Text("Quality scores will appear here once enough engagement data is recorded.")
+                    description: Text(loc(L10n.Premium.noDataQualityDesc))
                 )
             }
         }
@@ -124,14 +135,14 @@ struct QualityDetailView: View {
         }
     }
 
-    /// 根据评级标签返回说明文字
+    /// 根据评级标签返回说明文字（本地化 tip）
     private func qualityDescription(for label: String) -> String {
         switch label {
-        case "Excellent": return "Outstanding engagement quality. Your audience is highly responsive and loyal."
-        case "Great": return "Strong engagement. Your content resonates well with your followers."
-        case "Good": return "Solid engagement. A few tweaks could push you into the top tier."
-        case "Fair": return "Average engagement. Experiment with different content types to boost interaction."
-        default: return "Low engagement. Consider revamping your content strategy to better connect with your audience."
+        case "Excellent": return loc(L10n.Premium.tipExcellent)
+        case "Great": return loc(L10n.Premium.tipGreat)
+        case "Good": return loc(L10n.Premium.tipGood)
+        case "Fair": return loc(L10n.Premium.tipFair)
+        default: return loc(L10n.Premium.tipLowQuality)
         }
     }
 }

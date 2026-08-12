@@ -477,77 +477,10 @@ private struct PremiumInsightsSection: View {
         Group {
             if item.locked {
                 lockedTile(icon: item.icon, label: item.label)
-            } else if globalIndex == 0, hasPredictionChart {
-                // v0.15-alpha: 粉丝预测主卡片 — 跨双列，内嵌紧凑区间图 + 摘要
-                bigPredictionTile(icon: item.icon, label: item.label, globalIndex: globalIndex)
-                    .gridCellColumns(2)
             } else {
                 unlockedTile(icon: item.icon, label: item.label, globalIndex: globalIndex)
             }
         }
-    }
-
-    /// 是否有可展示的逐日预测数据（冷启动时回退标准 tile）
-    private var hasPredictionChart: Bool {
-        guard let r = viewModel.predictionResult, let median = r.dailyMedian, !median.isEmpty else { return false }
-        return true
-    }
-
-    /// 预测主卡片：标题行 + 紧凑区间图 + 一句话摘要
-    private func bigPredictionTile(icon: String, label: String, globalIndex: Int) -> some View {
-        let destination = destinationFor(index: globalIndex)
-        let result = viewModel.predictionResult
-        let base = Double(viewModel.latestSnapshot?.followersCount ?? 0)
-        let q10 = (result?.dailyQ10?.last ?? 0) + base
-        let q90 = (result?.dailyQ90?.last ?? 0) + base
-        let probability = result?.probabilityPositive ?? 0
-
-        return NavigationLink(destination: destination) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 8) {
-                    Image(systemName: icon)
-                        .font(.system(size: 14))
-                        .foregroundColor(theme.accentPrimary)
-                        .frame(width: 26, height: 26)
-                        .background(theme.accentPrimary.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 7))
-                    Text(label)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(theme.textPrimary)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(theme.textTertiary)
-                }
-
-                if let result {
-                    PredictionTrendChart(
-                        historical: viewModel.historyPoints,
-                        forecastStart: viewModel.historyPoints.last?.0 ?? Date(),
-                        baseFollowers: base,
-                        dailyLower: result.dailyLower ?? [],
-                        dailyQ10: result.dailyQ10 ?? [],
-                        dailyQ25: result.dailyQ25 ?? [],
-                        dailyMedian: result.dailyMedian ?? [],
-                        dailyQ75: result.dailyQ75 ?? [],
-                        dailyQ90: result.dailyQ90 ?? [],
-                        dailyUpper: result.dailyUpper ?? [],
-                        compact: true
-                    )
-                    .frame(height: 72)
-                }
-
-                // 一句话摘要
-                Text("30d forecast ~\(viewModel.predictedFollowers.formatted(.number)) · 80% range \(Int(q10).formatted(.number))–\(Int(q90).formatted(.number)) · P(growth>0) \(probability.formatted(.percent.precision(.fractionLength(0))))")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .followerGlassEffect(cornerRadius: 12, usesMaterial: false, fill: theme.premiumCardBackground)
-        }
-        .buttonStyle(.plain)
     }
 
     /// 解锁态 Tile
@@ -637,7 +570,7 @@ private struct PremiumInsightsSection: View {
         case 3: RetentionDetailView(result: viewModel.retentionResult)
         case 4: ComparisonDetailView(result: viewModel.comparisonResult)
         case 5: UnfollowListView(followers: viewModel.unfollowList)
-        case 6: BestTimeView(heatmapResult: viewModel.heatmapResult)
+        case 6: BestTimeView(result: viewModel.bestPostingTimeResult)
         case 7: ContentStrategyView(aiSummary: viewModel.aiSummary.isEmpty ? viewModel.contentTip : viewModel.aiSummary)
         // Phi: 三大人群画像新 Premium 功能
         case 8: CompetitorDetailView(comparisonResult: viewModel.comparisonResult)
@@ -681,6 +614,8 @@ private struct PremiumTileItem {
         authenticityService: container.authenticityService,
         campaignComparisonService: container.campaignComparisonService,
         engagementHeatmapService: container.engagementHeatmapService,
+        mediaPostRepository: container.mediaPostRepository,
+        bestPostingTimeService: container.bestPostingTimeService,
         mediaKitService: container.mediaKitService
     )
     let settingsViewModel = SettingsViewModel(

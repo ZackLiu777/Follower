@@ -26,51 +26,64 @@ struct RetentionDetailView: View {
             if let result = result {
                 ScrollView {
                     VStack(spacing: 20) {
-                        // 净增长率 Hero 卡片
+                        // 净增长率 Hero 卡片：箭头 + 百分比
                         VStack(spacing: 4) {
-                            Text(String(format: "%+.1f%%", result.netGrowthRate * 100))
-                                .font(.system(size: 48, weight: .bold, design: .rounded))
-                                .foregroundColor(result.netGrowthRate >= 0 ? theme.positiveGreen : theme.negativeRed)
-                            Text("Net Growth Rate").font(.subheadline).foregroundColor(.secondary)
+                            HStack(spacing: 8) {
+                                Image(systemName: result.netGrowthRate >= 0 ? "arrow.up.right" : "arrow.down.right")
+                                    .font(.system(size: 36, weight: .semibold))
+                                    .foregroundColor(result.netGrowthRate >= 0 ? theme.positiveGreen : theme.negativeRed)
+                                Text(String(format: "%+.1f%%", result.netGrowthRate * 100))
+                                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                                    .foregroundColor(result.netGrowthRate >= 0 ? theme.positiveGreen : theme.negativeRed)
+                            }
+                            Text(loc(L10n.Premium.netGrowthRate)).font(.subheadline).foregroundColor(.secondary)
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                         .padding(.horizontal)
 
-                        // 流失风险等级卡片
-                        VStack(spacing: 8) {
-                            Text("Churn Risk Level").font(.headline)
-                            Text(result.churnRiskLevel)
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
-                                .foregroundColor(churnColor(for: result.churnRiskLevel))
+                        // 流失风险等级卡片：量表条 + 等级 + 流失警告
+                        VStack(spacing: 10) {
+                            HStack {
+                                Text(loc(L10n.Premium.churnRiskLevel)).font(.headline)
+                                Spacer()
+                                Text(result.churnRiskLevel)
+                                    .font(.headline).fontWeight(.bold)
+                                    .foregroundColor(churnColor(for: result.churnRiskLevel))
+                            }
+                            SegmentedScaleView(
+                                level: churnLevel(for: result.churnRiskLevel),
+                                levelColor: churnColor(for: result.churnRiskLevel),
+                                levelLabel: result.churnRiskLevel
+                            )
                             if result.isChurning {
                                 HStack(spacing: 4) {
                                     Image(systemName: "exclamationmark.triangle.fill")
                                         .foregroundColor(theme.warningOrange)
-                                    Text("Churn detected — consecutive decline")
+                                    Text(loc(L10n.Premium.churnDetected))
                                         .font(.caption).foregroundColor(theme.warningOrange)
                                 }
                             }
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal)
 
                         // 粉丝变化对比
                         HStack(spacing: 20) {
                             statCard(
-                                title: "Start",
+                                title: loc(L10n.Premium.start),
                                 value: result.startFollowers.formatted(.number),
                                 color: theme.textSecondary
                             )
                             Image(systemName: "arrow.right")
                                 .foregroundColor(.secondary)
                             statCard(
-                                title: "End",
+                                title: loc(L10n.Premium.end),
                                 value: result.endFollowers.formatted(.number),
                                 color: result.netGrowthRate >= 0 ? theme.positiveGreen : theme.negativeRed
                             )
@@ -79,7 +92,7 @@ struct RetentionDetailView: View {
 
                         // 日均变化
                         VStack(spacing: 4) {
-                            Text("Avg Daily Change")
+                            Text(loc(L10n.Premium.avgDailyChange))
                                 .font(.subheadline).foregroundColor(.secondary)
                             Text(String(format: "%+.1f", result.avgDailyChange))
                                 .font(.title2).fontWeight(.bold)
@@ -87,7 +100,7 @@ struct RetentionDetailView: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal)
 
@@ -102,9 +115,9 @@ struct RetentionDetailView: View {
             } else {
                 // 无数据占位
                 ContentUnavailableView(
-                    "No Data Available",
+                    loc(L10n.Premium.noDataAvailable),
                     systemImage: "person.2.slash",
-                    description: Text("Retention data will appear here once enough snapshots are recorded.")
+                    description: Text(loc(L10n.Premium.noDataRetentionDesc))
                 )
             }
         }
@@ -125,7 +138,7 @@ struct RetentionDetailView: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(.regularMaterial)
+        .background(theme.cardSurface)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
@@ -141,13 +154,23 @@ struct RetentionDetailView: View {
         }
     }
 
-    /// 根据流失风险等级返回说明文字
+    /// 流失风险等级 → 量表档位（0-3，用于 SegmentedScaleView）
+    private func churnLevel(for level: String) -> Int {
+        switch level {
+        case "None": return 0
+        case "Low": return 1
+        case "Medium": return 2
+        default: return 3
+        }
+    }
+
+    /// 根据流失风险等级返回说明文字（本地化 tip）
     private func churnDescription(for level: String) -> String {
         switch level {
-        case "None": return "Your follower count is stable or growing. No churn risk detected."
-        case "Low": return "Minor drops detected. Monitor your content cadence to prevent further loss."
-        case "Medium": return "Noticeable decline pattern. Review your recent content and engagement strategy."
-        default: return "Significant churn risk. It may be time to reassess your content and posting frequency."
+        case "None": return loc(L10n.Premium.tipChurnNone)
+        case "Low": return loc(L10n.Premium.tipChurnLow)
+        case "Medium": return loc(L10n.Premium.tipChurnMedium)
+        default: return loc(L10n.Premium.tipChurnHigh)
         }
     }
 }

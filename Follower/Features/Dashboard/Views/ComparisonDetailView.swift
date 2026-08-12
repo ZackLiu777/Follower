@@ -42,28 +42,24 @@ struct ComparisonDetailView: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                         .padding(.horizontal)
 
-                        // 当前 vs 前周期均值对比
-                        HStack(spacing: 16) {
-                            comparisonCard(
-                                title: "Previous Period",
-                                value: String(format: "%.0f", result.previousAvg),
-                                color: theme.textSecondary
-                            )
-                            comparisonCard(
-                                title: "Current Period",
-                                value: String(format: "%.0f", result.currentAvg),
-                                color: directionColor(for: result.direction)
-                            )
-                        }
-                        .padding(.horizontal)
+                        // 当前 vs 前周期均值对比（双条比例条）
+                        DualBarCompareView(
+                            title: loc(L10n.Premium.currentPeriod),
+                            leftLabel: loc(L10n.Premium.previousPeriod),
+                            leftValue: result.previousAvg,
+                            leftColor: theme.textSecondary,
+                            rightLabel: loc(L10n.Premium.currentPeriod),
+                            rightValue: result.currentAvg,
+                            rightColor: directionColor(for: result.direction)
+                        )
 
                         // 绝对变化量
                         VStack(spacing: 4) {
-                            Text("Absolute Change")
+                            Text(loc(L10n.Premium.absoluteChange))
                                 .font(.subheadline).foregroundColor(.secondary)
                             Text(String(format: "%+.0f", result.absoluteChange))
                                 .font(.title2).fontWeight(.bold)
@@ -71,7 +67,7 @@ struct ComparisonDetailView: View {
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal)
 
@@ -86,32 +82,14 @@ struct ComparisonDetailView: View {
             } else {
                 // 无数据占位
                 ContentUnavailableView(
-                    "No Data Available",
+                    loc(L10n.Premium.noDataAvailable),
                     systemImage: "chart.line.flip",
-                    description: Text("Comparison data will appear here once enough historical data is recorded.")
+                    description: Text(loc(L10n.Premium.noDataComparisonDesc))
                 )
             }
         }
         .navigationTitle(loc(L10n.Premium.longTermComparison))
         .navigationBarTitleDisplayMode(.inline)
-    }
-
-    // MARK: - Helper Views
-
-    /// 周期对比卡片：标题 + 数值 + 颜色
-    private func comparisonCard(title: String, value: String, color: Color) -> some View {
-        VStack(spacing: 8) {
-            Text(value)
-                .font(.title2).fontWeight(.bold)
-                .foregroundColor(color)
-            Text(title)
-                .font(.caption).foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - Helpers
@@ -125,12 +103,12 @@ struct ComparisonDetailView: View {
         }
     }
 
-    /// 根据对比方向返回文字标签
+    /// 根据对比方向返回文字标签（本地化）
     private func directionLabel(for direction: ComparisonDirection) -> String {
         switch direction {
-        case .up: return "Growing"
-        case .down: return "Declining"
-        case .flat: return "Stable"
+        case .up: return loc(L10n.Premium.growing)
+        case .down: return loc(L10n.Premium.declining)
+        case .flat: return loc(L10n.Premium.stable)
         }
     }
 
@@ -143,15 +121,15 @@ struct ComparisonDetailView: View {
         }
     }
 
-    /// 根据对比方向和百分比返回说明文字
+    /// 根据对比方向和百分比返回说明文字（本地化格式串）
     private func comparisonDescription(for direction: ComparisonDirection, percent: Double) -> String {
         switch direction {
         case .up:
-            return String(format: "Your metrics are up %.1f%% compared to the previous period. Keep doing what you're doing!", abs(percent))
+            return String(format: loc(L10n.Premium.comparisonUp), abs(percent))
         case .down:
-            return String(format: "Your metrics are down %.1f%% compared to the previous period. Review recent content changes to identify causes.", abs(percent))
+            return String(format: loc(L10n.Premium.comparisonDown), abs(percent))
         case .flat:
-            return "Your metrics are stable compared to the previous period. Consider experimenting with new content types to spark growth."
+            return loc(L10n.Premium.comparisonStable)
         }
     }
 }

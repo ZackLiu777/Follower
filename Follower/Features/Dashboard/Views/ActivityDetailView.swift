@@ -26,22 +26,27 @@ struct ActivityDetailView: View {
             if let result = result {
                 ScrollView {
                     VStack(spacing: 20) {
-                        // 活跃级别 Hero 卡片
-                        VStack(spacing: 4) {
+                        // 活跃级别 Hero 卡片：等级文字 + 量表条
+                        VStack(spacing: 10) {
                             Text(result.label)
                                 .font(.system(size: 36, weight: .bold, design: .rounded))
                                 .foregroundColor(activityColor(for: result.label))
-                            Text("Activity Level").font(.subheadline).foregroundColor(.secondary)
+                            Text(loc(L10n.Premium.activityLevel)).font(.subheadline).foregroundColor(.secondary)
+                            SegmentedScaleView(
+                                level: activityLevel(for: result.label),
+                                levelColor: activityColor(for: result.label),
+                                levelLabel: result.label
+                            )
                         }
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                         .padding(.horizontal)
 
                         // 活跃天数比例进度条
                         VStack(spacing: 12) {
-                            Text("Active Days Ratio").font(.headline)
+                            Text(loc(L10n.Premium.activeDaysRatio)).font(.headline)
 
                             // 进度条
                             GeometryReader { geo in
@@ -57,7 +62,7 @@ struct ActivityDetailView: View {
                             .padding(.horizontal, 4)
 
                             HStack {
-                                Text("\(result.activeDays) of \(result.totalDays) days")
+                                Text(String(format: loc(L10n.Premium.activeDaysOf), result.activeDays, result.totalDays))
                                     .font(.subheadline).foregroundColor(.secondary)
                                 Spacer()
                                 Text(String(format: "%.0f%%", result.activeDaysRatio * 100))
@@ -65,19 +70,19 @@ struct ActivityDetailView: View {
                             }
                         }
                         .padding()
-                        .background(.regularMaterial)
+                        .background(theme.cardSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .padding(.horizontal)
 
                         // 平均每日事件数
                         HStack(spacing: 20) {
                             statCard(
-                                title: "Avg Events/Day",
+                                title: loc(L10n.Premium.avgEventsPerDay),
                                 value: String(format: "%.1f", result.avgEventsPerActiveDay),
                                 icon: "chart.bar.fill"
                             )
                             statCard(
-                                title: "Best Day",
+                                title: loc(L10n.Premium.bestDay),
                                 value: dayName(for: result.mostActiveDay),
                                 icon: "calendar.badge.clock"
                             )
@@ -95,9 +100,9 @@ struct ActivityDetailView: View {
             } else {
                 // 无数据占位
                 ContentUnavailableView(
-                    "No Data Available",
+                    loc(L10n.Premium.noDataAvailable),
                     systemImage: "chart.xyaxis.line",
-                    description: Text("Activity data will appear here once enough events are recorded.")
+                    description: Text(loc(L10n.Premium.noDataActivityDesc))
                 )
             }
         }
@@ -120,7 +125,7 @@ struct ActivityDetailView: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(.regularMaterial)
+        .background(theme.cardSurface)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
@@ -136,20 +141,32 @@ struct ActivityDetailView: View {
         }
     }
 
-    /// 将星期数字转换为可读名称
+    /// 活跃级别 → 量表档位（0-3，Highly Active 最高，用于 SegmentedScaleView）
+    private func activityLevel(for label: String) -> Int {
+        switch label {
+        case "Highly Active": return 3
+        case "Active": return 2
+        case "Moderate": return 1
+        default: return 0
+        }
+    }
+
+    /// 将星期数字转换为可读名称（本地化）
     private func dayName(for weekday: Int?) -> String {
         guard let wd = weekday, (1...7).contains(wd) else { return "N/A" }
-        let names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        let names = [loc(L10n.Premium.daySun), loc(L10n.Premium.dayMon), loc(L10n.Premium.dayTue),
+                     loc(L10n.Premium.dayWed), loc(L10n.Premium.dayThu), loc(L10n.Premium.dayFri),
+                     loc(L10n.Premium.daySat)]
         return names[wd - 1]
     }
 
-    /// 根据活跃级别返回说明文字
+    /// 根据活跃级别返回说明文字（本地化 tip）
     private func activityDescription(for label: String) -> String {
         switch label {
-        case "Highly Active": return "You post or engage almost every day. Keep up the momentum — consistency is your superpower."
-        case "Active": return "You're active most days. Consider filling in gaps to boost your visibility."
-        case "Moderate": return "Your activity is moderate. Try increasing post frequency to stay top of mind with your audience."
-        default: return "Your activity is low. Regular engagement is key to growing your following."
+        case "Highly Active": return loc(L10n.Premium.tipHighlyActive)
+        case "Active": return loc(L10n.Premium.tipActive)
+        case "Moderate": return loc(L10n.Premium.tipModerate)
+        default: return loc(L10n.Premium.tipLowActivity)
         }
     }
 }
