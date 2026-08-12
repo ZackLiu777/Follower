@@ -1,10 +1,18 @@
 //
 //  AccountUITests.swift
 //  FollowerUITests
+//
+//  账号 UI 测试 — Profile Tab（第 4 个 Tab）：
+//  个人资料头部（@用户名 + 平台）、账号行、连接新账号入口、
+//  活动状态区块，以及 Tab 切换后的状态保持。
+//  （v4 重构后个人资料从 Dashboard 头像弹窗迁移为独立 Tab，
+//   原 account_avatar_button / profile_settings_link 标识已不存在。）
+//
 
 import XCTest
 
-/// UI tests for Account — covers avatar profile sheet entry and settings navigation
+/// UI tests for Account — Profile tab header, account row, connect entry,
+/// activity status, and cross-tab stability
 final class AccountUITests: XCTestCase {
     var app: XCUIApplication!
 
@@ -16,30 +24,78 @@ final class AccountUITests: XCTestCase {
         app.launch()
     }
 
-    /// 仪表盘头像 → 点击弹出个人资料弹窗，页面应正常渲染
-    func testNavigateToProfileSheet() {
+    // MARK: - Helpers
+
+    /// 进入 Profile Tab（第 4 个 Tab，index 3）
+    private func openProfileTab() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
-        let avatar = app.buttons["account_avatar_button"]
-        XCTAssertTrue(avatar.waitForExistence(timeout: 10), "Avatar button should exist on dashboard")
-        avatar.tap()
-        sleep(2)
-        // 弹窗应正常渲染（关闭按钮存在）
-        XCTAssertTrue(app.buttons["profile_close_button"].waitForExistence(timeout: 10))
+        let tabs = app.tabBars.buttons
+        guard tabs.count >= 4 else {
+            XCTFail("Expected at least 4 tabs (Dashboard/Trends/Decisions/Profile)")
+            return
+        }
+        tabs.element(boundBy: 3).tap()
+        sleep(3)
     }
 
-    /// 弹窗 → 点「设置」→ 设置页导航栏应包含按钮（返回按钮）
-    func testSettingsNavButtonAfterEntry() {
+    /// Profile Tab → 个人资料头部（@用户名 + Instagram 平台）
+    func testProfileTabShowsAccountHeader() {
+        openProfileTab()
+
+        // 头部显示 @用户名（mock 账号 test.user → "@test.user"）
+        let userLabel = app.staticTexts.matching(
+            NSPredicate(format: "label BEGINSWITH %@", "@")
+        ).firstMatch
+        XCTAssertTrue(userLabel.waitForExistence(timeout: 10),
+                      "Profile header should show @username")
+        XCTAssertTrue(app.staticTexts["Instagram"].exists,
+                      "Profile header should show Instagram platform label")
+    }
+
+    /// Profile Tab → 账号列表应显示账号行（可切换）
+    func testProfileTabShowsAccountRow() {
+        openProfileTab()
+
+        let accountRow = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS %@", "test.user")
+        ).firstMatch
+        XCTAssertTrue(accountRow.waitForExistence(timeout: 10),
+                      "Account list should show test.user row")
+    }
+
+    /// Profile Tab → 连接新账号入口按钮应存在
+    func testProfileTabShowsConnectAccountButton() {
+        openProfileTab()
+
+        let connectButton = app.buttons["Connect New Account"]
+        XCTAssertTrue(connectButton.waitForExistence(timeout: 10),
+                      "Connect New Account button should exist")
+    }
+
+    /// Profile Tab → 活动状态区块
+    func testProfileTabShowsActivityStatus() {
+        openProfileTab()
+
+        XCTAssertTrue(app.staticTexts["Activity Status"].waitForExistence(timeout: 10),
+                      "Activity Status section should exist")
+    }
+
+    /// Profile Tab → 切换其他 Tab 再返回，页面状态保持不崩溃
+    func testProfileTabSurvivesTabSwitch() {
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10))
-        let avatar = app.buttons["account_avatar_button"]
-        XCTAssertTrue(avatar.waitForExistence(timeout: 10))
-        avatar.tap()
+        let tabs = app.tabBars.buttons
+        guard tabs.count >= 4 else {
+            XCTFail("Expected at least 4 tabs")
+            return
+        }
+        tabs.element(boundBy: 3).tap()
         sleep(2)
-        let settingsLink = app.buttons["profile_settings_link"]
-        XCTAssertTrue(settingsLink.waitForExistence(timeout: 10))
-        settingsLink.tap()
+        tabs.element(boundBy: 0).tap()
         sleep(2)
-        // Toolbar should have the back button
-        let toolbarButtons = app.navigationBars.buttons
-        XCTAssertGreaterThanOrEqual(toolbarButtons.count, 1, "Settings nav bar should have buttons")
+        tabs.element(boundBy: 3).tap()
+        sleep(2)
+
+        XCTAssertTrue(app.buttons["Connect New Account"].waitForExistence(timeout: 10),
+                      "Profile tab should still show account content after tab switch")
     }
 }

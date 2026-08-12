@@ -205,6 +205,16 @@
         }
       }
     },
+    "30d forecast ~%@ · 80%% range %@–%@ · P(growth>0) %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "30d forecast ~%1$@ · 80%% range %2$@–%3$@ · P(growth>0) %4$@"
+          }
+        }
+      }
+    },
     "Absolute Change" : {
 
     },
@@ -777,7 +787,7 @@
     "Avg Daily Change" : {
 
     },
-    "Based on your 90-day growth trend, you're on track to reach ~%@ followers. Keep posting consistently to maintain this growth rate." : {
+    "Bayesian negative binomial model · 30-day forecast · shaded bands show 50/80/95% credible intervals." : {
 
     },
     "Breakdown" : {
@@ -1678,6 +1688,9 @@
           }
         }
       }
+    },
+    "Date" : {
+
     },
     "Day" : {
 
@@ -3611,6 +3624,9 @@
     "Follower" : {
 
     },
+    "Followers" : {
+
+    },
     "Geo distribution data will appear here once available." : {
 
     },
@@ -3646,6 +3662,15 @@
         }
       }
     },
+    "high50" : {
+
+    },
+    "high80" : {
+
+    },
+    "high95" : {
+
+    },
     "Hour" : {
 
     },
@@ -3656,6 +3681,15 @@
 
     },
     "Login with your Instagram account via Meta OAuth." : {
+
+    },
+    "low50" : {
+
+    },
+    "low80" : {
+
+    },
+    "low95" : {
 
     },
     "mediakit.accountNotFound" : {
@@ -4934,6 +4968,9 @@
         }
       }
     },
+    "Median" : {
+
+    },
     "Mode" : {
 
     },
@@ -4978,6 +5015,9 @@
         }
       }
     },
+    "Not enough historical data yet — predictions appear after roughly 30 days of snapshots." : {
+
+    },
     "OAuth" : {
 
     },
@@ -5017,6 +5057,9 @@
       }
     },
     "Predicted Followers Next Month" : {
+
+    },
+    "Prediction unavailable — need at least 30 days of data (currently %lld days)." : {
 
     },
     "PREMIUM" : {
@@ -10112,35 +10155,6 @@
         }
       }
     },
-    "settings.pureBlack" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pure Black"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ピュアブラック"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "纯黑"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "純黑"
-          }
-        }
-      }
-    },
     "settings.cream" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -10779,6 +10793,35 @@
         }
       }
     },
+    "settings.pureBlack" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pure Black"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ピュアブラック"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "纯黑"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "純黑"
+          }
+        }
+      }
+    },
     "settings.purple" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11101,35 +11144,6 @@
         }
       }
     },
-    "tab.profile" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profile"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profile"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profile"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profile"
-          }
-        }
-      }
-    },
     "tab.my" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -11155,6 +11169,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "設定"
+          }
+        }
+      }
+    },
+    "tab.profile" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile"
           }
         }
       }
@@ -11221,6 +11264,9 @@
 
     },
     "Test" : {
+
+    },
+    "Today" : {
 
     },
     "Token" : {

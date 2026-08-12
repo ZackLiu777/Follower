@@ -2,21 +2,34 @@
 //  PredictionDetailView.swift
 //  Follower
 //
-//  Lambda: Premium 详情 — 粉丝预测。
+//  Lambda: Premium 详情 — 粉丝预测（v0.15-alpha 贝叶斯模型）。
+//  主图：历史实线 + 未来中位数虚线 + 50/80/95% 三层预测区间带 + "今天"线；
+//  关键数字行：预计粉丝数 / 80% 预测区间 / 增长概率。
+//  冷启动（result 为 nil）→ 空态提示（不渲染图表，杜绝误导性单线折线）。
+//
 
 import SwiftUI
-import Charts
+import Charts  // chartLegend(.hidden) — 图表修饰符来自 Charts 模块
 
-/// Premium 详情页：展示预测粉丝数 + 90 天历史趋势曲线 + 说明文字
+/// Premium 详情页：贝叶斯粉丝预测 — 区间时序图 + 关键数字 + 说明文字
 struct PredictionDetailView: View {
     @Environment(\.theme) private var theme
 
-    /// 预测下月粉丝数
+    /// 预测下月粉丝数（预测总数 = 当前 + 累计增长中位数）
     let predicted: Int
 
-    let historical: [Double]
+    /// 历史粉丝数（升序，带日期）
+    let historical: [(Date, Double)]
 
-    /// 预测数值卡片 + 历史趋势曲线 + 说明文字 UI
+    /// 贝叶斯预测结果（含逐日区间分位 / 增长概率）；nil = 冷启动
+    let result: PredictionResult?
+
+    /// 当前粉丝数（区间带纵轴基准）
+    let baseFollowers: Double
+
+    /// 90 天窗口快照天数 — 冷启动诊断显示（v0.15.1）
+    let dataDays: Int
+
     var body: some View {
         ZStack {
             // Theme background gradient
@@ -28,30 +41,36 @@ struct PredictionDetailView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     // 预测值 Hero 卡片
-                    VStack(spacing: 4) {
-                        Text("~\(predicted.formatted(.number))").font(.system(size: 40, weight: .bold, design: .rounded))
-                        Text("Predicted Followers Next Month").font(.subheadline).foregroundColor(.secondary)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(.regularMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .padding(.horizontal)
+                    heroCard
 
-                    // 90 天历史趋势折线图
-                    Chart {
-                        ForEach(Array(historical.enumerated()), id: \.0) { i, val in
-                            LineMark(x: .value("", i), y: .value("", val))
-                                .foregroundStyle(theme.chartLine)
-                        }
+                    // 主图：历史 + 预测区间带（冷启动 → 空态提示，不再回退单线折线）
+                    if hasForecast {
+                        PredictionTrendChart(
+                            historical: historical,
+                            forecastStart: forecastStart,
+                            baseFollowers: baseFollowers,
+                            dailyLower: daily(result?.dailyLower),
+                            dailyQ10: daily(result?.dailyQ10),
+                            dailyQ25: daily(result?.dailyQ25),
+                            dailyMedian: daily(result?.dailyMedian),
+                            dailyQ75: daily(result?.dailyQ75),
+                            dailyQ90: daily(result?.dailyQ90),
+                            dailyUpper: daily(result?.dailyUpper)
+                        )
+                        .frame(height: 240)
+                        .padding(.horizontal)
+                        .chartLegend(.hidden)
+                    } else {
+                        forecastUnavailableView
                     }
-                    .frame(height: 200)
-                    .padding(.horizontal)
+
+                    // 关键数字行（仅贝叶斯结果）
+                    if hasForecast, let result {
+                        keyFigures(result)
+                    }
 
                     // 预测说明文字
-                    Text("Based on your 90-day growth trend, you're on track to reach ~\(predicted.formatted(.number)) followers. Keep posting consistently to maintain this growth rate.")
-                        .font(.caption).foregroundColor(.secondary)
-                        .padding(.horizontal)
+                    captionText
                 }
                 .padding(.vertical)
             }
@@ -59,5 +78,112 @@ struct PredictionDetailView: View {
         }
         .navigationTitle(loc(L10n.Premium.followerPrediction))
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    // MARK: - 子视图
+
+    /// Hero 数字卡片
+    private var heroCard: some View {
+        VStack(spacing: 4) {
+            Text("~\(predicted.formatted(.number))").font(.system(size: 40, weight: .bold, design: .rounded))
+            Text("Predicted Followers Next Month").font(.subheadline).foregroundColor(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .padding(.horizontal)
+    }
+
+    /// 是否有逐日预测数据（冷启动判断）
+    private var hasForecast: Bool {
+        guard let r = result, let median = r.dailyMedian, !median.isEmpty else { return false }
+        return true
+    }
+
+    /// 预测起点 = 最后历史点日期
+    private var forecastStart: Date {
+        historical.last?.0 ?? Date()
+    }
+
+    /// 逐日数组安全解包（缺失 → 全 0 占位，图表不崩溃）
+    private func daily(_ arr: [Double]?) -> [Double] {
+        guard let arr, !arr.isEmpty else {
+            return [Double](repeating: 0, count: RollingForecast.horizonDays + 1)
+        }
+        return arr
+    }
+
+    /// 冷启动空态（数据不足）：不渲染图表，避免误导性单线折线。
+    /// 显示当前快照天数（v0.15.1 诊断）——数据不足时一眼定位是数据问题还是模型问题。
+    private var forecastUnavailableView: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "chart.xyaxis.line")
+                .font(.system(size: 28))
+                .foregroundColor(theme.textTertiary)
+            Text("Prediction unavailable — need at least 30 days of data (currently \(dataDays) days).")
+                .font(.subheadline)
+                .foregroundColor(theme.textTertiary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 200)
+        .padding(.horizontal)
+    }
+
+    /// 关键数字行：80% 预测区间 + 增长概率
+    @ViewBuilder
+    private func keyFigures(_ result: PredictionResult) -> some View {
+        let q10 = (result.dailyQ10?.last ?? 0) + baseFollowers
+        let q90 = (result.dailyQ90?.last ?? 0) + baseFollowers
+        let probability = result.probabilityPositive ?? 0
+
+        VStack(spacing: 12) {
+            HStack {
+                figureBlock(
+                    title: "80% Likely Range",
+                    value: "\(Int(q10).formatted(.number)) – \(Int(q90).formatted(.number))"
+                )
+                Divider().frame(height: 36)
+                figureBlock(
+                    title: "Growth Probability",
+                    value: probability.formatted(.percent.precision(.fractionLength(0)))
+                )
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity)
+            .background(.regularMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(.horizontal)
+        }
+    }
+
+    /// 单个数字块（标题 + 值）
+    private func figureBlock(title: String, value: String) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundColor(theme.textPrimary)
+            Text(title)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    /// 底部说明文字
+    private var captionText: some View {
+        Group {
+            if hasForecast {
+                Text("Bayesian negative binomial model · 30-day forecast · shaded bands show 50/80/95% credible intervals.")
+            } else {
+                Text("Not enough historical data yet — predictions appear after roughly 30 days of snapshots.")
+            }
+        }
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .multilineTextAlignment(.center)
+        .padding(.horizontal)
     }
 }

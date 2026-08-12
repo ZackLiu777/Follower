@@ -219,4 +219,62 @@ final class TrendsUITests: XCTestCase {
         XCTAssertTrue(followersChart.waitForExistence(timeout: 10),
                       "After returning to Trends: Followers chart should still exist")
     }
+
+    // MARK: - Phi: 时间窗口切换（日/周/月/年）
+
+    /// 趋势页时间窗口切换器应存在（4 个分段）且可切换 — 切换后图表不崩溃
+    func testTrendsTimeWindowPickerSwitches() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
+        let tabs = app.tabBars.buttons
+        guard tabs.count >= 2 else {
+            XCTFail("Expected at least 2 tabs")
+            return
+        }
+        tabs.element(boundBy: 1).tap()
+        sleep(3)
+
+        let segmented = app.segmentedControls.firstMatch
+        XCTAssertTrue(segmented.waitForExistence(timeout: 10),
+                      "Trends page should show the time window segmented picker")
+        XCTAssertTrue(segmented.buttons["Daily"].exists, "Daily segment should exist")
+        XCTAssertTrue(segmented.buttons["Weekly"].exists, "Weekly segment should exist")
+        XCTAssertTrue(segmented.buttons["Monthly"].exists, "Monthly segment should exist")
+        XCTAssertTrue(segmented.buttons["Yearly"].exists, "Yearly segment should exist")
+
+        // 切换到 Weekly — 图表应保持存在
+        segmented.buttons["Weekly"].tap()
+        sleep(2)
+        XCTAssertTrue(app.staticTexts["Followers"].waitForExistence(timeout: 10),
+                      "Charts should survive time window switch")
+    }
+
+    /// 趋势详情页时间窗口切换器 — 进入详情后仍可切换
+    func testTrendDetailTimeWindowPickerSwitches() {
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
+        let tabs = app.tabBars.buttons
+        guard tabs.count >= 2 else {
+            XCTFail("Expected at least 2 tabs")
+            return
+        }
+        tabs.element(boundBy: 1).tap()
+        sleep(3)
+
+        // 进入 Followers 详情
+        let chartTitle = app.staticTexts["Followers"]
+        XCTAssertTrue(chartTitle.waitForExistence(timeout: 10))
+        chartTitle.tap()
+        sleep(2)
+
+        // 详情页应有时段切换器（Daily/Weekly/Monthly/Yearly）
+        let segmented = app.segmentedControls.firstMatch
+        XCTAssertTrue(segmented.waitForExistence(timeout: 10),
+                      "Trend detail should show the time window segmented picker")
+        XCTAssertTrue(segmented.buttons["Monthly"].exists, "Monthly segment should exist in detail")
+
+        // 切换到 Monthly — 详情页不崩溃，导航栏仍在
+        segmented.buttons["Monthly"].tap()
+        sleep(2)
+        XCTAssertTrue(app.navigationBars["Followers"].waitForExistence(timeout: 10),
+                      "Trend detail should survive time window switch")
+    }
 }
