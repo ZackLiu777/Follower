@@ -50,7 +50,7 @@ TrendChart
 | `ComparisonService` | `compare(currentSnapshots:previousSnapshots:extract:)` | `ComparisonResult` |
 | `AIAnalysisService` | `analyze(snapshots:)` | `[AIInsight]` |
 
-Mock 回退保留（`unfollowList`、`bestPostingTime`、`contentTip`、`predictedFollowers`），确保即使真实服务异常 UI 仍有数据展示。
+Mock 回退保留（`unfollowList`、`contentTip`、`predictedFollowers`），确保即使真实服务异常 UI 仍有数据展示。`bestPostingTime` 已拆分：最佳发帖时间改为基于真实 MediaPost 帖子的 `bestPostingTimeResult`（见 sigma3 规格），不再使用 Mock 回退。
 
 #### 1.2.2 Premium 卡片（9 张）
 
