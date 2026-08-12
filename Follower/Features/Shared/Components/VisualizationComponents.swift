@@ -189,8 +189,10 @@ struct HeatmapGrid: View {
 
     /// GitHub 风格 5 档色阶映射（确定性纯函数，便于测试）：
     /// 0 → 无数据（灰）；(0, 0.25) → 1 档；[0.25, 0.5) → 2 档；[0.5, 0.75) → 3 档；≥0.75 → 4 档
+    /// 负值（异常输入）与 0 同档：无数据灰，避免把数据错误渲染成活动
     static func tier(for density: Double) -> Int {
         switch density {
+        case ..<0: return 0
         case 0: return 0
         case ..<0.25: return 1
         case ..<0.5: return 2
