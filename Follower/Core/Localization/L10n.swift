@@ -287,6 +287,48 @@ enum L10n {
         static let impactReverse = "decisions.impactReverse"
         static let impactOptimize = "decisions.impactOptimize"
         static let impactCritical = "decisions.impactCritical"
+
+        // MARK: Quantified impact (v1 — 与涨粉/浏览挂钩的量化收益)
+        /// 量化收益 — 粉丝 + 浏览："+69 粉丝 · +1.2K 浏览"
+        static let impactFansViews = "decisions.impactFansViews"
+        /// 量化收益 — 仅粉丝："+69 粉丝"
+        static let impactFansOnly = "decisions.impactFansOnly"
+        /// 量化收益 — 仅浏览："+1.2K 浏览"
+        static let impactViewsOnly = "decisions.impactViewsOnly"
+        /// 原因 — 时段互动提升倍数："在 周四 19:00 发帖的互动是平均水平的 1.4 倍"
+        static let reasonTimeUplift = "decisions.reasonTimeUplift"
+
+        // MARK: v2/v3 UI（Hero 区 / 分类标签 / 折叠区 / 空态）
+        /// Hero — 当前粉丝
+        static let heroFollowers = "decisions.heroFollowers"
+        /// Hero — 7 日涨粉
+        static let heroGrowth7d = "decisions.heroGrowth7d"
+        /// Hero — 7 日浏览
+        static let heroViews7d = "decisions.heroViews7d"
+        /// 建议列表区标题 — 今日建议
+        static let todayActions = "decisions.todayActions"
+        /// Hero — 数据时间戳（基于 %@ 数据）
+        static let basedOnData = "decisions.basedOnData"
+        /// 分类标签 — 内容
+        static let tagContent = "decisions.tagContent"
+        /// 分类标签 — 时间
+        static let tagTiming = "decisions.tagTiming"
+        /// 分类标签 — 增长
+        static let tagGrowth = "decisions.tagGrowth"
+        /// 分类标签 — 互动
+        static let tagEngagement = "decisions.tagEngagement"
+        /// 分类标签 — 触达
+        static let tagReach = "decisions.tagReach"
+        /// 分类标签 — 健康
+        static let tagHealth = "decisions.tagHealth"
+        /// 分类标签 — 运营
+        static let tagOps = "decisions.tagOps"
+        /// 行动按钮 — 采取行动
+        static let takeAction = "decisions.takeAction"
+        /// 低置信标签 — 估算
+        static let estimation = "decisions.estimation"
+        /// 空态说明 — 暂无建议
+        static let noDecisionsMessage = "decisions.noDecisionsMessage"
     }
 
     // MARK: Premium Insights
@@ -604,5 +646,140 @@ enum L10n {
         static let generateMediaKit = "mediakit.generateMediaKit"
         static let mediaKitSection = "mediakit.mediaKitSection"
         static let mediaKitDescription = "mediakit.mediaKitDescription"
+    }
+}
+
+// MARK: Decision Templates (v3 — 41 个 P0 模板)
+/// 模板文案 key — 标题（每模板独立）/ 原因与行动（按模式共享）
+enum Tpl {
+    // MARK: Titles (41)
+    enum Title {
+        static let boostTopType = "tpl.boostTopType.title"
+        static let rescueDecliningType = "tpl.rescueDecliningType.title"
+        static let replicateViral = "tpl.replicateViral.title"
+        static let lowEngagementDiagnosis = "tpl.lowEngagementDiagnosis.title"
+        static let diversifyTypes = "tpl.diversifyTypes.title"
+        static let carouselForLongContent = "tpl.carouselForLongContent.title"
+        static let increaseFrequency = "tpl.increaseFrequency.title"
+        static let reduceFrequency = "tpl.reduceFrequency.title"
+        static let balanceWeeklyCadence = "tpl.balanceWeeklyCadence.title"
+        static let testSecondBestType = "tpl.testSecondBestType.title"
+        static let typeTrendWarning = "tpl.typeTrendWarning.title"
+        static let guideComments = "tpl.guideComments.title"
+        static let bestHour = "tpl.bestHour.title"
+        static let bestDay = "tpl.bestDay.title"
+        static let secondBestHour = "tpl.secondBestHour.title"
+        static let avoidWorstHours = "tpl.avoidWorstHours.title"
+        static let weekdayVsWeekend = "tpl.weekdayVsWeekend.title"
+        static let growthSlowdown = "tpl.growthSlowdown.title"
+        static let inactiveWakeup = "tpl.inactiveWakeup.title"
+        static let churnWarning = "tpl.churnWarning.title"
+        static let churnPeakDay = "tpl.churnPeakDay.title"
+        static let conversionBoost = "tpl.conversionBoost.title"
+        static let followerQuality = "tpl.followerQuality.title"
+        static let topFansEngage = "tpl.topFansEngage.title"
+        static let growthTarget = "tpl.growthTarget.title"
+        static let engagementDecline = "tpl.engagementDecline.title"
+        static let replyComments = "tpl.replyComments.title"
+        static let qAndA = "tpl.qAndA.title"
+        static let shareRateLow = "tpl.shareRateLow.title"
+        static let viralFollowUp = "tpl.viralFollowUp.title"
+        static let reachDecline = "tpl.reachDecline.title"
+        static let profileViewsBoost = "tpl.profileViewsBoost.title"
+        static let reachWasted = "tpl.reachWasted.title"
+        static let stablePublishing = "tpl.stablePublishing.title"
+        static let followingRatioHigh = "tpl.followingRatioHigh.title"
+        static let draftBacklog = "tpl.draftBacklog.title"
+        static let postingGap = "tpl.postingGap.title"
+        static let dataCoverage = "tpl.dataCoverage.title"
+        static let reuseViral = "tpl.reuseViral.title"
+        static let monthlyPlan = "tpl.monthlyPlan.title"
+        static let seriesContent = "tpl.seriesContent.title"
+    }
+
+    // MARK: Reasons (共享模式)
+    enum Reason {
+        static let perPostGain = "tpl.reason.perPostGain"
+        static let typeDeclining = "tpl.reason.typeDeclining"
+        static let viral = "tpl.reason.viral"
+        static let lowEngage = "tpl.reason.lowEngage"
+        static let dominant = "tpl.reason.dominant"
+        static let photoWeak = "tpl.reason.photoWeak"
+        static let freqLow = "tpl.reason.freqLow"
+        static let freqHigh = "tpl.reason.freqHigh"
+        static let cadence = "tpl.reason.cadence"
+        static let secondType = "tpl.reason.secondType"
+        static let typeWarning = "tpl.reason.typeWarning"
+        static let highLikesLowComments = "tpl.reason.highLikesLowComments"
+        static let hourUplift = "tpl.reason.hourUplift"
+        static let dayUplift = "tpl.reason.dayUplift"
+        static let secondHour = "tpl.reason.secondHour"
+        static let avoidWorst = "tpl.reason.avoidWorst"
+        static let weekendVsWeekday = "tpl.reason.weekendVsWeekday"
+        static let insufficientData = "tpl.reason.insufficientData"
+        static let weekendBetter = "tpl.reason.weekendBetter"
+        static let weekdayBetter = "tpl.reason.weekdayBetter"
+        static let growthSlowdown = "tpl.reason.growthSlowdown"
+        static let inactiveFollowers = "tpl.reason.inactiveFollowers"
+        static let churn = "tpl.reason.churn"
+        static let churnDay = "tpl.reason.churnDay"
+        static let conversion = "tpl.reason.conversion"
+        static let lowQuality = "tpl.reason.lowQuality"
+        static let topFans = "tpl.reason.topFans"
+        static let growthTarget = "tpl.reason.growthTarget"
+        static let engagementDecline = "tpl.reason.engagementDecline"
+        static let reply = "tpl.reason.reply"
+        static let qna = "tpl.reason.qna"
+        static let shareRate = "tpl.reason.shareRate"
+        static let viralFollowUp = "tpl.reason.viralFollowUp"
+        static let reachDecline = "tpl.reason.reachDecline"
+        static let profileViews = "tpl.reason.profileViews"
+        static let reachWasted = "tpl.reason.reachWasted"
+        static let unstablePublishing = "tpl.reason.unstablePublishing"
+        static let followingRatio = "tpl.reason.followingRatio"
+        static let drafts = "tpl.reason.drafts"
+        static let postingGap = "tpl.reason.postingGap"
+        static let dataCoverage = "tpl.reason.dataCoverage"
+        static let monthlyPlan = "tpl.reason.monthlyPlan"
+        static let seriesContent = "tpl.reason.seriesContent"
+    }
+
+    // MARK: Actions (共享模式)
+    enum Action {
+        static let boost = "tpl.action.boost"
+        static let tryNewFormat = "tpl.action.tryNewFormat"
+        static let replyAll = "tpl.action.replyAll"
+        static let analyzeLow = "tpl.action.analyzeLow"
+        static let diversify = "tpl.action.diversify"
+        static let switchFormat = "tpl.action.switchFormat"
+        static let scheduleMore = "tpl.action.scheduleMore"
+        static let reduceTo = "tpl.action.reduceTo"
+        static let spreadCadence = "tpl.action.spreadCadence"
+        static let testOne = "tpl.action.testOne"
+        static let pauseType = "tpl.action.pauseType"
+        static let askComments = "tpl.action.askComments"
+        static let postAtHour = "tpl.action.postAtHour"
+        static let postAtDay = "tpl.action.postAtDay"
+        static let fillSecond = "tpl.action.fillSecond"
+        static let avoidWorst = "tpl.action.avoidWorst"
+        static let balanceWeekend = "tpl.action.balanceWeekend"
+        static let prioritizeWeekend = "tpl.action.prioritizeWeekend"
+        static let prioritizeWeekday = "tpl.action.prioritizeWeekday"
+        static let engageTopFans = "tpl.action.engageTopFans"
+        static let dmTopFans = "tpl.action.dmTopFans"
+        static let runGiveaway = "tpl.action.runGiveaway"
+        static let crossPromote = "tpl.action.crossPromote"
+        static let encourageShare = "tpl.action.encourageShare"
+        static let followUp = "tpl.action.followUp"
+        static let checkReach = "tpl.action.checkReach"
+        static let optimizeProfile = "tpl.action.optimizeProfile"
+        static let stabilize = "tpl.action.stabilize"
+        static let unfollowClean = "tpl.action.unfollowClean"
+        static let publishDrafts = "tpl.action.publishDrafts"
+        static let postNow = "tpl.action.postNow"
+        static let syncMore = "tpl.action.syncMore"
+        static let reuseViral = "tpl.action.reuseViral"
+        static let monthlyPlan = "tpl.action.monthlyPlan"
+        static let qna = "tpl.action.qna"
     }
 }

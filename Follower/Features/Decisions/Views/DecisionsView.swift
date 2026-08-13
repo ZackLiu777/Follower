@@ -34,7 +34,11 @@ struct DecisionsView: View {
                             message: loc(L10n.Decisions.noAccountMessage),
                             actionLabel: nil, action: nil)
                     case .dataReady:
-                        DecisionsTimelineView(cards: viewModel.cards)
+                        DecisionsTimelineView(
+                            hero: viewModel.summary,
+                            cards: viewModel.cards,
+                            onRefresh: { Task { await viewModel.refreshDecisions() } }
+                        )
                     case .syncing:
                         ProgressView(loc(L10n.Common.loading)).frame(maxWidth: .infinity, minHeight: 300)
                     case .readyToSync:
@@ -48,6 +52,18 @@ struct DecisionsView: View {
             }
             .navigationTitle(loc(L10n.Decisions.title))
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if appState.syncState == .dataReady {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            Task { await viewModel.refreshDecisions() }
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                        .accessibilityIdentifier("decisions_refresh")
+                    }
+                }
+            }
         }
         .task {
             await viewModel.loadInitialAccount()
@@ -64,7 +80,9 @@ struct DecisionsView: View {
     let viewModel = DecisionsViewModel(
         snapshotRepo: appState.container.snapshotRepository,
         metricRepo: appState.container.metricRepository,
-        accountRepo: appState.container.accountRepository
+        accountRepo: appState.container.accountRepository,
+        mediaPostRepo: appState.container.mediaPostRepository,
+        draftPostRepo: appState.container.draftPostRepository
     )
     return DecisionsView(viewModel: viewModel).environment(appState)
 }

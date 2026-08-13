@@ -197,22 +197,24 @@ struct MediaKitDataProvider: MediaKitDataProviding {
         )) ?? []
         guard !snapshots.isEmpty else { return [] }
 
-        let metrics = (try? await metricRepo.fetch(
-            accountId: accountId, metricType: .engagementTrend, window: .day, limit: 90
-        )) ?? []
+        let posts = (try? await mediaRepo.fetchRecent(accountId: accountId, limit: 100)) ?? []
         let followers = snapshots.last?.followersCount ?? 0
 
         let health = FeatureExtractor.extractHealth(snapshots: snapshots, followers: followers)
-        let contentPerf = FeatureExtractor.extractContentPerformance(metrics: metrics)
-        let timing = FeatureExtractor.extractTimingProfile(metrics: metrics)
+        let contentPerf = FeatureExtractor.extractContentPerformance(posts: posts)
+        let timing = FeatureExtractor.extractTimingProfile(posts: posts)
         let fatigue = FeatureExtractor.extractFatigue(performance: contentPerf)
+        let impact = FeatureExtractor.extractImpact(snapshots: snapshots, posts: posts)
+        // MediaKit 无周窗口指标与草稿数据 → 空 context（仅内容/时间/增长类模板触发）
+        let context = FeatureExtractor.extractContext(
+            snapshots: snapshots, posts: posts, weeklyMetrics: [:], draftCount: 0)
         let features = GrowthFeatures(
             contentPerformance: contentPerf, followerHealth: health,
-            timingProfile: timing, fatigueIndices: fatigue
+            timingProfile: timing, fatigueIndices: fatigue, impact: impact, context: context
         )
         let scores = ScoringEngine.score(features)
-        let cards = CardGenerator.generate(scores: scores, features: features)
-        return cards.sorted { $0.priority < $1.priority }.prefix(3).map { $0 }
+        let decisions = CardGenerator.generate(scores: scores, features: features)
+        return decisions.topSuggestions.prefix(3).map { $0 }
     }
 
     // MARK: - 占位与格式化

@@ -60,7 +60,9 @@ private struct ContentViewInner: View {
         _decisionsVM = State(wrappedValue: DecisionsViewModel(
             snapshotRepo: container.snapshotRepository,
             metricRepo: container.metricRepository,
-            accountRepo: container.accountRepository
+            accountRepo: container.accountRepository,
+            mediaPostRepo: container.mediaPostRepository,
+            draftPostRepo: container.draftPostRepository
         ))
         _settingsVM = State(wrappedValue: SettingsViewModel(
             trialManager: container.trialManager,
