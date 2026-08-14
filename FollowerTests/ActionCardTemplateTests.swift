@@ -13,17 +13,17 @@ import Foundation
 /// Unit tests for DecisionTemplate — 参数化渲染与量化收益
 struct DecisionTemplateTests {
 
-    /// 构造模板
+    /// 构造模板（使用带 %@ 占位符的 Tpl 模板 key）
     private func makeTemplate(
         titleArgs: [String] = ["Reel"],
-        reasonArgs: [String] = ["Reel", "2.3"],
+        reasonArgs: [String] = ["Reel", "2"],
         actionArgs: [[String]] = [["2", "Reel"]]
     ) -> DecisionTemplate {
         DecisionTemplate(
             id: "test.template", type: .content, icon: "flame.fill",
-            titleKey: L10n.Decisions.primaryBoostTitle, titleArgs: titleArgs,
-            reasonKey: L10n.Decisions.reasonMomentum, reasonArgs: reasonArgs,
-            actionKeys: [L10n.Decisions.actionDoubleDown], actionArgsList: actionArgs
+            titleKey: Tpl.Title.boostTopType, titleArgs: titleArgs,
+            reasonKey: Tpl.Reason.perPostGain, reasonArgs: reasonArgs,
+            actionKeys: [Tpl.Action.boost], actionArgsList: actionArgs
         )
     }
 
@@ -40,9 +40,9 @@ struct DecisionTemplateTests {
     /// 原因含多个参数 → 全部替换
     @Test
     func testDisplayReasonFormatsArgs() {
-        let t = makeTemplate(reasonArgs: ["Reel", "2.3"])
+        let t = makeTemplate(reasonArgs: ["Reel", "2"])
         #expect(t.displayReason.contains("Reel"))
-        #expect(t.displayReason.contains("2.3"))
+        #expect(t.displayReason.contains("2"))
     }
 
     /// 行动参数与 key 一一对应
