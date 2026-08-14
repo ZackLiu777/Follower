@@ -23,8 +23,9 @@ struct FeatureExtractor: Sendable {
 
     // MARK: - FollowerHealth
 
-    /// 从 Snapshot 序列计算 FollowerHealth
-    /// - growth7d / growth30d：首尾快照差值按观测跨度换算为 7 日 / 30 日速率
+    /// 从 Snapshot 序列计算 FollowerHealth（v1.1 放开 90 天限制后使用真实窗口语义）
+    /// - growth7d / growth30d / viewsGrowth7d：**真实窗口** — 取窗口内首尾快照差值；
+    ///   窗口内不足 2 条时，用全部可用跨度按比例折算（数据稀疏期兜底）。
     /// - activeRatio 来自平均 engagementRate 动态映射（估算，非精确活跃统计）
     static func extractHealth(snapshots: [Snapshot], followers: Int) -> FollowerHealth {
         guard !snapshots.isEmpty else {
@@ -33,22 +34,56 @@ struct FeatureExtractor: Sendable {
                 viewsGrowth7d: 0)
         }
         let sorted = snapshots.sorted { $0.observedAt < $1.observedAt }
-        let first = sorted.first!, last = sorted.last!
         // engagementRate 通常在 0.01~0.15 之间，映射到 activeRatio 0.05~0.50
         let avgEng = sorted.map(\.engagementRate).reduce(0, +) / Double(sorted.count)
         let activeRatio = min(0.50, max(0.05, avgEng * 3.5))
         let active = Int(Double(followers) * activeRatio)
-        let totalGrowth = Double(last.followersCount - first.followersCount)
-        let totalViewsGrowth = Double(last.totalViews - first.totalViews)
-        let spanDays = max(1.0, last.observedAt.timeIntervalSince(first.observedAt) / 86400.0)
         return FollowerHealth(
             activeFollowers: active,
             inactiveFollowers: followers - active,
             totalFollowers: followers,
-            followerGrowth7d: totalGrowth * (7.0 / spanDays),
-            followerGrowth30d: totalGrowth * (30.0 / spanDays),
-            viewsGrowth7d: max(0, totalViewsGrowth) * (7.0 / spanDays)
+            followerGrowth7d: windowDelta(sorted, days: 7) { $0.followersCount },
+            followerGrowth30d: windowDelta(sorted, days: 30) { $0.followersCount },
+            viewsGrowth7d: max(0, windowDelta(sorted, days: 7) { $0.totalViews })
         )
+    }
+
+    /// 窗口增量 — 取最近 `days` 天窗口内首尾快照差值；
+    /// 窗口内不足 2 条时，用全部可用跨度按比例折算（数据稀疏期兜底）。
+    /// - Parameters:
+    ///   - sorted: 按 observedAt 升序的快照
+    ///   - days: 窗口天数（7 / 30）
+    ///   - value: 取值闭包（followersCount / totalViews）
+    static func windowDelta(_ sorted: [Snapshot], days: Double, value: (Snapshot) -> Int) -> Double {
+        guard let first = sorted.first, let last = sorted.last else { return 0 }
+        let windowStart = last.observedAt.addingTimeInterval(-days * 86_400)
+        let window = sorted.filter { $0.observedAt >= windowStart }
+        if window.count >= 2, let wFirst = window.first, let wLast = window.last {
+            return Double(value(wLast) - value(wFirst))
+        }
+        // 窗口内数据不足 → 全部可用跨度折算
+        let spanDays = max(1.0, last.observedAt.timeIntervalSince(first.observedAt) / 86_400.0)
+        return Double(value(last) - value(first)) * (days / spanDays)
+    }
+
+    /// 7 自然日窗口增量 — 与 Dashboard computeDeltas 口径一致
+    /// （Calendar 7 天前为窗口起点，首尾快照差值），供决策页 Hero 展示。
+    static func weekCalendarDelta(_ sorted: [Snapshot], value: (Snapshot) -> Int) -> Int {
+        guard let current = sorted.last else { return 0 }
+        let weekAgo = Calendar.current.date(byAdding: .day, value: -7, to: current.observedAt)
+            ?? current.observedAt.addingTimeInterval(-7 * 86_400)
+        let window = sorted.filter { $0.observedAt >= weekAgo }
+        guard let first = window.first else { return 0 }
+        return value(current) - value(first)
+    }
+
+    /// 周期序列末两次差值 — 与趋势页 delta（周/月/年窗口）口径一致：
+    /// 取周期末值序列（periodEndMetrics，无 0 占位）相邻两条差（本周 vs 上周等）。
+    /// 序列不足 2 条 → nil（调用方回退其他口径）。
+    static func lastPeriodDelta(_ metrics: [Metric]) -> Int? {
+        let sorted = metrics.sorted { $0.observedAt < $1.observedAt }
+        guard sorted.count >= 2 else { return nil }
+        return sorted[sorted.count - 1].value - sorted[sorted.count - 2].value
     }
 
     // MARK: - ContentPerformance
@@ -68,25 +103,6 @@ struct FeatureExtractor: Sendable {
             )
         }
         return result
-    }
-
-    // MARK: - TimingProfile
-
-    /// 从帖子发布时间 × 真实互动的分布计算最佳发帖日/时段 — 零硬编码
-    /// 最佳小时窗口与最差小时窗口均由 ImpactEstimator 从数据计算
-    static func extractTimingProfile(posts: [MediaPost]) -> TimingProfile {
-        let window = ImpactEstimator.bestHourWindow(posts: posts)
-        let (day, _) = ImpactEstimator.bestDay(posts: posts)
-        return TimingProfile(
-            bestHours: formatHourWindow(window.startHour, window.endHour),
-            worstHours: formatHourWindow(window.worstStartHour, window.worstEndHour),
-            bestDay: day
-        )
-    }
-
-    /// 小时窗口格式化："19:00–21:00"（零填充）
-    private static func formatHourWindow(_ start: Int, _ end: Int) -> String {
-        String(format: "%02d:00–%02d:00", start, end)
     }
 
     // MARK: - FatigueIndex
@@ -245,13 +261,8 @@ struct FeatureExtractor: Sendable {
         let avgWeeklyPosts = Double(posts30d) / 4.3
 
         // ── 账号增长阶段判定（确定性规则）──
-        let totalGrowth30d: Double
-        if let firstSnap = sorted.first, let lastSnap = sorted.last {
-            let spanDays = max(1.0, lastSnap.observedAt.timeIntervalSince(firstSnap.observedAt) / 86_400.0)
-            totalGrowth30d = Double(lastSnap.followersCount - firstSnap.followersCount) * (30.0 / spanDays)
-        } else {
-            totalGrowth30d = 0
-        }
+        // v1.1：真实 30 天窗口速率（非全历史折算）
+        let totalGrowth30d = windowDelta(sorted, days: 30) { $0.followersCount }
         let phase = Self.classifyPhase(
             followersThisWeek: wow.followersThisWeek,
             weeklyRate30: totalGrowth30d > 0 ? totalGrowth30d / 4.0 : 0
@@ -306,7 +317,8 @@ struct FeatureExtractor: Sendable {
 
     // MARK: - ImpactSummary
 
-    /// 从快照 + 帖子计算量化收益摘要（转化率 / 单帖收益 / 时段提升）
+    /// 从快照 + 帖子计算量化收益摘要（转化率 / 单帖收益）
+    /// v1.2：移除时段提升（时间类建议已从产品移除）
     static func extractImpact(snapshots: [Snapshot], posts: [MediaPost]) -> ImpactSummary {
         let rates = ImpactEstimator.conversionRates(snapshots: snapshots)
         let stats = ImpactEstimator.typeStats(posts: posts)
@@ -316,15 +328,10 @@ struct FeatureExtractor: Sendable {
             followerGain[type] = ImpactEstimator.perPostFollowerGain(perf, rates: rates)
             viewsGain[type] = ImpactEstimator.perPostViewsGain(perf, rates: rates)
         }
-        let window = ImpactEstimator.bestHourWindow(posts: posts)
-        let (day, dayUplift) = ImpactEstimator.bestDay(posts: posts)
         return ImpactSummary(
             rates: rates,
             perPostFollowerGain: followerGain,
-            perPostViewsGain: viewsGain,
-            hourUplift: window,
-            bestDay: day,
-            dayUplift: dayUplift
+            perPostViewsGain: viewsGain
         )
     }
 }

@@ -60,20 +60,6 @@ struct ImpactEstimator: Sendable {
         let growthRate: Double
     }
 
-    /// 最佳/最差发帖时段（连续小时窗口）
-    struct HourUplift: Sendable {
-        /// 最佳窗口起始小时（0-23）
-        let startHour: Int
-        /// 最佳窗口结束小时（0-23）
-        let endHour: Int
-        /// 最佳窗口平均互动 ÷ 整体平均（≥ 1.0）
-        let uplift: Double
-        /// 最差窗口起始小时（0-23）
-        let worstStartHour: Int
-        /// 最差窗口结束小时（0-23）
-        let worstEndHour: Int
-    }
-
     // MARK: - 转化率
 
     /// 从快照日增量计算账号级转化率。
@@ -150,24 +136,7 @@ struct ImpactEstimator: Sendable {
         perf.avgLikes * rates.viewsPerLike
     }
 
-    // MARK: - 时段提升
-
-    /// 从帖子发布时间计算最佳/最差连续时段窗口及其互动提升倍数。
-    /// 对每个有数据的起始小时 h，统计 [h, h+2] 三小时窗口内帖子的平均互动
-    /// （仅统计有数据的整点），取平均最高 / 最低者为最佳 / 最差窗口。
-    /// - Parameter posts: 该账号的帖子
-    /// - Returns: 最佳与最差窗口；帖子 < 2 或整体互动为 0 → 提升倍数 = 1.0
-    static func bestHourWindow(posts: [MediaPost]) -> HourUplift {
-        let ranks = hourWindowRanks(posts: posts)
-        guard let best = ranks.first else {
-            return HourUplift(startHour: 19, endHour: 21, uplift: 1.0,
-                worstStartHour: 3, worstEndHour: 5)
-        }
-        let worst = ranks.last ?? best
-        return HourUplift(startHour: best.start, endHour: best.end,
-            uplift: max(1.0, best.uplift),
-            worstStartHour: worst.start, worstEndHour: worst.end)
-    }
+    // MARK: - 时段排名（v1.2 起仅供 DecisionContext 的 secondBestHour 使用）
 
     /// 全部小时窗口按平均互动降序排名（每窗口 = 起始小时 [h, h+2] 内有数据的整点）。
     /// - Returns: [(start, end, avg, uplift)]；帖子 < 2 或互动为 0 → 空
@@ -209,33 +178,5 @@ struct ImpactEstimator: Sendable {
         let ranks = hourWindowRanks(posts: posts)
         guard ranks.count >= 2, ranks[1].uplift > 1.0 else { return nil }
         return (ranks[1].start, ranks[1].uplift)
-    }
-
-    /// 从帖子发布时间计算最佳发帖日（1=周日 … 7=周六）及其互动提升倍数。
-    /// - Parameter posts: 该账号的帖子
-    /// - Returns: 最佳日与提升倍数；帖子 < 2 → uplift = 1.0
-    static func bestDay(posts: [MediaPost]) -> (day: Int, uplift: Double) {
-        guard posts.count >= 2 else {
-            return (Calendar.current.component(.weekday, from: Date()), 1.0)
-        }
-        let cal = Calendar.current
-        var byDay: [Int: [Double]] = [:]
-        for post in posts {
-            let d = cal.component(.weekday, from: post.date)
-            byDay[d, default: []].append(Double(post.likes + post.comments))
-        }
-        let overallAvg = byDay.values.flatMap { $0 }.reduce(0, +) / Double(posts.count)
-        var bestDay = 1
-        var bestAvg = -1.0
-        // 按 key 排序遍历保证平局时结果确定（1=周日 … 7=周六）
-        for (day, values) in byDay.sorted(by: { $0.key < $1.key }) {
-            let avg = values.reduce(0, +) / Double(values.count)
-            if avg > bestAvg {
-                bestAvg = avg
-                bestDay = day
-            }
-        }
-        let uplift = overallAvg > 0 ? max(1.0, bestAvg / overallAvg) : 1.0
-        return (bestDay, uplift)
     }
 }

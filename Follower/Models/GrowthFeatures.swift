@@ -57,18 +57,6 @@ struct FollowerHealth: Sendable {
     let viewsGrowth7d: Double
 }
 
-// MARK: - TimingProfile
-
-/// 发帖时间画像 — 最佳/最差发帖时段与日期
-struct TimingProfile: Sendable {
-    /// 最佳发帖时段，例如 "19:00–21:00"
-    let bestHours: String
-    /// 最差发帖时段，例如 "03:00–06:00"
-    let worstHours: String
-    /// 最佳发帖日（1=Sun, 2=Mon, ..., 7=Sat）
-    let bestDay: Int
-}
-
 // MARK: - FatigueIndex
 
 /// 内容疲劳检测指标 — 用于识别过度发布的内容类型
@@ -90,6 +78,7 @@ struct FatigueIndex: Sendable {
 /// 量化收益摘要 — 由 ImpactEstimator 从真实数据计算，
 /// 供 CardGenerator 为每条建议生成"预计 +N 粉丝 / +M 浏览"数字。
 /// 所有收益均为基于转化率的估算（API 无单帖粉丝归因字段）。
+/// v1.2：移除时段字段（时间类建议已从产品中移除，时段推断存在小样本误导风险）。
 struct ImpactSummary: Sendable {
     /// 账号级转化率（浏览/点赞 → 粉丝）
     let rates: ImpactEstimator.ConversionRates
@@ -97,12 +86,6 @@ struct ImpactSummary: Sendable {
     let perPostFollowerGain: [ContentType: Double]
     /// 每种内容类型每发一帖的预计浏览收益
     let perPostViewsGain: [ContentType: Double]
-    /// 最佳发帖时段（小时窗口 + 提升倍数）
-    let hourUplift: ImpactEstimator.HourUplift
-    /// 最佳发帖日（1=周日 … 7=周六）
-    let bestDay: Int
-    /// 最佳发帖日相对平均的提升倍数
-    let dayUplift: Double
 }
 
 // MARK: - AccountPhase
@@ -229,14 +212,12 @@ struct DecisionContext: Sendable {
 // MARK: - GrowthFeatures
 
 /// 特征提取结果 — FeatureExtractor 的输出，
-/// 聚合内容表现、粉丝健康、时间画像和疲劳检测等所有可评分维度
+/// 聚合内容表现、粉丝健康、疲劳检测等所有可评分维度
 struct GrowthFeatures: Sendable {
     /// 各内容类型的表现统计（以 ContentType 为 key）
     let contentPerformance: [ContentType: ContentStats]
     /// 粉丝健康度快照
     let followerHealth: FollowerHealth
-    /// 发帖时间画像
-    let timingProfile: TimingProfile
     /// 各内容类型的疲劳检测指标（以 ContentType 为 key）
     let fatigueIndices: [ContentType: FatigueIndex]
     /// 量化收益摘要（真实数据推导，用于卡片收益数字）

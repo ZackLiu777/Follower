@@ -163,79 +163,38 @@ struct ImpactEstimatorTests {
         #expect(stats[.photo]?.growthRate == 0.0)
     }
 
-    // MARK: - bestHourWindow
+    // MARK: - hourWindowRanks（保留：DecisionContext.secondBestHour 使用）
 
-    /// 高互动集中在 21 点 → 最佳窗口起始 21 点，提升倍数 = 峰值/整体
+    /// 窗口排名：高互动集中在 21 点 → 第一窗口 21 点
     @Test
-    func testBestHourWindowFindsPeakHour() {
-        // 9 点两帖 10 赞；21 点两帖 100 赞
+    func testHourWindowRanksFindsPeak() {
         let posts = [
             makePost(type: .video, likes: 10, hour: 9, weekday: 1),
             makePost(type: .video, likes: 10, hour: 9, weekday: 2),
             makePost(type: .image, likes: 100, hour: 21, weekday: 3),
             makePost(type: .image, likes: 100, hour: 21, weekday: 4),
         ]
-        let window = ImpactEstimator.bestHourWindow(posts: posts)
-        #expect(window.startHour == 21)
-        // 整体平均 55，窗口平均 100 → uplift = 100/55
-        #expect(abs(window.uplift - 100.0 / 55.0) < 1e-9)
-        #expect(window.worstStartHour == 9)
+        let ranks = ImpactEstimator.hourWindowRanks(posts: posts)
+        #expect(ranks.first?.start == 21)
+        #expect(ranks.count == 2)
     }
 
-    /// 帖子 < 2 → 兜底窗口，uplift = 1.0
+    /// 帖子 < 2 → 空排名
     @Test
-    func testBestHourWindowTooFewPosts() {
-        let window = ImpactEstimator.bestHourWindow(posts: [makePost(type: .video, likes: 10, hour: 12)])
-        #expect(window.uplift == 1.0)
-        #expect(window.startHour == 19)
+    func testHourWindowRanksTooFewPosts() {
+        #expect(ImpactEstimator.hourWindowRanks(posts: [makePost(type: .video, likes: 10, hour: 12)]).isEmpty)
     }
 
-    /// 全零互动 → uplift = 1.0（不除零、不放大）
+    /// 次佳窗口：第二高窗口提升 > 1 才返回
     @Test
-    func testBestHourWindowZeroEngagement() {
+    func testSecondBestHourWindow() {
         let posts = [
-            makePost(type: .video, likes: 0, hour: 9),
-            makePost(type: .video, likes: 0, hour: 21),
+            makePost(type: .video, likes: 10, hour: 9, weekday: 1),
+            makePost(type: .video, likes: 100, hour: 21, weekday: 3),
         ]
-        let window = ImpactEstimator.bestHourWindow(posts: posts)
-        #expect(window.uplift == 1.0)
-    }
-
-    /// 全部同一小时 → 窗口 = 该小时，uplift = 1.0
-    @Test
-    func testBestHourWindowSingleHour() {
-        let posts = [
-            makePost(type: .video, likes: 10, hour: 19),
-            makePost(type: .video, likes: 30, hour: 19),
-        ]
-        let window = ImpactEstimator.bestHourWindow(posts: posts)
-        #expect(window.startHour == 19)
-        #expect(window.endHour == 19)
-        #expect(abs(window.uplift - 1.0) < 1e-9)
-    }
-
-    // MARK: - bestDay
-
-    /// 高互动集中在周五（weekday=6）→ 最佳日 = 6
-    @Test
-    func testBestDayFindsPeakDay() {
-        let posts = [
-            makePost(type: .video, likes: 10, weekday: 2),
-            makePost(type: .video, likes: 10, weekday: 3),
-            makePost(type: .image, likes: 100, weekday: 6),
-            makePost(type: .image, likes: 100, weekday: 6),
-        ]
-        let (day, uplift) = ImpactEstimator.bestDay(posts: posts)
-        #expect(day == 6)
-        // 整体平均 (10+10+100+100)/4 = 55，周五平均 100
-        #expect(abs(uplift - 100.0 / 55.0) < 1e-9)
-    }
-
-    /// 帖子 < 2 → uplift = 1.0
-    @Test
-    func testBestDayTooFewPosts() {
-        let (_, uplift) = ImpactEstimator.bestDay(posts: [makePost(type: .video, likes: 10)])
-        #expect(uplift == 1.0)
+        let second = ImpactEstimator.secondBestHourWindow(posts: posts)
+        // 21 点平均 100，9 点平均 10 → 第二窗口 = 9 点
+        #expect(second?.start == 9)
     }
 
     // MARK: - perPost 收益

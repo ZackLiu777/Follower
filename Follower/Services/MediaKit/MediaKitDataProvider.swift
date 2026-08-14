@@ -129,26 +129,26 @@ struct MediaKitDataProvider: MediaKitDataProviding {
         ]
     }
 
-    /// 12 周粉丝增长（复用聚合层周窗口数据，避免重新聚合）
+    /// 粉丝增长（周窗口 — v1.1 放开 90 天限制，拉全年 52 周）
     private func fetchWeeklyGrowth(accountId: Int64) async -> [MediaKitGrowthPoint] {
         let metrics = (try? await metricRepo.fetch(
-            accountId: accountId, metricType: .followerGrowth, window: .week, limit: 12
+            accountId: accountId, metricType: .followerGrowth, window: .week, limit: 52
         )) ?? []
         return metrics
             .sorted { $0.observedAt < $1.observedAt }
             .map { MediaKitGrowthPoint(date: $0.observedAt, followers: $0.value) }
     }
 
-    /// Top 5 帖子：最近 25 条按点赞数降序取前 5
+    /// Top 5 帖子：全部帖子按点赞数降序取前 5（v1.1 放开 limit 100 限制）
     private func fetchTopPosts(accountId: Int64) async -> [MediaPost] {
-        let recent = (try? await mediaRepo.fetchRecent(accountId: accountId, limit: 25)) ?? []
-        return recent.sorted { $0.likes > $1.likes }.prefix(5).map { $0 }
+        let all = (try? await mediaRepo.fetchAll(accountId: accountId)) ?? []
+        return all.sorted { $0.likes > $1.likes }.prefix(5).map { $0 }
     }
 
-    /// 帖子类型分布（最近 100 条统计）
+    /// 帖子类型分布（全部帖子统计 — v1.1 放开 limit 100 限制）
     private func fetchPostTypeCounts(accountId: Int64) async -> [MediaKitPostTypeCount] {
-        let recent = (try? await mediaRepo.fetchRecent(accountId: accountId, limit: 100)) ?? []
-        let grouped = Dictionary(grouping: recent, by: { $0.type.rawValue })
+        let all = (try? await mediaRepo.fetchAll(accountId: accountId)) ?? []
+        let grouped = Dictionary(grouping: all, by: { $0.type.rawValue })
         return grouped.map { MediaKitPostTypeCount(type: $0.key, count: $0.value.count) }
             .sorted { $0.count > $1.count }
     }
@@ -191,26 +191,23 @@ struct MediaKitDataProvider: MediaKitDataProviding {
     /// 增长决策建议：复用决策引擎流水线（FeatureExtractor → ScoringEngine → CardGenerator），
     /// 与 Decisions 页同源；无快照数据时返回空（决策页跳过）
     private func buildActionCards(accountId: Int64) async -> [ActionCard] {
-        let snapshots = (try? await snapshotRepo.fetch(
-            accountId: accountId,
-            from: Date().addingTimeInterval(-90 * 86_400), to: Date()
-        )) ?? []
+        // v1.1 放开 90 天限制：用满本地累积快照
+        let snapshots = (try? await snapshotRepo.fetchAll(accountId: accountId)) ?? []
         guard !snapshots.isEmpty else { return [] }
 
-        let posts = (try? await mediaRepo.fetchRecent(accountId: accountId, limit: 100)) ?? []
+        let posts = (try? await mediaRepo.fetchAll(accountId: accountId)) ?? []
         let followers = snapshots.last?.followersCount ?? 0
 
         let health = FeatureExtractor.extractHealth(snapshots: snapshots, followers: followers)
         let contentPerf = FeatureExtractor.extractContentPerformance(posts: posts)
-        let timing = FeatureExtractor.extractTimingProfile(posts: posts)
         let fatigue = FeatureExtractor.extractFatigue(performance: contentPerf)
         let impact = FeatureExtractor.extractImpact(snapshots: snapshots, posts: posts)
-        // MediaKit 无周窗口指标与草稿数据 → 空 context（仅内容/时间/增长类模板触发）
+        // MediaKit 无周窗口指标与草稿数据 → 空 context（仅内容/增长类模板触发）
         let context = FeatureExtractor.extractContext(
             snapshots: snapshots, posts: posts, weeklyMetrics: [:], draftCount: 0)
         let features = GrowthFeatures(
             contentPerformance: contentPerf, followerHealth: health,
-            timingProfile: timing, fatigueIndices: fatigue, impact: impact, context: context
+            fatigueIndices: fatigue, impact: impact, context: context
         )
         let scores = ScoringEngine.score(features)
         let decisions = CardGenerator.generate(scores: scores, features: features)

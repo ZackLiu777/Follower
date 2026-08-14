@@ -99,7 +99,7 @@ struct CardGenerator: Sendable {
         case .growing:
             return [
                 "boostTopType": 15, "replicateViral": 15, "viralFollowUp": 15,
-                "topFansEngage": 10, "guideComments": 10, "bestHour": 10,
+                "topFansEngage": 10, "guideComments": 10,
                 "reuseViral": 8, "seriesContent": 5,
             ]
         case .declining:
@@ -110,15 +110,15 @@ struct CardGenerator: Sendable {
             ]
         case .stagnant:
             return [
-                "increaseFrequency": 20, "bestDay": 15, "monthlyPlan": 15,
-                "seriesContent": 15, "inactiveWakeup": 10, "bestHour": 10,
+                "increaseFrequency": 20, "monthlyPlan": 15,
+                "seriesContent": 15, "inactiveWakeup": 10,
                 "growthTarget": 8, "diversifyTypes": 8, "guideComments": 5,
             ]
         case .viral:
             return [
                 "viralFollowUp": 25, "replicateViral": 20, "boostTopType": 15,
                 "reuseViral": 15, "guideComments": 10, "topFansEngage": 10,
-                "bestHour": 8, "inactiveWakeup": 5,
+                "inactiveWakeup": 5,
             ]
         }
     }

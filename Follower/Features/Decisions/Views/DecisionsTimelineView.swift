@@ -58,9 +58,6 @@ struct DecisionsTimelineView: View {
             VStack(spacing: 16) {
                 if let hero {
                     heroCard(hero)
-                    if hero.timeUplift > 1.05 {
-                        bestTimeCard(hero)
-                    }
                 }
 
                 SectionHeader(title: loc(L10n.Decisions.todayActions), theme: theme)
@@ -159,41 +156,6 @@ struct DecisionsTimelineView: View {
     /// 带符号数字：+123 / -45（0 → +0 保持绿色）
     private func signed(_ n: Int) -> String {
         n >= 0 ? "+\(ActionCard.formatCount(n))" : "-\(ActionCard.formatCount(abs(n)))"
-    }
-
-    // MARK: - Best Time Card
-
-    /// 最佳时段推荐卡（互动提升倍数来自真实帖子分布）
-    private func bestTimeCard(_ hero: DecisionSummary) -> some View {
-        let dayName = dayNames[clamp(hero.bestDay - 1, 0, 6)]
-        let line = String(format: loc(L10n.Decisions.reasonTimeUplift),
-            "\(dayName) \(hero.bestHours)", String(format: "%.1f", hero.timeUplift))
-
-        return HStack(spacing: 12) {
-            Image(systemName: "clock.badge.checkmark.fill")
-                .font(.system(size: 24, weight: .medium))
-                .foregroundColor(theme.accentSecondary)
-                .frame(width: 44, height: 44)
-                .background(theme.accentSecondary.opacity(0.15))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(loc(L10n.Decisions.bestPostingTime))
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(theme.textPrimary)
-
-                Text(line)
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundColor(theme.textSecondary)
-                    .lineLimit(2)
-            }
-
-            Spacer()
-        }
-        .padding(16)
-        .background(theme.cardSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.divider, lineWidth: 0.5))
     }
 
     // MARK: - Empty State
@@ -383,22 +345,11 @@ private struct TimelineCardRow: View {
     }
 }
 
-// MARK: - Helpers
-
-private let dayNames = [
-    loc(L10n.Premium.daySun), loc(L10n.Premium.dayMon), loc(L10n.Premium.dayTue),
-    loc(L10n.Premium.dayWed), loc(L10n.Premium.dayThu), loc(L10n.Premium.dayFri),
-    loc(L10n.Premium.daySat)
-]
-
-private func clamp(_ v: Int, _ lo: Int, _ hi: Int) -> Int { Swift.min(hi, Swift.max(lo, v)) }
-
 // MARK: - Preview
 
 #Preview("DecisionsTimelineView — Hero + Cards") {
     let hero = DecisionSummary(
         followers: 12840, growth7d: 86, views7d: 3200,
-        bestHours: "19:00–21:00", bestDay: 4, timeUplift: 1.4,
         dataDate: Date()
     )
     return NavigationStack {

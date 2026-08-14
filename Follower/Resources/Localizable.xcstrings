@@ -12686,19 +12686,19 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Profile"
+            "value" : "プロフィール"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Profile"
+            "value" : "我的"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Profile"
+            "value" : "我的"
           }
         }
       }

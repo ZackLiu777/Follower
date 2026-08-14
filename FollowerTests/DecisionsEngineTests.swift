@@ -45,21 +45,14 @@ private func makeFollowerHealth(
 /// 构造 ImpactSummary — 默认已知转化率（followerPerLike = 0.01 → 每 100 赞 1 粉）
 private func makeImpact(
     followerPerLike: Double = 0.01,
-    viewsPerLike: Double = 10.0,
-    hourUplift: Double = 1.5,
-    dayUplift: Double = 1.3
+    viewsPerLike: Double = 10.0
 ) -> ImpactSummary {
     let rates = ImpactEstimator.ConversionRates(
         followerPerView: 0.001, followerPerLike: followerPerLike, viewsPerLike: viewsPerLike)
     return ImpactSummary(
         rates: rates,
         perPostFollowerGain: [.reel: 5.0, .carousel: 2.0, .photo: 1.0],
-        perPostViewsGain: [.reel: 5000.0, .carousel: 2000.0, .photo: 1000.0],
-        hourUplift: ImpactEstimator.HourUplift(
-            startHour: 19, endHour: 21, uplift: hourUplift,
-            worstStartHour: 3, worstEndHour: 5),
-        bestDay: 4,
-        dayUplift: dayUplift
+        perPostViewsGain: [.reel: 5000.0, .carousel: 2000.0, .photo: 1000.0]
     )
 }
 
@@ -135,7 +128,6 @@ private func makeFeatures(
     GrowthFeatures(
         contentPerformance: Dictionary(uniqueKeysWithValues: contentStats),
         followerHealth: followerHealth,
-        timingProfile: TimingProfile(bestHours: "19:00–21:00", worstHours: "03:00–06:00", bestDay: 4),
         fatigueIndices: Dictionary(uniqueKeysWithValues: fatigueIndices),
         impact: impact,
         context: context
@@ -238,14 +230,12 @@ struct TemplateEngineTests {
         #expect(candidates.first { $0.template.id == "boostTopType" } == nil)
     }
 
-    /// bestHour：提升 > 5% 触发；≤ 5% 不触发
+    /// 时间类建议已移除（v1.2：小样本时段推断有误导风险，建议体系不再包含时间指导）
     @Test
-    func testBestHourUpliftThreshold() {
-        let up = makeFeatures(impact: makeImpact(hourUplift: 1.5))
-        #expect(TemplateEngine.candidates(features: up, scores: makeScores()).contains { $0.template.id == "bestHour" })
-
-        let flat = makeFeatures(impact: makeImpact(hourUplift: 1.02))
-        #expect(!TemplateEngine.candidates(features: flat, scores: makeScores()).contains { $0.template.id == "bestHour" })
+    func testTimingTemplatesRemoved() {
+        let features = makeFeatures(impact: makeImpact())
+        let candidates = TemplateEngine.candidates(features: features, scores: makeScores())
+        #expect(!candidates.contains { $0.template.type == .timing }, "时间类模板应全部移除")
     }
 
     /// inactiveWakeup：存在不活跃粉丝 → 触发，收益 = 10% 不活跃数
@@ -307,7 +297,7 @@ struct TemplateEngineTests {
         let features = makeFeatures(
             contentStats: [],
             followerHealth: makeFollowerHealth(activeRatio: 1.0, growth7d: 60, growth30d: 100),
-            impact: makeImpact(hourUplift: 1.0, dayUplift: 1.0),
+            impact: makeImpact(),
             context: makeContext(postsLast7d: 0)
         )
         let candidates = TemplateEngine.candidates(features: features, scores: makeScores(contentScores: []))
@@ -562,7 +552,7 @@ struct CardGeneratorTests {
         let features = makeFeatures(
             contentStats: [],
             followerHealth: makeFollowerHealth(activeRatio: 1.0, growth7d: 60, growth30d: 100),
-            impact: makeImpact(hourUplift: 1.0, dayUplift: 1.0),
+            impact: makeImpact(),
             context: makeContext(postsLast7d: 0)
         )
         let decisions = CardGenerator.generate(scores: makeScores(contentScores: []), features: features)

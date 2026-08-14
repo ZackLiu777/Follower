@@ -11,12 +11,14 @@ import GRDB
 
 // MARK: - MediaPostRepositoryProtocol
 
-/// MediaPost 数据访问协议 — 帖子的批量落库与最近查询
+/// MediaPost 数据访问协议 — 帖子的批量落库与查询
 protocol MediaPostRepositoryProtocol: Sendable {
     /// 批量 upsert 帖子（同 igMediaID 替换，依赖唯一键），返回持久化后的帖子
     func upsertBatch(accountId: Int64, media: [MediaPost]) async throws -> [MediaPost]
     /// 查询最近帖子（按日期降序，limit 限制条数）
     func fetchRecent(accountId: Int64, limit: Int) async throws -> [MediaPost]
+    /// 查询全部帖子（按日期升序 — v1.1 放开 90 天限制，Features 用满本地累积历史）
+    func fetchAll(accountId: Int64) async throws -> [MediaPost]
 }
 
 // MARK: - MediaPostRepository
@@ -60,6 +62,16 @@ final class MediaPostRepository: MediaPostRepositoryProtocol {
                 .filter(MediaPost.Columns.accountId == accountId)
                 .order(MediaPost.Columns.date.desc)
                 .limit(limit)
+                .fetchAll(db)
+        }
+    }
+
+    /// 查询全部帖子（按日期升序 — v1.1：决策引擎/MediaKit 用满本地累积历史）
+    func fetchAll(accountId: Int64) async throws -> [MediaPost] {
+        try await db.read { db in
+            try MediaPost
+                .filter(MediaPost.Columns.accountId == accountId)
+                .order(MediaPost.Columns.date.asc)
                 .fetchAll(db)
         }
     }

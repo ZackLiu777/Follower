@@ -22,4 +22,8 @@ final class MockMediaPostRepository: MediaPostRepositoryProtocol, @unchecked Sen
     func fetchRecent(accountId: Int64, limit: Int) async throws -> [MediaPost] {
         Array(posts.prefix(limit))
     }
+
+    func fetchAll(accountId: Int64) async throws -> [MediaPost] {
+        posts
+    }
 }

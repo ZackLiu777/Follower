@@ -55,7 +55,7 @@ struct FeatureExtractorTests {
         #expect(health.followerGrowth30d == 0)
     }
 
-    /// 7 天增长 100 → growth7d = 100，growth30d = 100 × 30/7（速率换算）
+    /// 7 天增长 100 → growth7d = 100（真实 7 天窗口），growth30d = 100（窗口内同为这 2 条）
     @Test
     func testExtractHealthGrowthConversion() {
         let snapshots = [
@@ -64,7 +64,7 @@ struct FeatureExtractorTests {
         ]
         let health = FeatureExtractor.extractHealth(snapshots: snapshots, followers: 10_100)
         #expect(health.followerGrowth7d == 100)
-        #expect(abs(health.followerGrowth30d - 100.0 * 30.0 / 7.0) < 0.01)
+        #expect(health.followerGrowth30d == 100)
     }
 
     /// 输入乱序 → 内部按时间排序，首尾差值正确
@@ -76,7 +76,7 @@ struct FeatureExtractorTests {
         #expect(health.followerGrowth7d == 1000)
     }
 
-    /// 长观测跨度 → 速率按 7 天换算（90 天涨 90 → 周速率 7）
+    /// 长观测跨度且窗口内仅 1 条 → 按全部跨度折算（90 天涨 90 → 周速率 7）
     @Test
     func testExtractHealthRateScaledToSevenDays() {
         let snapshots = [
@@ -85,6 +85,93 @@ struct FeatureExtractorTests {
         ]
         let health = FeatureExtractor.extractHealth(snapshots: snapshots, followers: 10_090)
         #expect(abs(health.followerGrowth7d - 90.0 * 7.0 / 90.0) < 0.01)
+    }
+
+    // MARK: - windowDelta（真实窗口语义）
+
+    /// 窗口内多条快照 → 取窗口首尾差值（不折算）
+    @Test
+    func testWindowDeltaUsesWindowEdges() {
+        // 第 1 天 10000，第 25 天 10050，第 40 天 10100
+        let snaps = [
+            makeSnapshot(followers: 10_000, engagement: 0.05, at: 0),
+            makeSnapshot(followers: 10_050, engagement: 0.05, at: 25 * 86_400),
+            makeSnapshot(followers: 10_100, engagement: 0.05, at: 40 * 86_400),
+        ]
+        let sorted = snaps.sorted { $0.observedAt < $1.observedAt }
+        // 30 天窗口：起点 = 40d - 30d = 10d → 窗口 = [25d, 40d] → 差值 50
+        let delta30 = FeatureExtractor.windowDelta(sorted, days: 30) { $0.followersCount }
+        #expect(abs(delta30 - 50) < 0.01)
+    }
+
+    /// 窗口内仅 1 条 → 全部跨度折算
+    @Test
+    func testWindowDeltaScalesWhenSparse() {
+        let snaps = [
+            makeSnapshot(followers: 10_000, engagement: 0.05, at: 0),
+            makeSnapshot(followers: 10_100, engagement: 0.05, at: 60 * 86_400),
+        ]
+        let sorted = snaps.sorted { $0.observedAt < $1.observedAt }
+        // 7 天窗口无第二条 → 折算 100 × 7/60
+        let delta7 = FeatureExtractor.windowDelta(sorted, days: 7) { $0.followersCount }
+        #expect(abs(delta7 - 100.0 * 7.0 / 60.0) < 0.01)
+    }
+
+    /// 空快照 → 0（不崩溃）
+    @Test
+    func testWindowDeltaEmpty() {
+        #expect(FeatureExtractor.windowDelta([], days: 7) { $0.followersCount } == 0)
+    }
+
+    /// 单条快照 → 0
+    @Test
+    func testWindowDeltaSingleSnapshot() {
+        let snaps = [makeSnapshot(followers: 10_000, engagement: 0.05, at: 0)]
+        #expect(FeatureExtractor.windowDelta(snaps, days: 7) { $0.followersCount } == 0)
+    }
+
+    /// 7 自然日窗口增量（Dashboard 口径）：最近 7 天内快照首尾差
+    @Test
+    func testWeekCalendarDelta() {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let s0 = Snapshot(id: nil, accountId: 1, followersCount: 10_000, followingCount: 100,
+            mediaCount: 10, engagementRate: 0.05, totalLikes: 500, totalComments: 50,
+            totalShares: 10, totalViews: 20_000,
+            observedAt: cal.date(byAdding: .day, value: -10, to: today)!,
+            createdAt: Date())
+        let s1 = Snapshot(id: nil, accountId: 1, followersCount: 10_040, followingCount: 100,
+            mediaCount: 10, engagementRate: 0.05, totalLikes: 500, totalComments: 50,
+            totalShares: 10, totalViews: 20_700,
+            observedAt: cal.date(byAdding: .day, value: -3, to: today)!,
+            createdAt: Date())
+        let s2 = Snapshot(id: nil, accountId: 1, followersCount: 10_090, followingCount: 100,
+            mediaCount: 10, engagementRate: 0.05, totalLikes: 500, totalComments: 50,
+            totalShares: 10, totalViews: 21_500,
+            observedAt: today, createdAt: Date())
+        let sorted = [s0, s1, s2].sorted { $0.observedAt < $1.observedAt }
+        // 7 自然日窗口（today - 7d 起）：s1 → s2 差 = 50 粉丝 / 800 浏览
+        #expect(FeatureExtractor.weekCalendarDelta(sorted) { $0.followersCount } == 50)
+        #expect(FeatureExtractor.weekCalendarDelta(sorted) { $0.totalViews } == 800)
+    }
+
+    /// 周期末值序列相邻差（趋势周线 delta 口径）：本周 vs 上周
+    @Test
+    func testLastPeriodDelta() {
+        let now = Date()
+        let lastWeek = now.addingTimeInterval(-7 * 86_400)
+        let twoWeeks = now.addingTimeInterval(-14 * 86_400)
+        let metrics = [
+            Metric(id: nil, accountId: 1, metricType: .followerGrowth, value: 100,
+                window: .week, observedAt: twoWeeks, createdAt: Date()),
+            Metric(id: nil, accountId: 1, metricType: .followerGrowth, value: 120,
+                window: .week, observedAt: lastWeek, createdAt: Date()),
+            Metric(id: nil, accountId: 1, metricType: .followerGrowth, value: 135,
+                window: .week, observedAt: now, createdAt: Date()),
+        ]
+        #expect(FeatureExtractor.lastPeriodDelta(metrics) == 15)  // 135 - 120
+        #expect(FeatureExtractor.lastPeriodDelta(Array(metrics.prefix(1))) == nil)
+        #expect(FeatureExtractor.lastPeriodDelta([]) == nil)
     }
 
     /// 7 天浏览增量：快照 totalViews 差值按观测跨度换算（负浏览增量截断为 0）
@@ -170,31 +257,6 @@ struct FeatureExtractorTests {
         #expect(abs((perf[.reel]?.growthRate ?? 0) - 2.0) < 1e-9)
     }
 
-    // MARK: - extractTimingProfile
-
-    /// 空帖子 → 不崩溃，返回兜底时段（uplift 1.0）
-    @Test
-    func testExtractTimingProfileEmptyPosts() {
-        let profile = FeatureExtractor.extractTimingProfile(posts: [])
-        let pattern = #"^\d{2}:00–\d{2}:00$"#
-        #expect(profile.bestHours.range(of: pattern, options: .regularExpression) != nil)
-        #expect(profile.worstHours.range(of: pattern, options: .regularExpression) != nil)
-    }
-
-    /// 高互动帖子集中在 21 点 → 最佳时段包含 21:00
-    @Test
-    func testExtractTimingProfileBestHourFromData() {
-        let posts = [
-            makePost(type: .video, likes: 10, hour: 9),
-            makePost(type: .video, likes: 10, hour: 9),
-            makePost(type: .image, likes: 100, hour: 21),
-            makePost(type: .image, likes: 100, hour: 21),
-        ]
-        let profile = FeatureExtractor.extractTimingProfile(posts: posts)
-        #expect(profile.bestHours.contains("21:00"))
-        #expect(profile.worstHours.contains("09:00"))
-    }
-
     // MARK: - extractFatigue
 
     /// 空性能字典 → 空结果（不崩溃）
@@ -253,10 +315,9 @@ struct FeatureExtractorTests {
         #expect(abs((impact.perPostFollowerGain[.reel] ?? -1) - 50.0) < 1e-9)
         // viewsPerLike = 4000/50 = 80 → 单帖浏览 = 100 × 80 = 8000
         #expect(abs((impact.perPostViewsGain[.reel] ?? -1) - 8000.0) < 1e-9)
-        #expect(impact.bestDay >= 1 && impact.bestDay <= 7)
     }
 
-    /// 无帖子 → 时段提升 1.0，无单帖收益（不编造）
+    /// 无帖子 → 无单帖收益（不编造）
     @Test
     func testExtractImpactNoPostsNoGains() {
         let snaps = [
@@ -266,7 +327,6 @@ struct FeatureExtractorTests {
         let impact = FeatureExtractor.extractImpact(snapshots: snaps, posts: [])
         #expect(impact.perPostFollowerGain.isEmpty)
         #expect(impact.perPostViewsGain.isEmpty)
-        #expect(impact.hourUplift.uplift == 1.0)
     }
 
     // MARK: - extractContext

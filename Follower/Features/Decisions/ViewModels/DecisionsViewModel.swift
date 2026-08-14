@@ -18,12 +18,6 @@ struct DecisionSummary: Sendable {
     let growth7d: Int
     /// 近 7 天浏览增量（四舍五入）
     let views7d: Int
-    /// 最佳发帖时段（"19:00–21:00"）
-    let bestHours: String
-    /// 最佳发帖日（1=周日 … 7=周六）
-    let bestDay: Int
-    /// 最佳时段互动提升倍数
-    let timeUplift: Double
     /// 最近一次快照时间（数据新鲜度展示）
     let dataDate: Date?
 }
@@ -89,17 +83,18 @@ final class DecisionsViewModel {
         }
         isLoading = true; defer { isLoading = false }
         do {
-            let snapshots = try await snapshotRepo.fetch(accountId: accountId,
-                from: Date().addingTimeInterval(-90 * 86400), to: Date())
+            // 全量本地快照（v1.1：放开 90 天限制，用满用户长期累积的历史）
+            let snapshots = try await snapshotRepo.fetchAll(accountId: accountId)
             let latest = try await snapshotRepo.latest(accountId: accountId)
             let followers = latest?.followersCount ?? 0
-            let posts = try await mediaPostRepo.fetchRecent(accountId: accountId, limit: 100)
+            // v1.1：帖子全量（类型占比/爆款/低互动分析用满本地历史）
+            let posts = try await mediaPostRepo.fetchAll(accountId: accountId)
 
-            // 周窗口指标（触达 / 主页浏览 / 平均赞 / 互动率）— 趋势信号与触达类建议
+            // 周窗口指标（触达 / 主页浏览 / 平均赞 / 互动率）— 趋势信号用满本地历史
             var weekly: [MetricType: [Metric]] = [:]
             for type in [MetricType.reachEstimate, .profileViews, .averageLikes, .engagementTrend] {
                 weekly[type] = (try? await metricRepo.fetch(
-                    accountId: accountId, metricType: type, window: .week, limit: 12)) ?? []
+                    accountId: accountId, metricType: type, window: .week, limit: 365)) ?? []
             }
             let draftCount = ((try? await draftPostRepo.fetchAll()) ?? []).count
 
@@ -107,24 +102,26 @@ final class DecisionsViewModel {
 
             let health = FeatureExtractor.extractHealth(snapshots: snapshots, followers: followers)
             let contentPerf = FeatureExtractor.extractContentPerformance(posts: posts)
-            let timing = FeatureExtractor.extractTimingProfile(posts: posts)
             let fatigue = FeatureExtractor.extractFatigue(performance: contentPerf)
             let impact = FeatureExtractor.extractImpact(snapshots: snapshots, posts: posts)
             let context = FeatureExtractor.extractContext(
                 snapshots: snapshots, posts: posts, weeklyMetrics: weekly, draftCount: draftCount)
             let features = GrowthFeatures(contentPerformance: contentPerf, followerHealth: health,
-                timingProfile: timing, fatigueIndices: fatigue, impact: impact, context: context)
+                fatigueIndices: fatigue, impact: impact, context: context)
 
             let scores = ScoringEngine.score(features)
             let decisions = CardGenerator.generate(scores: scores, features: features)
             cards = decisions.topSuggestions
+            // Hero 数值与趋势页口径一致：
+            // - 涨粉/浏览优先用周窗口周期末值序列相邻差（与趋势周线 delta 同源）
+            // - 周序列不足 2 条时回退 7 自然日窗口快照首尾差（Dashboard 口径）
+            let sortedSnapshots = snapshots.sorted { $0.observedAt < $1.observedAt }
             summary = DecisionSummary(
                 followers: followers,
-                growth7d: Int(health.followerGrowth7d.rounded()),
-                views7d: Int(health.viewsGrowth7d.rounded()),
-                bestHours: timing.bestHours,
-                bestDay: timing.bestDay,
-                timeUplift: impact.hourUplift.uplift,
+                growth7d: FeatureExtractor.lastPeriodDelta(weekly[.followerGrowth] ?? [])
+                    ?? FeatureExtractor.weekCalendarDelta(sortedSnapshots) { $0.followersCount },
+                views7d: max(0, FeatureExtractor.lastPeriodDelta(weekly[.profileViews] ?? [])
+                    ?? FeatureExtractor.weekCalendarDelta(sortedSnapshots) { $0.totalViews }),
                 dataDate: latest?.observedAt
             )
             print("[DecisionsVM] refreshDecisions — top \(cards.count) suggestions")

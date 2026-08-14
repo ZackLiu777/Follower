@@ -67,7 +67,15 @@ struct DecisionsView: View {
         }
         .task {
             await viewModel.loadInitialAccount()
+            if let id = appState.selectedAccountId ?? viewModel.selectedAccountId {
+                viewModel.selectedAccountId = id
+            }
             if appState.syncState == .dataReady { await viewModel.refreshDecisions() }
+        }
+        .onChange(of: appState.selectedAccountId) { _, newId in
+            guard let id = newId else { return }
+            viewModel.selectedAccountId = id
+            Task { await viewModel.refreshDecisions() }
         }
         .onChange(of: appState.syncState) { _, new in
             if new == .dataReady { Task { await viewModel.refreshDecisions() } }

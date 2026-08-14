@@ -104,6 +104,19 @@ private struct ContentViewInner: View {
         .themeSynced()
         .toolbarBackground(.hidden, for: .tabBar)  // 隐藏 TabBar 背景，让渐变透出
         .sensoryFeedback(.selection, trigger: selectedTab)
+        // 全局账号切换统一分发：无论切换发生在 Dashboard Menu 还是 Profile 页，
+        // 三个数据 Tab 都同步刷新（避免依赖各 view 的挂载状态，切换永远生效）
+        .onChange(of: appState.selectedAccountId) { _, newId in
+            guard let id = newId else { return }
+            if id != dashboardVM.selectedAccountId {
+                dashboardVM.selectAccount(id)
+            }
+            Task { await trendsVM.loadTrends(accountId: id) }
+            if id != decisionsVM.selectedAccountId {
+                decisionsVM.selectedAccountId = id
+                Task { await decisionsVM.refreshDecisions() }
+            }
+        }
     }
 }
 

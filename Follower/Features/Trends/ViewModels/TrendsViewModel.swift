@@ -132,7 +132,8 @@ final class TrendsViewModel {
             var yearDict: [MetricType: [Metric]] = [:]
 
             for type in Self.visibleMetricTypes {
-                let d = try await metricRepo.fetch(accountId: accountId, metricType: type, window: .day, limit: 90)
+                // v1.1 放开 90 天限制：日窗口拉 365 天，周/月/年保持长期聚合
+                let d = try await metricRepo.fetch(accountId: accountId, metricType: type, window: .day, limit: 365)
                 let w = try await metricRepo.fetch(accountId: accountId, metricType: type, window: .week, limit: 52)
                 let m = try await metricRepo.fetch(accountId: accountId, metricType: type, window: .month, limit: 24)
                 let y = try await metricRepo.fetch(accountId: accountId, metricType: type, window: .year, limit: 10)
@@ -189,10 +190,11 @@ final class TrendsViewModel {
 
     // MARK: - 总计 / 增减 / 周期标签
 
-    /// 总览页增减：最近一次真实观测 − 上一次真实观测（10→14 显示 +4，14→9 显示 -5）。
-    /// v0.12：周/月/年不再用窗口首末差——weeklyDataPoints 无数据日补 0，窗口内首值为 0 时
-    /// 差值退化成最新值本身（徽章显示总数而非增减）；day 优先用真实采样点序列
-    /// （同一天内多次变化也能算差），不足 2 点回退日粒度 Metric 相邻两条（今天 vs 昨天）。
+    /// 总览页增减：
+    /// - day：今天采样点相邻差（不足 2 点回退日粒度 Metric）
+    /// - week/month/year：各自窗口的周期末值序列相邻两条（周 vs 上周 / 月 vs 上月 / 年 vs 去年）
+    ///   —— 各窗口显示各自粒度的变化，不再共用日粒度相邻差（修复各窗口同值的 bug）。
+    ///   周期末值由聚合层 periodEndMetrics 生成（组内最后一次真实观测，无 0 占位）。
     func delta(for metricType: MetricType) -> Int {
         switch selectedWindow {
         case .day:
@@ -204,8 +206,18 @@ final class TrendsViewModel {
             let daily = (dailyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
             guard daily.count >= 2 else { return 0 }
             return daily[daily.count - 1].value - daily[daily.count - 2].value
-        default:
-            // 周/月/年：日粒度 Metric 相邻两条（真实值，无 0 占位；跨窗口边界同样生效）
+        case .week, .month, .year:
+            let series: [Metric]
+            switch selectedWindow {
+            case .week:  series = weeklyMetrics[metricType] ?? []
+            case .month: series = monthlyMetrics[metricType] ?? []
+            default:     series = yearlyMetrics[metricType] ?? []
+            }
+            let sorted = series.sorted { $0.observedAt < $1.observedAt }
+            if sorted.count >= 2 {
+                return sorted[sorted.count - 1].value - sorted[sorted.count - 2].value
+            }
+            // 高窗口无数据 → 回退日粒度相邻两条
             let daily = (dailyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
             guard daily.count >= 2 else { return 0 }
             return daily[daily.count - 1].value - daily[daily.count - 2].value
