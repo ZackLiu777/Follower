@@ -59,7 +59,7 @@ jobs:
             -only-testing:FollowerTests/SimulationCalibrationTests \
             -only-testing:FollowerTests/TestHelpers \
             -only-testing:FollowerTests/DashboardAutoSyncTests \
-            -only-testing:FollowerTests/ActionCardTemplateTests \
+            -only-testing:FollowerTests/DecisionTemplateTests \
             -only-testing:FollowerTests/FeatureExtractorTests \
             -only-testing:FollowerTests/PostAssistantServiceTests \
             -only-testing:FollowerTests/PostQueueViewModelTests \
@@ -67,6 +67,7 @@ jobs:
             -only-testing:FollowerTests/BestPostingTimeServiceTests \
             -only-testing:FollowerTests/HeatmapTierTests \
             -only-testing:FollowerTests/ScoreTierTests \
+            -only-testing:FollowerTests/ImpactEstimatorTests \
             -derivedDataPath /tmp/FollowerDD CODE_SIGNING_ALLOWED=NO
 
       - name: Run Flaky Tests (shared DB / @MainActor VM / UI timing — allowed to fail)

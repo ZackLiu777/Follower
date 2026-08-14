@@ -15,16 +15,22 @@ struct ScoringEngine: Sendable {
 
     // MARK: - Content Type Scoring
 
-    /// 内容类型评分公式：
-    ///   avgEngagement * 100 * 0.5 + growthRate * 0.3 - fatiguePenalty * 0.2
-    /// 结果 clamped 到 [0.0, 1.0]
+    /// 内容类型评分公式（相对排名，无绝对常量假设）：
+    ///   relEng × 0.5 + relGrowth × 0.3 + (1 − fatigue) × 0.2
+    /// 其中：
+    ///   relEng = 本类型平均互动 ÷ 全部类型最大平均互动（0~1）
+    ///   relGrowth = (clamp(growthRate, −1, 1) + 1) / 2（0~1）
+    /// 结果天然位于 [0.0, 1.0]
     /// - Parameters:
-    ///   - stats: 该内容类型的表现统计
+    ///   - stats: 该内容类型的表现统计（真实数据）
+    ///   - maxEngagement: 全部类型中的最大平均互动（相对基准）
     ///   - fatigue: 疲劳惩罚系数（来自 FatigueIndex.penalty）
     /// - Returns: 该内容类型的综合得分（0.0 ~ 1.0）
-    static func scoreContentType(_ stats: ContentStats, fatigue: Double) -> Double {
-        let raw = stats.avgEngagement * 100 * 0.5 + stats.growthRate * 0.3 - fatigue * 0.2
-        return min(1.0, max(0.0, raw))
+    static func scoreContentType(_ stats: ContentStats, maxEngagement: Double, fatigue: Double) -> Double {
+        let relEng = maxEngagement > 0 ? min(1.0, stats.avgEngagement / maxEngagement) : 0.0
+        let relGrowth = (min(1.0, max(-1.0, stats.growthRate)) + 1.0) / 2.0
+        let relFatigue = min(1.0, max(0.0, fatigue))
+        return relEng * 0.5 + relGrowth * 0.3 + (1.0 - relFatigue) * 0.2
     }
 
     // MARK: - Growth Health Scoring
@@ -58,10 +64,11 @@ struct ScoringEngine: Sendable {
     /// - Parameter features: 特征提取结果
     /// - Returns: 汇总评分结果，contentScores 按分数降序排列
     static func score(_ features: GrowthFeatures) -> GrowthScores {
-        // 各内容类型评分，按分数降序
+        // 各内容类型评分，按分数降序；相对基准 = 全部类型最大平均互动
+        let maxEng = features.contentPerformance.values.map(\.avgEngagement).max() ?? 0
         let contentResults = features.contentPerformance.map { (type, stats) in
             let fatigue = features.fatigueIndices[type]?.penalty ?? 0
-            return (type, scoreContentType(stats, fatigue: fatigue))
+            return (type, scoreContentType(stats, maxEngagement: maxEng, fatigue: fatigue))
         }.sorted { $0.1 > $1.1 }
 
         // 收集疲劳的内容类型

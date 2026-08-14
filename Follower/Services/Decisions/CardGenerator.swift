@@ -2,122 +2,158 @@
 //  CardGenerator.swift
 //  Follower
 //
-//  卡片生成器 — 将 GrowthScores 和 GrowthFeatures 转化为 ActionCard 数组。
-//  纯函数，Sendable，无状态。基于规则引擎生成四种类型的行动卡片。
-//  卡片模板参数存储在 ActionCardTemplate 中，本地化字符串由 View 层实时渲染。
+//  卡片生成器 — 从 TemplateEngine 候选按机会分排序，分组为主列表与折叠区。
+//  纯函数，Sendable，确定性。删除「每类 2 张」硬上限：
+//  全部触发的模板按机会分降序，前 6 条为主列表，其余进折叠区。
+//
 
 import Foundation
 
+// MARK: - GeneratedDecisions
+
+/// 生成结果 — 主列表 + 折叠区
+struct GeneratedDecisions: Sendable {
+    /// 主列表（机会分前 6）
+    let topSuggestions: [ActionCard]
+    /// 折叠区（其余全部）
+    let moreSuggestions: [ActionCard]
+
+    /// 全部建议（按机会分降序）
+    var all: [ActionCard] { topSuggestions + moreSuggestions }
+    var isEmpty: Bool { all.isEmpty }
+}
+
+/// 候选建议 — 模板 + 机会分 + 量化收益 + 置信度
+struct TemplateCandidate: Sendable {
+    let template: DecisionTemplate
+    let score: Int
+    let impact: CardImpact
+    /// 低置信（数据信号不足的降级版本）
+    let lowConfidence: Bool
+
+    init(template: DecisionTemplate, score: Int, impact: CardImpact, lowConfidence: Bool = false) {
+        self.template = template
+        self.score = score
+        self.impact = impact
+        self.lowConfidence = lowConfidence
+    }
+}
+
 // MARK: - CardGenerator
 
-/// 卡片生成器 — 根据评分结果和原始特征，按规则生成有序的 ActionCard 数组。
-///
-/// 生成规则（按优先级）：
-/// 1. 最高分内容类型 → Primary Action Card（score > 0.5）
-/// 2. 疲劳检测 → Alert Card（每种疲劳类型一张）
-/// 3. 粉丝不活跃 → Recovery Card（recoveryNeeded > 0.5）
-/// 4. 通用洞察 → Insight Card（始终生成）
-///
-/// 最终按 priority 升序排列
+/// 卡片生成器 — 全部候选按机会分排序，精选相关性最优的 ≤4 条为主列表，
+/// 其余全部进折叠区（建议库入口）。
 struct CardGenerator: Sendable {
 
-    // MARK: - Main Entry Point
+    /// 主列表精选上限（产品约束：一次性显示不超过 4 条）
+    static let topLimit = 4
 
-    /// 主入口：根据评分和特征生成全部卡片
-    /// - Parameters:
-    ///   - scores: ScoringEngine 输出的评分结果
-    ///   - features: FeatureExtractor 输出的原始特征
-    /// - Returns: 按 priority 升序排列的 ActionCard 数组
-    static func generate(scores: GrowthScores, features: GrowthFeatures) -> [ActionCard] {
-        var cards: [ActionCard] = []
+    /// 主入口：生成全部建议 → 按账号阶段动态加权 → 精选主列表 + 折叠区
+    /// 精选规则（相关性最优）：
+    ///   1. 状态感知加权 — 按账号阶段（增长/下滑/停滞/爆发）给对应模板加分，
+    ///      让不同数据状态产生不同精选组合
+    ///   2. 强信号（非估算）优先
+    ///   3. 类别去重 — 同一类别最多 1 条进精选，保证 4 条覆盖不同维度
+    ///   4. 按机会分降序
+    /// - Returns: 精选主列表（≤4 条，类别互不重复）+ 折叠区（其余全部）
+    static func generate(scores: GrowthScores, features: GrowthFeatures) -> GeneratedDecisions {
+        let candidates = TemplateEngine.candidates(features: features, scores: scores)
+        let weighted = applyPhaseWeighting(candidates: candidates, phase: features.context.phase)
+            .sorted { $0.score > $1.score }
 
-        // Rule 1: 最高分内容类型 → Primary Action Card（阈值极低确保总是触发）
-        if let top = scores.contentScores.first, top.1 > 0.01,
-           let stats = features.contentPerformance[top.0] {
-            let ctx: CardContext = stats.growthRate > 0.05 ? .growing
-                : stats.growthRate < -0.03 ? .declining : .stable
-            cards.append(primaryCard(for: top.0, stats: stats, context: ctx))
+        let selected = selectTop(candidates: weighted, limit: topLimit)
+        let selectedIDs = Set(selected.map(\.template.id))
+        let rest = weighted.filter { !selectedIDs.contains($0.template.id) }
+
+        let cards = selected.enumerated().map { index, candidate in
+            ActionCard(
+                id: candidate.template.id,
+                template: candidate.template,
+                priority: index,
+                impact: candidate.impact,
+                lowConfidence: candidate.lowConfidence
+            )
         }
-
-        // Rule 2: 疲劳检测 → 最多一张 Alert Card（合并所有疲劳类型）
-        if let firstFatigued = scores.fatiguedTypes.first {
-            let maxPenalty = scores.fatiguedTypes.compactMap { features.fatigueIndices[$0]?.penalty }.max() ?? 0.2
-            cards.append(fatigueCard(for: firstFatigued, penalty: maxPenalty))
+        let more = rest.enumerated().map { index, candidate in
+            ActionCard(
+                id: candidate.template.id,
+                template: candidate.template,
+                priority: index,
+                impact: candidate.impact,
+                lowConfidence: candidate.lowConfidence
+            )
         }
-
-        // Rule 3: 粉丝不活跃 → Recovery Card（阈值极低确保总是触发）
-        if scores.recoveryNeeded > 0.01 {
-            cards.append(recoveryCard(health: features.followerHealth))
+        print("[CardGenerator] phase: \(features.context.phase) | selected \(cards.count) + more \(more.count)")
+        for c in cards {
+            print("  [top] \(c.template.id) | lowConf: \(c.lowConfidence) | impact: +\(c.impact.followerGain)fans/+\(c.impact.viewsGain)views")
         }
-
-        // Rule 4: 通用洞察 → Insight Card
-        if let insight = insightCard(features: features) {
-            cards.append(insight)
-        }
-
-        // 确保最少 4 张卡片 — 缺失的类型用变体补充，避免重复
-        let missing = 4 - cards.count
-        if missing > 0 {
-            let variants = fallbackCards(features: features, scores: scores, count: missing, existing: cards)
-            cards.append(contentsOf: variants)
-        }
-
-        let sorted = cards.sorted { $0.priority < $1.priority }
-        print("[CardGenerator] generated \(sorted.count) cards:")
-        for c in sorted {
-            print("  [\(c.priority)] \(c.type) | \(c.template.displayTitle) | actions: \(c.template.displayActions.count)")
-        }
-        return sorted
+        return GeneratedDecisions(topSuggestions: cards, moreSuggestions: more)
     }
 
-    /// 生成变体卡片填补空缺 — 每张不同 variation + bestDay，并去重
-    private static func fallbackCards(features: GrowthFeatures, scores: GrowthScores,
-                                       count: Int, existing: [ActionCard]) -> [ActionCard] {
-        var result: [ActionCard] = []
-        let hour = String(features.timingProfile.bestHours.split(separator: "–").first ?? "19:00")
-        let baseDay = features.timingProfile.bestDay
-        // 收集已有卡片中已使用的 variation
-        let usedVariations = Set(existing.compactMap { card in
-            if case .insight(_, _, let v) = card.template { return v }
-            return nil
-        })
-        var vi = 1
-        for i in 0..<count {
-            while usedVariations.contains(vi) { vi = (vi + 1) % 4 }
-            let v = vi; vi = (vi + 1) % 4
-            // 每张 fallback 偏移不同天数，确保行动建议不同
-            let day = ((baseDay - 1 + (i + 1) * 2) % 7) + 1
-            result.append(ActionCard(id: UUID().uuidString, type: .insight,
-                icon: "lightbulb.fill",
-                template: .insight(bestDay: day, bestHour: hour, variation: v),
-                priority: 10 + i))
+    // MARK: - 状态感知加权
+
+    /// 各阶段模板加权表 — 模板 id → 加分
+    /// 让反映当前数据状态的模板在精选排序中胜出（不同数据 → 不同决策）
+    static func phaseWeights(for phase: AccountPhase) -> [String: Int] {
+        switch phase {
+        case .growing:
+            return [
+                "boostTopType": 15, "replicateViral": 15, "viralFollowUp": 15,
+                "topFansEngage": 10, "guideComments": 10,
+                "reuseViral": 8, "seriesContent": 5,
+            ]
+        case .declining:
+            return [
+                "churnWarning": 25, "rescueDecliningType": 20, "engagementDecline": 20,
+                "reachDecline": 15, "typeTrendWarning": 15, "growthSlowdown": 15,
+                "conversionBoost": 10, "churnPeakDay": 10, "reduceFrequency": 8,
+            ]
+        case .stagnant:
+            return [
+                "increaseFrequency": 20, "monthlyPlan": 15,
+                "seriesContent": 15, "inactiveWakeup": 10,
+                "growthTarget": 8, "diversifyTypes": 8, "guideComments": 5,
+            ]
+        case .viral:
+            return [
+                "viralFollowUp": 25, "replicateViral": 20, "boostTopType": 15,
+                "reuseViral": 15, "guideComments": 10, "topFansEngage": 10,
+                "inactiveWakeup": 5,
+            ]
         }
+    }
+
+    /// 应用阶段加权 — 加权后的候选（新增 TemplateCandidate）
+    static func applyPhaseWeighting(candidates: [TemplateCandidate], phase: AccountPhase) -> [TemplateCandidate] {
+        let weights = phaseWeights(for: phase)
+        return candidates.map { candidate in
+            let bonus = weights[candidate.template.id] ?? 0
+            return TemplateCandidate(
+                template: candidate.template,
+                score: candidate.score + bonus,
+                impact: candidate.impact,
+                lowConfidence: candidate.lowConfidence
+            )
+        }
+    }
+
+    /// 精选算法：强信号优先 + 类别去重 + 机会分降序
+    static func selectTop(candidates: [TemplateCandidate], limit: Int) -> [TemplateCandidate] {
+        let sorted = candidates.sorted { $0.score > $1.score }
+        var result: [TemplateCandidate] = []
+        var usedTypes = Set<CardType>()
+
+        func fill(highConfidenceOnly: Bool) {
+            for c in sorted where c.lowConfidence != highConfidenceOnly {
+                guard result.count < limit else { return }
+                if usedTypes.contains(c.template.type) { continue }
+                usedTypes.insert(c.template.type)
+                result.append(c)
+            }
+        }
+
+        fill(highConfidenceOnly: true)  // 先强信号
+        fill(highConfidenceOnly: false) // 不足再弱信号补位
         return result
-    }
-
-    // MARK: - Card Builders
-
-    private static func primaryCard(for type: ContentType, stats: ContentStats, context: CardContext) -> ActionCard {
-        let x = round((stats.avgEngagement * 100 / 1.3) * 10) / 10
-        return ActionCard(id: UUID().uuidString, type: .primary, icon: "flame.fill",
-            template: .primary(contentType: type, outperformanceX: x, context: context), priority: 0)
-    }
-
-    private static func fatigueCard(for type: ContentType, penalty: Double) -> ActionCard {
-        ActionCard(id: UUID().uuidString, type: .alert, icon: "exclamationmark.triangle.fill",
-            template: .alert(fatiguedType: type, penalty: penalty), priority: 1)
-    }
-
-    private static func recoveryCard(health: FollowerHealth) -> ActionCard {
-        let pct = Int((1.0 - health.activeRatio) * 100)
-        let ctx: CardContext = pct > 70 ? .severe : .declining
-        return ActionCard(id: UUID().uuidString, type: .recovery, icon: "arrow.up.heart.fill",
-            template: .recovery(inactivePct: pct, context: ctx), priority: 2)
-    }
-
-    private static func insightCard(features: GrowthFeatures) -> ActionCard? {
-        let bestHour = String(features.timingProfile.bestHours.split(separator: "–").first ?? "19:00")
-        return ActionCard(id: UUID().uuidString, type: .insight, icon: "lightbulb.fill",
-            template: .insight(bestDay: features.timingProfile.bestDay, bestHour: bestHour), priority: 3)
     }
 }

@@ -1,162 +1,170 @@
 //
-//  ActionCardTemplateTests.swift
+//  DecisionTemplateTests.swift
 //  FollowerTests
 //
-//  ActionCard 模板渲染单元测试 — displayTitle / displayActions /
-//  displayReason / displayImpact 各分支与边界（day 越界 clamp）。
+//  DecisionTemplate 模板渲染单元测试 — displayTitle / displayActions /
+//  displayReason 参数化格式化、impactText、formatCount、sampleCards。
 //
 
 import Testing
 import Foundation
 @testable import Follower
 
-/// Unit tests for ActionCardTemplate — branch rendering, boundary clamping
-struct ActionCardTemplateTests {
+/// Unit tests for DecisionTemplate — 参数化渲染与量化收益
+struct DecisionTemplateTests {
 
-    // MARK: - displayTitle 分支
-
-    /// primary 卡片：growing / declining / stable / severe 四上下文标题互不相同
-    @Test
-    func testPrimaryTitleDiffersByContext() {
-        let growing = ActionCardTemplate.primary(contentType: .reel, outperformanceX: 2.0, context: .growing)
-        let declining = ActionCardTemplate.primary(contentType: .reel, outperformanceX: 2.0, context: .declining)
-        let stable = ActionCardTemplate.primary(contentType: .reel, outperformanceX: 2.0, context: .stable)
-        let severe = ActionCardTemplate.primary(contentType: .reel, outperformanceX: 2.0, context: .severe)
-
-        #expect(!growing.displayTitle.isEmpty)
-        #expect(growing.displayTitle != declining.displayTitle)
-        #expect(growing.displayTitle != stable.displayTitle)
-        // severe 与 declining 共用 reverse 标题
-        #expect(severe.displayTitle == declining.displayTitle)
+    /// 构造模板（使用带 %@ 占位符的 Tpl 模板 key）
+    private func makeTemplate(
+        titleArgs: [String] = ["Reel"],
+        reasonArgs: [String] = ["Reel", "2"],
+        actionArgs: [[String]] = [["2", "Reel"]]
+    ) -> DecisionTemplate {
+        DecisionTemplate(
+            id: "test.template", type: .content, icon: "flame.fill",
+            titleKey: Tpl.Title.boostTopType, titleArgs: titleArgs,
+            reasonKey: Tpl.Reason.perPostGain, reasonArgs: reasonArgs,
+            actionKeys: [Tpl.Action.boost], actionArgsList: actionArgs
+        )
     }
 
-    /// alert 卡片：penalty > 0.3 → 严重标题；≤ 0.3 → 轻微标题
+    // MARK: - 参数化渲染
+
+    /// 标题含参数 → 参数被替换
     @Test
-    func testAlertTitleByPenaltyThreshold() {
-        let severe = ActionCardTemplate.alert(fatiguedType: .carousel, penalty: 0.5)
-        let mild = ActionCardTemplate.alert(fatiguedType: .carousel, penalty: 0.3)
-        #expect(severe.displayTitle != mild.displayTitle)
-        #expect(!severe.displayTitle.isEmpty)
+    func testDisplayTitleFormatsArgs() {
+        let t = makeTemplate(titleArgs: ["Reel"])
+        #expect(!t.displayTitle.isEmpty)
+        #expect(t.displayTitle.contains("Reel"))
     }
 
-    /// recovery 卡片：severe 上下文 → 关键标题；其余 → 中度标题
+    /// 原因含多个参数 → 全部替换
     @Test
-    func testRecoveryTitleByContext() {
-        let critical = ActionCardTemplate.recovery(inactivePct: 80, context: .severe)
-        let moderate = ActionCardTemplate.recovery(inactivePct: 80, context: .declining)
-        #expect(critical.displayTitle != moderate.displayTitle)
+    func testDisplayReasonFormatsArgs() {
+        let t = makeTemplate(reasonArgs: ["Reel", "2"])
+        #expect(t.displayReason.contains("Reel"))
+        #expect(t.displayReason.contains("2"))
     }
 
-    /// insight 卡片：variation 0/1/2/3 四分支（0 默认 = 最佳发帖时间）
+    /// 行动参数与 key 一一对应
     @Test
-    func testInsightTitleVariations() {
-        let base = ActionCardTemplate.insight(bestDay: 4, bestHour: "19:00", variation: 0)
-        let content = ActionCardTemplate.insight(bestDay: 4, bestHour: "19:00", variation: 1)
-        let engagement = ActionCardTemplate.insight(bestDay: 4, bestHour: "19:00", variation: 2)
-        let growth = ActionCardTemplate.insight(bestDay: 4, bestHour: "19:00", variation: 3)
-
-        #expect(!base.displayTitle.isEmpty)
-        #expect(content.displayTitle != base.displayTitle)
-        #expect(engagement.displayTitle != base.displayTitle)
-        #expect(growth.displayTitle != base.displayTitle)
+    func testDisplayActionsFormatted() {
+        let t = makeTemplate(actionArgs: [["2", "Reel"]])
+        let actions = t.displayActions
+        #expect(actions.count == 1)
+        #expect(actions[0].contains("2"))
+        #expect(actions[0].contains("Reel"))
     }
 
-    // MARK: - displayActions 分支
-
-    /// primary growing → 2 条建议；declining → 3 条
+    /// 无参数 key → 直接取本地化文案（不崩溃）
     @Test
-    func testPrimaryActionCountByContext() {
-        let growing = ActionCardTemplate.primary(contentType: .reel, outperformanceX: 2.0, context: .growing)
-        let declining = ActionCardTemplate.primary(contentType: .reel, outperformanceX: 2.0, context: .declining)
-        #expect(growing.displayActions.count == 2)
-        #expect(declining.displayActions.count == 3)
+    func testTemplateNoArgsRenders() {
+        let t = DecisionTemplate(
+            id: "test.noargs", type: .ops, icon: "calendar",
+            titleKey: L10n.Decisions.tagOps,
+            reasonKey: L10n.Decisions.tagOps,
+            actionKeys: [L10n.Decisions.tagOps]
+        )
+        #expect(!t.displayTitle.isEmpty)
+        #expect(!t.displayReason.isEmpty)
+        #expect(t.displayActions == [t.displayTitle])
     }
 
-    /// alert 卡片：severe → 2 条（停更+转型）；mild → 1 条（减少发帖）
+    /// 行动参数少于 key（缺省）→ 按无参数渲染，不崩溃
     @Test
-    func testAlertActionCountByPenalty() {
-        let severe = ActionCardTemplate.alert(fatiguedType: .carousel, penalty: 0.5)
-        let mild = ActionCardTemplate.alert(fatiguedType: .carousel, penalty: 0.3)
-        #expect(severe.displayActions.count == 2)
-        #expect(mild.displayActions.count == 1)
+    func testTemplateMissingActionArgsDoesNotCrash() {
+        let t = DecisionTemplate(
+            id: "test.missing", type: .health, icon: "exclamationmark.triangle.fill",
+            titleKey: L10n.Decisions.alertSevereTitle,
+            reasonKey: L10n.Decisions.reasonFatigueSevere, reasonArgs: ["Carousel"],
+            actionKeys: [L10n.Decisions.actionReducePosts, L10n.Decisions.actionDiversifyFrom],
+            actionArgsList: [["Carousel"]]
+        )
+        let actions = t.displayActions
+        #expect(actions.count == 2)
+        #expect(!actions[0].isEmpty)
+        #expect(!actions[1].isEmpty)
     }
 
-    /// recovery 卡片：severe → 3 条；moderate → 2 条
+    // MARK: - CardType 映射
+
+    /// 7 类全部存在且可枚举
     @Test
-    func testRecoveryActionCountByContext() {
-        let critical = ActionCardTemplate.recovery(inactivePct: 62, context: .severe)
-        let moderate = ActionCardTemplate.recovery(inactivePct: 62, context: .stable)
-        #expect(critical.displayActions.count == 3)
-        #expect(moderate.displayActions.count == 2)
+    func testCardTypeAllCases() {
+        #expect(CardType.allCases.count == 7)
+        #expect(CardType.allCases.contains(.content))
+        #expect(CardType.allCases.contains(.timing))
+        #expect(CardType.allCases.contains(.growth))
+        #expect(CardType.allCases.contains(.engagement))
+        #expect(CardType.allCases.contains(.reach))
+        #expect(CardType.allCases.contains(.health))
+        #expect(CardType.allCases.contains(.ops))
     }
 
-    /// insight 卡片 → 1 条建议，包含星期名与时段
+    // MARK: - impactText
+
+    /// 粉丝 + 浏览 → 双数字组合文案
     @Test
-    func testInsightActionContainsSchedule() {
-        let insight = ActionCardTemplate.insight(bestDay: 4, bestHour: "19:00", variation: 0)
-        let action = insight.displayActions
-        #expect(action.count == 1)
-        #expect(action[0].contains("19:00"))
+    func testImpactTextFansAndViews() {
+        let card = ActionCard(id: "t1",
+            template: makeTemplate(), priority: 0,
+            impact: CardImpact(followerGain: 69, viewsGain: 1200))
+        let text = card.impactText
+        #expect(text != nil)
+        #expect(text!.contains("+69"))
+        #expect(text!.contains("1.2K"))
     }
 
-    // MARK: - displayReason / displayImpact
-
-    /// displayReason 各类型非空；alert 严重/轻微原因不同
+    /// 仅粉丝 → 单数字文案
     @Test
-    func testDisplayReasonNonEmptyAndDistinct() {
-        let severeAlert = ActionCardTemplate.alert(fatiguedType: .reel, penalty: 0.5)
-        let mildAlert = ActionCardTemplate.alert(fatiguedType: .reel, penalty: 0.3)
-        #expect(!severeAlert.displayReason.isEmpty)
-        #expect(severeAlert.displayReason != mildAlert.displayReason)
-
-        let primary = ActionCardTemplate.primary(contentType: .reel, outperformanceX: 2.0, context: .growing)
-        #expect(!primary.displayReason.isEmpty)
+    func testImpactTextFansOnly() {
+        let card = ActionCard(id: "t2",
+            template: makeTemplate(), priority: 0,
+            impact: CardImpact(followerGain: 69, viewsGain: 0))
+        let text = card.impactText
+        #expect(text != nil)
+        #expect(text!.contains("+69"))
     }
 
-    /// displayImpact：alert 为 nil；primary/insight 非 nil
+    /// 仅浏览 → 单数字文案
     @Test
-    func testDisplayImpactNullability() {
-        let alert = ActionCardTemplate.alert(fatiguedType: .reel, penalty: 0.3)
-        #expect(alert.displayImpact == nil)
-
-        let primary = ActionCardTemplate.primary(contentType: .reel, outperformanceX: 2.0, context: .growing)
-        #expect(primary.displayImpact != nil)
-
-        let insight = ActionCardTemplate.insight(bestDay: 4, bestHour: "19:00", variation: 0)
-        #expect(insight.displayImpact != nil)
+    func testImpactTextViewsOnly() {
+        let card = ActionCard(id: "t3",
+            template: makeTemplate(), priority: 0,
+            impact: CardImpact(followerGain: 0, viewsGain: 890))
+        let text = card.impactText
+        #expect(text != nil)
+        #expect(text!.contains("+890"))
     }
 
-    // MARK: - day 边界（clamp 防护）
-
-    /// insight bestDay 越界（0 / 8）→ 不崩溃，星期名落在合法范围
+    /// 零收益 → nil（UI 不显示收益徽章）
     @Test
-    func testInsightDayOutOfRangeDoesNotCrash() {
-        let dayZero = ActionCardTemplate.insight(bestDay: 0, bestHour: "19:00", variation: 0)
-        let dayEight = ActionCardTemplate.insight(bestDay: 8, bestHour: "19:00", variation: 0)
-        #expect(!dayZero.displayTitle.isEmpty)
-        #expect(!dayEight.displayTitle.isEmpty)
-        #expect(!dayZero.displayReason.isEmpty)
-        #expect(!dayEight.displayReason.isEmpty)
+    func testImpactTextZeroReturnsNil() {
+        let card = ActionCard(id: "t4",
+            template: makeTemplate(), priority: 0,
+            impact: .zero)
+        #expect(card.impactText == nil)
     }
 
-    /// bestDay 1 与 7 是不同星期 → 建议文案不同
+    // MARK: - formatCount
+
+    /// 数字缩写：<1000 原样；≥1000 K；≥1M M
     @Test
-    func testInsightDayOneAndSevenDiffer() {
-        let monday = ActionCardTemplate.insight(bestDay: 1, bestHour: "19:00", variation: 0)
-        let sunday = ActionCardTemplate.insight(bestDay: 7, bestHour: "19:00", variation: 0)
-        #expect(monday.displayReason != sunday.displayReason)
+    func testFormatCountAbbreviation() {
+        #expect(ActionCard.formatCount(69) == "69")
+        #expect(ActionCard.formatCount(999) == "999")
+        #expect(ActionCard.formatCount(1000) == "1K")
+        #expect(ActionCard.formatCount(1250) == "1.2K")
+        #expect(ActionCard.formatCount(2_300_000) == "2.3M")
     }
 
     // MARK: - sampleCards
 
-    /// 示例卡片：4 张、4 种类型、priority 升序
+    /// 示例卡片：4 张、覆盖不同类别、全部携带量化收益
     @Test
-    func testSampleCardsCoverAllTypesSorted() {
+    func testSampleCardsAllQuantified() {
         let cards = ActionCard.sampleCards
         #expect(cards.count == 4)
-        #expect(Set(cards.map(\.type)) == Set(CardType.allCases))
-        for i in 0..<(cards.count - 1) {
-            #expect(cards[i].priority < cards[i + 1].priority)
-        }
+        #expect(cards.allSatisfy { $0.impact.isQuantified })
+        #expect(Set(cards.map(\.type)).count >= 3, "示例应覆盖多个类别")
     }
 }

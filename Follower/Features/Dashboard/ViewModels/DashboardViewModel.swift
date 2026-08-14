@@ -220,10 +220,9 @@ final class DashboardViewModel {
         } catch { errorMessage = error.localizedDescription }
     }
 
-    /// 90 天窗口内快照天数（自动补同步与冷启动诊断共用）
+    /// 本地全部快照天数（冷启动诊断与自动补同步共用 — v1.1 放开 90 天限制）
     private func recentSnapshotCount(accountId: Int64) async -> Int {
-        let cutoff = Date().addingTimeInterval(-90 * 86_400)
-        return (try? await snapshotRepo.fetch(accountId: accountId, from: cutoff, to: Date()))?.count ?? 0
+        (try? await snapshotRepo.fetchAll(accountId: accountId))?.count ?? 0
     }
 
     /// 判定是否需要为测试账号自动补同步（纯函数，可单测）：
@@ -308,7 +307,7 @@ final class DashboardViewModel {
             accountId: accountId,
             metricType: .followerGrowth,
             window: .day,
-            limit: 90
+            limit: 365
         )) ?? []
 
         followerWeeklyData = TrendChart.weeklyDataPoints(from: raw)
@@ -328,9 +327,8 @@ final class DashboardViewModel {
     private func loadPremiumInsights() async {
         guard let accountId = selectedAccountId else { return }
 
-        // 快照数据 — 多个 Premium 服务共用
-        let cutOff = Date().addingTimeInterval(-90 * 86_400)
-        let snapshots = (try? await snapshotRepo.fetch(accountId: accountId, from: cutOff, to: Date())) ?? []
+        // 快照数据 — 多个 Premium 服务共用（v1.1 放开 90 天限制，用满本地历史）
+        let snapshots = (try? await snapshotRepo.fetchAll(accountId: accountId)) ?? []
         predictionDataDays = snapshots.count  // 冷启动诊断显示（v0.15.1）
         let snap = latestSnapshot
 
@@ -360,9 +358,10 @@ final class DashboardViewModel {
             predictionResult = await predictionService.predictLinear(dataPoints: dataPoints, daysAhead: 30)
         }
 
-        // 活跃度分析 — 基于 Event 时间分布
-        if let events = try? await eventRepo.fetch(accountId: accountId, from: cutOff, to: Date()) {
-            activityResult = await activityService.analyze(events: events, from: cutOff, to: Date())
+        // 活跃度分析 — 基于 Event 时间分布（v1.1 放开 90 天限制：全量事件）
+        if let events = try? await eventRepo.fetchAll(accountId: accountId) {
+            let from = events.map(\.observedAt).min() ?? Date()
+            activityResult = await activityService.analyze(events: events, from: from, to: Date())
         }
 
         // 留存/流失分析 — 基于 Snapshot 粉丝数变化
@@ -409,14 +408,14 @@ final class DashboardViewModel {
             )
         }
 
-        // 互动热力图 — Event 加权 + 快照互动增量双通道（v0.16）
-        if let events = try? await eventRepo.fetch(accountId: accountId, from: cutOff, to: Date()),
+        // 互动热力图 — Event 加权 + 快照互动增量双通道（v0.16；v1.1 全量事件）
+        if let events = try? await eventRepo.fetchAll(accountId: accountId),
            !events.isEmpty || !snapshots.isEmpty {
             heatmapResult = await engagementHeatmapService.generate(from: events, snapshots: snapshots)
         }
 
-        // 最佳发帖时间 — MediaPost 聚合（与热力图数据源分离，v0.16）
-        if let posts = try? await mediaPostRepository.fetchRecent(accountId: accountId, limit: 100),
+        // 最佳发帖时间 — MediaPost 聚合（与热力图数据源分离，v0.16；v1.1 全量帖子）
+        if let posts = try? await mediaPostRepository.fetchAll(accountId: accountId),
            !posts.isEmpty {
             bestPostingTimeResult = await bestPostingTimeService.analyze(from: posts)
         }

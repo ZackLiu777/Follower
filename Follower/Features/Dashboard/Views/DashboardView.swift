@@ -423,7 +423,7 @@ private struct PremiumInsightsSection: View {
             ]
         } else {
             return [
-                .init(icon: "chart.line.uptrend.xy", label: loc(L10n.Premium.followerPrediction), locked: true),
+                .init(icon: "chart.line.uptrend.xyaxis", label: loc(L10n.Premium.followerPrediction), locked: true),
                 .init(icon: "bolt.fill", label: loc(L10n.Premium.activityAnalysis), locked: true),
                 .init(icon: "star.fill", label: loc(L10n.Premium.engagementQuality), locked: true),
                 .init(icon: "person.2.fill", label: loc(L10n.Premium.retentionChurn), locked: true),

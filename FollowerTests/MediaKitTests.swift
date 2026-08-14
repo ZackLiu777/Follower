@@ -105,8 +105,9 @@ struct MediaKitTests {
         #expect(Array(data.weeklySeries.keys) == [.followerGrowth])
         #expect(data.weeklySeries[.followerGrowth] == [1000.0])
 
-        // 决策建议：有快照 → 至少生成 4 张卡片（CardGenerator 兜底）
-        #expect(data.actionCards.count >= 4)
+        // 决策建议：有快照 → 至少生成 1 张卡片（buildActionCards 截取前 3 张）
+        #expect(data.actionCards.count >= 1)
+        #expect(data.actionCards.count <= 3)
     }
 
     /// 无任何数据（仅账号）→ collect 不抛错、指标全占位、序列空
