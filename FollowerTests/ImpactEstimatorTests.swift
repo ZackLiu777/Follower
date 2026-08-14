@@ -185,16 +185,31 @@ struct ImpactEstimatorTests {
         #expect(ImpactEstimator.hourWindowRanks(posts: [makePost(type: .video, likes: 10, hour: 12)]).isEmpty)
     }
 
-    /// 次佳窗口：第二高窗口提升 > 1 才返回
+    /// 次佳窗口：第二高窗口平均 > 整体平均才返回（提升 > 1.0）
     @Test
     func testSecondBestHourWindow() {
         let posts = [
             makePost(type: .video, likes: 10, hour: 9, weekday: 1),
-            makePost(type: .video, likes: 100, hour: 21, weekday: 3),
+            makePost(type: .video, likes: 10, hour: 9, weekday: 2),
+            makePost(type: .video, likes: 80, hour: 15, weekday: 3),
+            makePost(type: .video, likes: 80, hour: 15, weekday: 4),
+            makePost(type: .image, likes: 100, hour: 21, weekday: 5),
+            makePost(type: .image, likes: 100, hour: 21, weekday: 6),
         ]
         let second = ImpactEstimator.secondBestHourWindow(posts: posts)
-        // 21 点平均 100，9 点平均 10 → 第二窗口 = 9 点
-        #expect(second?.start == 9)
+        // 整体平均 = 380/6 ≈ 63.3；窗口 15 点平均 80 > 平均 → 第二窗口 = 15
+        #expect(second?.start == 15)
+    }
+
+    /// 次佳窗口低于整体平均 → nil（不返回低提升时段）
+    @Test
+    func testSecondBestHourWindowReturnsNilWhenBelowAverage() {
+        let posts = [
+            makePost(type: .video, likes: 10, hour: 9, weekday: 1),
+            makePost(type: .image, likes: 100, hour: 21, weekday: 3),
+        ]
+        // 整体平均 55，9 点窗口平均 10 < 55 → 第二窗口无提升 → nil
+        #expect(ImpactEstimator.secondBestHourWindow(posts: posts) == nil)
     }
 
     // MARK: - perPost 收益
