@@ -46,6 +46,10 @@ final class DashboardViewModel {
     private let mediaPostRepository: MediaPostRepositoryProtocol
     /// 最佳发帖时间服务（Premium — 基于 MediaPost，与热力图数据源分离）
     private let bestPostingTimeService: BestPostingTimeServiceProtocol
+    /// 内容档案服务（Phi+）
+    private let contentProfileService: ContentProfileService
+    /// 互动漏斗服务（Phi+）
+    private let engagementFunnelService: EngagementFunnelService
     /// 媒体包 PDF 服务（Premium: mediaKitExport）
     private let mediaKitService: MediaKitServiceProtocol
 
@@ -107,6 +111,10 @@ final class DashboardViewModel {
      var predictionResult: PredictionResult?
     /// AI 生成的摘要文本（Premium）
      var aiSummary: String = ""
+    /// 内容档案结果（Phi+ — 内容策略 v2）
+    var contentProfileResult: ContentProfileResult?
+    /// 互动漏斗结果（Phi+）
+    var funnelResult: EngagementFunnelResult?
 
     // MARK: - Published: Phi 三大人群画像 Premium 数据
 
@@ -156,6 +164,8 @@ final class DashboardViewModel {
         engagementHeatmapService: EngagementHeatmapServiceProtocol,
         mediaPostRepository: MediaPostRepositoryProtocol,
         bestPostingTimeService: BestPostingTimeServiceProtocol,
+        contentProfileService: ContentProfileService,
+        engagementFunnelService: EngagementFunnelService,
         mediaKitService: MediaKitServiceProtocol
     ) {
         self.snapshotRepo = snapshotRepo
@@ -175,6 +185,8 @@ final class DashboardViewModel {
         self.engagementHeatmapService = engagementHeatmapService
         self.mediaPostRepository = mediaPostRepository
         self.bestPostingTimeService = bestPostingTimeService
+        self.contentProfileService = contentProfileService
+        self.engagementFunnelService = engagementFunnelService
         self.mediaKitService = mediaKitService
 
         // 监听新账号创建通知，自动刷新列表
@@ -420,6 +432,8 @@ final class DashboardViewModel {
         if let posts = try? await mediaPostRepository.fetchAll(accountId: accountId),
            !posts.isEmpty {
             bestPostingTimeResult = await bestPostingTimeService.analyze(from: posts)
+            // Phi+：内容档案（MediaPost 数据驱动）
+            contentProfileResult = await contentProfileService.analyze(from: posts)
             #if DEBUG
             if let r = bestPostingTimeResult {
                 print("[BestTime] posts: \(posts.count) | recommendation: \(r.peakDescription) "
@@ -428,7 +442,17 @@ final class DashboardViewModel {
                     + "| P(best): \(String(format: "%.0f%%", r.recommendation.probabilityOfBeingBest * 100)) "
                     + "| samples: \(r.recommendation.sampleCount)")
             }
+            if let profile = contentProfileResult {
+                print("[ContentProfile] posts: \(profile.totalPosts) | viral: \(profile.viralCount) "
+                    + "| avg: \(profile.averageCount) | low: \(profile.lowCount) "
+                    + "| top: \(profile.topPosts.count) | formula: \(profile.viralFormula != nil)")
+            }
             #endif
+        }
+
+        // Phi+：互动漏斗（快照全量）
+        if !snapshots.isEmpty {
+            funnelResult = await engagementFunnelService.analyze(snapshots: snapshots)
         }
 
         // Mock 回退 — 保持向后兼容，现有 UI 继续工作

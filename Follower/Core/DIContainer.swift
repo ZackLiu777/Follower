@@ -56,6 +56,10 @@ final class DIContainer {
     let retentionAnalysisService: RetentionAnalysisServiceProtocol
     let geoDistributionService: GeoDistributionServiceProtocol
     let aiAnalysisService: AIAnalysisServiceProtocol
+    /// 内容档案服务（Phi+ — 内容策略数据驱动版）
+    let contentProfileService: ContentProfileService
+    /// 互动漏斗服务（Phi+ — 浏览→互动→涨粉诊断）
+    let engagementFunnelService: EngagementFunnelService
 
     // MARK: - Phi Premium Services
 
@@ -146,6 +150,8 @@ final class DIContainer {
         self.retentionAnalysisService = RetentionAnalysisService()
         self.geoDistributionService = GeoDistributionService(apiResolver: resolver, tokenProvider: tokenProv)
         self.aiAnalysisService = AIAnalysisService()
+        self.contentProfileService = ContentProfileService()
+        self.engagementFunnelService = EngagementFunnelService()
         self.authenticityService = AuthenticityService()
         self.campaignComparisonService = CampaignComparisonService()
         self.engagementHeatmapService = EngagementHeatmapService()

@@ -128,6 +128,8 @@ struct PremiumViewModelTests {
             engagementHeatmapService: EngagementHeatmapService(),
             mediaPostRepository: mediaPostRepo,
             bestPostingTimeService: BestPostingTimeService(),
+            contentProfileService: ContentProfileService(),
+            engagementFunnelService: EngagementFunnelService(),
             mediaKitService: MediaKitService()
         )
     }

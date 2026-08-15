@@ -10,12 +10,15 @@
 import SwiftUI
 
 /// 帖子图片：AsyncImage 加载 + phase 降级（色块+类型图标）
-/// 尺寸由调用方 frame 决定，本组件只负责内容与裁切
+/// v1.7：内部固定容器（可选 aspectRatio）—— 任意尺寸图片规范化成确定视觉容器
 struct PostImageView: View {
     /// 帖子数据（mediaURL 为图片地址，colorHex 为占位底色）
     let post: MediaPost
-    /// 圆角（列表缩略图 8，详情大图 12）
+    /// 圆角（列表缩略图 8，详情大图 16）
     var cornerRadius: CGFloat = 12
+    /// 固定容器宽高比（如 4/5）；nil = 由调用方 frame 决定尺寸（兼容列表缩略图）。
+    /// 容器内图片始终 center-crop 填满，不同原图比例不会改变容器尺寸。
+    var aspectRatio: CGFloat? = nil
 
     var body: some View {
         ZStack {
@@ -43,6 +46,9 @@ struct PostImageView: View {
                 fallbackContent
             }
         }
+        .frame(maxWidth: .infinity)
+        // v1.7：固定容器比例（nil 无约束）—— 详情页 4:5，列表页由外层 frame 控制
+        .aspectRatio(aspectRatio, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
 

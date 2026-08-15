@@ -571,7 +571,8 @@ private struct PremiumInsightsSection: View {
         case 4: ComparisonDetailView(result: viewModel.comparisonResult)
         case 5: UnfollowListView(followers: viewModel.unfollowList)
         case 6: BestTimeView(result: viewModel.bestPostingTimeResult)
-        case 7: ContentStrategyView(aiSummary: viewModel.aiSummary.isEmpty ? viewModel.contentTip : viewModel.aiSummary)
+        case 7: ContentStrategyView(profile: viewModel.contentProfileResult,
+                                    funnel: viewModel.funnelResult)
         // Phi: 三大人群画像新 Premium 功能
         case 8: CompetitorDetailView(comparisonResult: viewModel.comparisonResult)
         case 9: AuthenticityDetailView(result: viewModel.authenticityResult)
@@ -616,6 +617,8 @@ private struct PremiumTileItem {
         engagementHeatmapService: container.engagementHeatmapService,
         mediaPostRepository: container.mediaPostRepository,
         bestPostingTimeService: container.bestPostingTimeService,
+        contentProfileService: container.contentProfileService,
+        engagementFunnelService: container.engagementFunnelService,
         mediaKitService: container.mediaKitService
     )
     let settingsViewModel = SettingsViewModel(

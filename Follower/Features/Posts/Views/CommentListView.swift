@@ -50,17 +50,30 @@ struct CommentListView: View {
 
                 if viewModel.comments.isEmpty && viewModel.errorMessage == nil {
                     Section {
+                        // v1.8：空态卡片主题化 — theme.cardSurface 圆角卡片
                         ContentUnavailableView(
                             "暂无评论",
                             systemImage: "bubble.left",
                             description: Text("评论加载后显示在这里")
                         )
+                        .listRowBackground(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(currentTheme.cardSurface)
+                        )
+                        .listRowSeparator(.hidden)
                     }
                 }
 
                 Section {
                     ForEach(viewModel.comments) { comment in
                         commentRow(comment)
+                            // v1.8：评论行卡片主题化 — theme.cardSurface 圆角卡片
+                            .listRowBackground(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(currentTheme.cardSurface)
+                                    .padding(.vertical, 3)
+                            )
+                            .listRowSeparator(.hidden)
                     }
                 }
             }
@@ -74,10 +87,11 @@ struct CommentListView: View {
                 .ignoresSafeArea()
             )
 
-            // 回复输入区
+            // 回复输入区（v1.8：卡片 theme 化 — 替换 .ultraThinMaterial）
             HStack(spacing: 10) {
                 TextField("回复评论…", text: $viewModel.replyText)
                     .textFieldStyle(.plain)
+                    .foregroundColor(currentTheme.textPrimary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 9)
                     .background(currentTheme.cardSurface.opacity(0.6))
@@ -94,7 +108,7 @@ struct CommentListView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(.ultraThinMaterial)
+            .background(currentTheme.cardSurface)
         }
         .navigationTitle("评论")
         .navigationBarTitleDisplayMode(.inline)

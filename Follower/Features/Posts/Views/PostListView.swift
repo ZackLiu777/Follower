@@ -27,7 +27,15 @@ struct PostListView: View {
             NavigationLink { PostDetailView(post: post) } label: {
                 PostRowView(post: post)
             }
+            // v1.8：行卡片主题化 — theme.cardSurface 圆角卡片，跟随 9 套主题
+            .listRowBackground(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(currentTheme.cardSurface)
+                    .padding(.vertical, 3)
+            )
+            .listRowSeparator(.hidden)
         }
+        .listStyle(.plain)
         .navigationTitle("All Posts")
         .navigationBarTitleDisplayMode(.inline)
         .background(

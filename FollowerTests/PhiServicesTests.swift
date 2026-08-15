@@ -485,6 +485,8 @@ struct PhiServicesTests {
             engagementHeatmapService: EngagementHeatmapService(),
             mediaPostRepository: MediaPostRepository(db: DatabaseManager.shared),
             bestPostingTimeService: BestPostingTimeService(),
+            contentProfileService: ContentProfileService(),
+            engagementFunnelService: EngagementFunnelService(),
             mediaKitService: MediaKitService()
         )
         #expect(vm.authenticityResult == nil)
@@ -534,6 +536,8 @@ struct PhiServicesTests {
             engagementHeatmapService: EngagementHeatmapService(),
             mediaPostRepository: MediaPostRepository(db: DatabaseManager.shared),
             bestPostingTimeService: BestPostingTimeService(),
+            contentProfileService: ContentProfileService(),
+            engagementFunnelService: EngagementFunnelService(),
             mediaKitService: MediaKitService()
         )
         vm.selectedAccountId = 1
@@ -559,3 +563,130 @@ struct PhiServicesTests {
     }
 }
 // Mock classes reused from PremiumViewModelTests.swift (same module)
+
+// MARK: - ContentProfileServiceTests
+
+struct ContentProfileServiceTests {
+
+    private func makePost(id: Int, type: MediaPostType, likes: Int, comments: Int = 0,
+                          hour: Int = 12, weekday: Int = 2, caption: String = "c") -> MediaPost {
+        let cal = Calendar.current
+        let date = cal.date(from: DateComponents(year: 2026, month: 1, day: 5 + (weekday - 2), hour: hour))!
+        return MediaPost(id: Int64(id), accountId: 1, igMediaID: "\(id)",
+            type: type, date: date, likes: likes, comments: comments,
+            caption: caption, mediaURL: nil, permalink: nil)
+    }
+
+    /// 档位判定：爆款 ≥ 2×平均，低互动 ≤ 0.3×平均
+    @Test
+    func testTierClassification() async {
+        let service = ContentProfileService()
+        // 平均 = (1000 + 100 + 100 + 10)/4 = 302.5；爆款阈值 605，低互动阈值 90.75
+        let posts = [
+            makePost(id: 1, type: .video, likes: 1000),
+            makePost(id: 2, type: .image, likes: 100),
+            makePost(id: 3, type: .image, likes: 100),
+            makePost(id: 4, type: .image, likes: 10),
+        ]
+        let result = await service.analyze(from: posts)
+        #expect(result.viralCount == 1)
+        #expect(result.averageCount == 2)
+        #expect(result.lowCount == 1)
+    }
+
+    /// 爆款公式：≥2 爆款时给出 dominant 类型/星期/小时
+    @Test
+    func testViralFormula() async {
+        let service = ContentProfileService()
+        // 平均 = (1000+900+10+10)/4 = 480；爆款 = 1000/900
+        let posts = [
+            makePost(id: 1, type: .video, likes: 1000, hour: 19, weekday: 4),
+            makePost(id: 2, type: .video, likes: 900, hour: 19, weekday: 4),
+            makePost(id: 3, type: .image, likes: 10, hour: 8),
+            makePost(id: 4, type: .image, likes: 10, hour: 9),
+        ]
+        let result = await service.analyze(from: posts)
+        #expect(result.viralFormula != nil)
+        #expect(result.viralFormula?.dominantType == .reel)
+        #expect(result.viralFormula?.dominantHour == 19)
+        #expect(result.viralFormula?.dominantWeekday == 4)
+    }
+
+    /// 爆款 < 2 → 无公式；Top 榜按互动降序
+    @Test
+    func testNoFormulaAndTopPosts() async {
+        let service = ContentProfileService()
+        let posts = [
+            makePost(id: 1, type: .image, likes: 30),
+            makePost(id: 2, type: .video, likes: 60),
+            makePost(id: 3, type: .image, likes: 5),
+        ]
+        let result = await service.analyze(from: posts)
+        #expect(result.viralFormula == nil)
+        #expect(result.topPosts.count == 3)
+        #expect(result.topPosts[0].engagement == 60)
+        #expect(result.topPosts[0].type == .reel)
+    }
+
+    /// 空输入 → 空结果
+    @Test
+    func testEmptyPosts() async {
+        let result = await ContentProfileService().analyze(from: [])
+        #expect(result.totalPosts == 0)
+        #expect(result.topPosts.isEmpty)
+        #expect(result.typeBands.isEmpty)
+    }
+}
+
+// MARK: - EngagementFunnelServiceTests
+
+struct EngagementFunnelServiceTests {
+
+    private func makeSnapshot(day: Int, followers: Int, likes: Int, comments: Int, views: Int) -> Snapshot {
+        Snapshot(id: nil, accountId: 1,
+            followersCount: followers, followingCount: 100, mediaCount: 10,
+            engagementRate: 0.05, totalLikes: likes, totalComments: comments,
+            totalShares: 1, totalViews: views,
+            observedAt: Date(timeIntervalSince1970: 1_700_000_000 + Double(day) * 86_400),
+            createdAt: Date())
+    }
+
+    /// 已知增量 → 三环节转化率精确可算
+    @Test
+    func testFunnelRates() async {
+        let service = EngagementFunnelService()
+        // ΔF=100, Δ互动=1000（likes 800 + comments 200）, Δviews=10000
+        let snaps = [
+            makeSnapshot(day: 0, followers: 10_000, likes: 800, comments: 200, views: 10_000),
+            makeSnapshot(day: 1, followers: 10_100, likes: 1_600, comments: 400, views: 20_000),
+        ]
+        let result = await service.analyze(snapshots: snaps)
+        #expect(abs(result.viewToEngagement - 0.10) < 1e-9)   // 1000/10000
+        #expect(abs(result.engagementToFollower - 0.10) < 1e-9) // 100/1000
+        #expect(abs(result.viewToFollower - 0.01) < 1e-9)     // 100/10000
+    }
+
+    /// 瓶颈检测：互动环节最弱 → .engagement + 量化机会
+    @Test
+    func testBottleneckAndOpportunity() async {
+        let service = EngagementFunnelService()
+        // 互动转化低：Δviews=10000, Δ互动=100, ΔF=50
+        let snaps = [
+            makeSnapshot(day: 0, followers: 10_000, likes: 500, comments: 100, views: 10_000),
+            makeSnapshot(day: 1, followers: 10_050, likes: 550, comments: 150, views: 20_000),
+        ]
+        let result = await service.analyze(snapshots: snaps)
+        // viewToEng = 100/10000 = 0.01；engToFollower = 50/100 = 0.5
+        #expect(result.bottleneck == .engagement)
+        // 机会 = Δeng × 0.1 × engToFollower = 100 × 0.1 × 0.5 = 5
+        #expect(result.opportunityFollowers == 5)
+    }
+
+    /// 空快照 → 空结果
+    @Test
+    func testEmptySnapshots() async {
+        let result = await EngagementFunnelService().analyze(snapshots: [])
+        #expect(result.bottleneck == .none)
+        #expect(result.opportunityFollowers == 0)
+    }
+}
