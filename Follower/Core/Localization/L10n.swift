@@ -347,6 +347,30 @@ enum L10n {
         static let bestTimeToPost = "premium.bestTimeToPost"
         static let contentStrategy = "premium.contentStrategy"
 
+        // MARK: Best Time v2（推荐 + 置信度 + 证据）
+        /// 评分数字（%@ = 0-100）
+        static let bestTimeScore = "premium.bestTimeScore"
+        /// 评分标签
+        static let bestTimeScoreLabel = "premium.bestTimeScoreLabel"
+        /// 置信度标签
+        static let bestTimeConfidenceLabel = "premium.bestTimeConfidenceLabel"
+        /// 相对基线提升标签
+        static let bestTimeLiftLabel = "premium.bestTimeLiftLabel"
+        /// 置信度分档
+        static let confidenceLow = "premium.confidenceLow"
+        static let confidenceMedium = "premium.confidenceMedium"
+        static let confidenceHigh = "premium.confidenceHigh"
+        /// Why 卡标题
+        static let bestTimeWhyTitle = "premium.bestTimeWhyTitle"
+        /// 相对基线提升说明
+        static let bestTimeLiftDesc = "premium.bestTimeLiftDesc"
+        /// 样本说明（%@ = 窗口样本，%d = 总帖数）："%@ 篇帖子分析（窗口内 %@ 篇）"
+        static let bestTimeSamples = "premium.bestTimeSamples"
+        /// 最佳窗口概率
+        static let bestTimeProbability = "premium.bestTimeProbability"
+        /// 历史表现卡标题
+        static let bestTimeHistoricalTitle = "premium.bestTimeHistoricalTitle"
+
         // MARK: Card value snippets
         static let analyzing = "premium.analyzing"
         static let in30Days = "premium.in30Days"

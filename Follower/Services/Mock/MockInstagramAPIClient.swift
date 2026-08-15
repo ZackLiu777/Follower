@@ -37,22 +37,42 @@ final class MockInstagramAPIClient: InstagramAPIClientProtocol, @unchecked Senda
     /// 评论覆盖的媒体数（前 N 条媒体带评论）
     static let commentedMediaCount = 10
 
-    private let dataset: MockDataset
+    private var datasets: [String: MockDataset] = [:]
     /// reply 递增计数器（跨线程保护）
     private let lock = NSLock()
     private var replyCounter: Int = 0
 
     init(seed: UInt64 = MockInstagramAPIClient.defaultSeed) {
-        self.dataset = MockDataset(seed: seed)
+        // 默认数据集 — 兼容旧行为与既有测试（sentinelToken 直接命中）
+        datasets[MockInstagramAPIClient.sentinelToken] = MockDataset(seed: seed)
+    }
+
+    // MARK: - Per-Token 数据集（v1.3：不同测试账号 → 不同数据）
+
+    /// 按 token 派生稳定 seed：解析 "mock://token-<n>" 中的账号序号；
+    /// 无数字后缀 → defaultSeed（兼容旧 token）。
+    static func seed(for token: String) -> UInt64 {
+        let digits = token.split(separator: "-").last.flatMap { UInt64($0) }
+        return defaultSeed + (digits ?? 0)
+    }
+
+    /// 取 token 对应的数据集（惰性生成 + 缓存；同 token 同数据，确定性）
+    private func dataset(for token: String) -> MockDataset {
+        lock.lock(); defer { lock.unlock() }
+        if let d = datasets[token] { return d }
+        let d = MockDataset(seed: Self.seed(for: token))
+        datasets[token] = d
+        return d
     }
 
     // MARK: - InstagramAPIClientProtocol
 
     func fetchProfile(accessToken: String) async throws -> IGUser {
-        dataset.user
+        dataset(for: accessToken).user
     }
 
     func fetchInsights(accessToken: String, metrics: [String], period: String) async throws -> [IGInsightValue] {
+        let dataset = dataset(for: accessToken)
         // 地域分布（Premium GeoDetailView）：audience_country → lifetime breakdown 形态
         if metrics.contains("audience_country") {
             return [dataset.countryInsight]
@@ -76,11 +96,11 @@ final class MockInstagramAPIClient: InstagramAPIClientProtocol, @unchecked Senda
     }
 
     func fetchMedia(accessToken: String, limit: Int) async throws -> [IGMedia] {
-        Array(dataset.media.prefix(limit))
+        Array(dataset(for: accessToken).media.prefix(limit))
     }
 
     func fetchComments(accessToken: String, mediaID: String, limit: Int) async throws -> [IGComment] {
-        Array((dataset.commentsByMedia[mediaID] ?? []).prefix(limit))
+        Array((dataset(for: accessToken).commentsByMedia[mediaID] ?? []).prefix(limit))
     }
 
     func replyComment(accessToken: String, mediaID: String, message: String) async throws -> String {
@@ -227,7 +247,10 @@ private struct MockDataset {
             }
             // 时间分布：前 15 条在最近 90 天（列表页/仪表盘展示），后 10 条散布更早
             let dayOffset = i < 15 ? rng.int(in: (days - 90)...(days - 1)) : rng.int(in: 120...(days - 100))
-            let date = cal.date(byAdding: .day, value: -dayOffset, to: startOfToday)!
+            // v1.3：加随机小时（0-23）— 修复此前全为 0 点导致最佳发帖时间恒为 00:00 的问题
+            let hour = rng.int(in: 0...23)
+            let day = cal.date(byAdding: .day, value: -dayOffset, to: startOfToday)!
+            let date = cal.date(byAdding: .hour, value: hour, to: day)!
 
             // 互动分布：i==3 爆款（×10+），i==11/12 零互动边界
             let likes: Int

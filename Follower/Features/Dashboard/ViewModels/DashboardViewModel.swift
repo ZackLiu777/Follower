@@ -418,6 +418,15 @@ final class DashboardViewModel {
         if let posts = try? await mediaPostRepository.fetchAll(accountId: accountId),
            !posts.isEmpty {
             bestPostingTimeResult = await bestPostingTimeService.analyze(from: posts)
+            #if DEBUG
+            if let r = bestPostingTimeResult {
+                print("[BestTime] posts: \(posts.count) | recommendation: \(r.peakDescription) "
+                    + "| score: \(r.recommendation.score) | conf: \(r.confidence.rawValue) "
+                    + "| lift: \(String(format: "%.0f%%", r.recommendation.liftVsAverage * 100)) "
+                    + "| P(best): \(String(format: "%.0f%%", r.recommendation.probabilityOfBeingBest * 100)) "
+                    + "| samples: \(r.recommendation.sampleCount)")
+            }
+            #endif
         }
 
         // Mock 回退 — 保持向后兼容，现有 UI 继续工作

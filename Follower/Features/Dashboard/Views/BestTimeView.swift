@@ -3,8 +3,10 @@
 //  Follower
 //
 //  Phi: Premium 详情 — 最佳发帖时间（基于真实 MediaPost 帖子数据）。
-//  与「互动热力图」（Event+快照）数据源分离：本页回答「哪个时段发帖互动最好」，
-//  UI 采用 Swift Charts 柱状图（24 小时 + 7 天），最佳时段高亮。
+//  v2 三层结构（Service 负责统计推断，View 只呈现）：
+//    ① Recommendation — 最佳时段 + 评分 + 置信度（收缩估计结论）
+//    ② Why — 相对基线提升 / 样本量 / 成为最佳窗口的概率（bootstrap）
+//    ③ Historical — 气泡矩阵 + 每日柱状图（原始平均值，诚实呈现历史事实）
 //
 
 import SwiftUI
@@ -24,7 +26,7 @@ struct BestTimeView: View {
          loc(L10n.Premium.daySat)]
     }
 
-    /// 最佳发帖时间 UI：Hero 推荐 + 每小时/每星期互动柱状图
+    /// 最佳发帖时间 UI：Recommendation → Why → Historical
     var body: some View {
         ZStack {
             LinearGradient(
@@ -35,9 +37,9 @@ struct BestTimeView: View {
             ScrollView {
                 if let result, result.totalPosts > 0 {
                     VStack(alignment: .leading, spacing: 16) {
-                        heroCard(result)
-                        bubbleMatrixCard(result)
-                        dayChartCard(result)
+                        recommendationCard(result)
+                        whyCard(result)
+                        historicalCard(result)
                     }
                     .padding(.vertical)
                 } else {
@@ -55,20 +57,113 @@ struct BestTimeView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    /// Hero 卡片：最佳时段推荐 + 数据样本说明
-    private func heroCard(_ result: BestPostingTimeResult) -> some View {
-        VStack(spacing: 4) {
-            Text("📅 \(result.peakDescription)").font(.title2).fontWeight(.bold)
-            Text("\(String(format: loc(L10n.Premium.basedOnPosts), result.totalPosts)) · "
-                 + String(format: loc(L10n.Premium.avgEngagementPerPost),
-                          String(format: "%.0f", result.avgEngagementPerPost)))
-                .font(.subheadline).foregroundColor(.secondary)
+    // MARK: - ① Recommendation
+
+    /// 推荐卡：最佳时段 + 评分 + 置信度 + 相对基线提升
+    private func recommendationCard(_ result: BestPostingTimeResult) -> some View {
+        let rec = result.recommendation
+        return VStack(spacing: 8) {
+            Text("✨ \(loc(L10n.Premium.bestTimeToPost))")
+                .font(.subheadline)
+                .foregroundColor(theme.textSecondary)
+
+            Text(result.peakDescription)
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .foregroundColor(theme.textPrimary)
+
+            HStack(spacing: 12) {
+                // 评分
+                VStack(spacing: 2) {
+                    Text(String(format: loc(L10n.Premium.bestTimeScore), rec.score))
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundColor(theme.accentPrimary)
+                    Text(loc(L10n.Premium.bestTimeScoreLabel))
+                        .font(.caption2).foregroundColor(theme.textTertiary)
+                }
+                Divider().frame(height: 30)
+                // 置信度
+                VStack(spacing: 2) {
+                    Text(confidenceLabel(result.confidence))
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(confidenceColor(result.confidence))
+                    Text(loc(L10n.Premium.bestTimeConfidenceLabel))
+                        .font(.caption2).foregroundColor(theme.textTertiary)
+                }
+                Divider().frame(height: 30)
+                // 相对基线提升
+                VStack(spacing: 2) {
+                    Text("\(rec.liftVsAverage >= 0 ? "↑" : "↓") \(Int(abs(rec.liftVsAverage * 100).rounded()))%")
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundColor(rec.liftVsAverage >= 0 ? theme.positiveGreen : theme.warningOrange)
+                    Text(loc(L10n.Premium.bestTimeLiftLabel))
+                        .font(.caption2).foregroundColor(theme.textTertiary)
+                }
+            }
+            .padding(.top, 4)
         }
         .padding()
         .frame(maxWidth: .infinity)
         .background(theme.cardSurface)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .padding(.horizontal)
+    }
+
+    // MARK: - ② Why
+
+    /// 依据卡：提升幅度 / 样本量 / 成为最佳的概率
+    private func whyCard(_ result: BestPostingTimeResult) -> some View {
+        let rec = result.recommendation
+        return VStack(alignment: .leading, spacing: 10) {
+            Text(loc(L10n.Premium.bestTimeWhyTitle)).font(.headline)
+
+            whyRow(
+                icon: "chart.line.uptrend.xyaxis",
+                value: String(format: "%+.0f%%", rec.liftVsAverage * 100),
+                title: loc(L10n.Premium.bestTimeLiftDesc))
+            whyRow(
+                icon: "doc.text.fill",
+                value: "\(rec.sampleCount)",
+                title: String(format: loc(L10n.Premium.bestTimeSamples), result.totalPosts))
+            whyRow(
+                icon: "scope",
+                value: String(format: "%.0f%%", rec.probabilityOfBeingBest * 100),
+                title: loc(L10n.Premium.bestTimeProbability))
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(theme.cardSurface)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal)
+    }
+
+    private func whyRow(icon: String, value: String, title: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(theme.accentSecondary)
+                .frame(width: 28)
+            Text(title)
+                .font(.subheadline)
+                .foregroundColor(theme.textSecondary)
+            Spacer()
+            Text(value)
+                .font(.subheadline).fontWeight(.semibold)
+                .foregroundColor(theme.textPrimary)
+        }
+    }
+
+    // MARK: - ③ Historical
+
+    /// 历史表现卡：气泡矩阵 + 每日柱状图（原始平均值，诚实呈现）
+    private func historicalCard(_ result: BestPostingTimeResult) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(loc(L10n.Premium.bestTimeHistoricalTitle)).font(.headline)
+                .padding(.horizontal)
+            bubbleMatrixCard(result)
+                .padding(.horizontal, 0)
+            dayChartCard(result)
+                .padding(.horizontal, 0)
+        }
     }
 
     /// 互动气泡矩阵卡片：7 行（周日-周六）× 8 列（每 3 小时桶）
@@ -209,5 +304,23 @@ struct BestTimeView: View {
         .background(theme.cardSurface)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .padding(.horizontal)
+    }
+
+    // MARK: - Confidence Helpers
+
+    private func confidenceLabel(_ level: ConfidenceLevel) -> String {
+        switch level {
+        case .low:  return loc(L10n.Premium.confidenceLow)
+        case .medium: return loc(L10n.Premium.confidenceMedium)
+        case .high: return loc(L10n.Premium.confidenceHigh)
+        }
+    }
+
+    private func confidenceColor(_ level: ConfidenceLevel) -> Color {
+        switch level {
+        case .low:  return theme.warningOrange
+        case .medium: return theme.accentPrimary
+        case .high: return theme.positiveGreen
+        }
     }
 }
