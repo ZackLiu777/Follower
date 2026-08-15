@@ -51,9 +51,7 @@ struct PredictionDetailView: View {
                             baseFollowers: baseFollowers,
                             dailyLower: daily(result?.dailyLower),
                             dailyQ10: daily(result?.dailyQ10),
-                            dailyQ25: daily(result?.dailyQ25),
                             dailyMedian: daily(result?.dailyMedian),
-                            dailyQ75: daily(result?.dailyQ75),
                             dailyQ90: daily(result?.dailyQ90),
                             dailyUpper: daily(result?.dailyUpper)
                         )
@@ -82,11 +80,28 @@ struct PredictionDetailView: View {
 
     // MARK: - 子视图
 
-    /// Hero 数字卡片
+    /// Hero 数字卡片 — 最终预测值 + 预计增长（vs 当前粉丝数）
     private var heroCard: some View {
-        VStack(spacing: 4) {
-            Text("~\(predicted.formatted(.number))").font(.system(size: 40, weight: .bold, design: .rounded))
-            Text(loc(L10n.Premium.predictedFollowersNext)).font(.subheadline).foregroundColor(.secondary)
+        let growth = Int((Double(predicted) - baseFollowers).rounded())
+        let growthPct = baseFollowers > 0 ? Double(growth) / baseFollowers * 100 : 0
+        return VStack(spacing: 6) {
+            Text("~\(predicted.formatted(.number))")
+                .font(.system(size: 40, weight: .bold, design: .rounded))
+                .foregroundColor(theme.textPrimary)
+            Text(loc(L10n.Premium.predictedFollowersNext))
+                .font(.subheadline).foregroundColor(.secondary)
+
+            if growth != 0 {
+                HStack(spacing: 6) {
+                    Image(systemName: growth > 0 ? "arrow.up.right" : "arrow.down.right")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text("\(growth > 0 ? "+" : "")\(growth.formatted(.number)) · \(growthPct >= 0 ? "+" : "")\(String(format: "%.1f", growthPct))%")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(growth > 0 ? theme.positiveGreen : theme.negativeRed)
+                    Text(loc(L10n.Premium.predictedGrowthLabel))
+                        .font(.caption).foregroundColor(.secondary)
+                }
+            }
         }
         .padding()
         .frame(maxWidth: .infinity)
@@ -131,12 +146,15 @@ struct PredictionDetailView: View {
         .padding(.horizontal)
     }
 
-    /// 关键数字行：80% 预测区间 + 增长概率
+    /// 关键数字行：80% 预测区间 / 预计增长（含相对值）/ 增长概率（clamp 99%）
     @ViewBuilder
     private func keyFigures(_ result: PredictionResult) -> some View {
         let q10 = (result.dailyQ10?.last ?? 0) + baseFollowers
         let q90 = (result.dailyQ90?.last ?? 0) + baseFollowers
-        let probability = result.probabilityPositive ?? 0
+        let growth = Double(predicted) - baseFollowers
+        let growthPct = baseFollowers > 0 ? growth / baseFollowers * 100 : 0
+        // v1.4：概率封顶 99% — P=1.0 显示"100%"会给用户虚假确定性
+        let probability = min((result.probabilityPositive ?? 0), 0.99)
 
         VStack(spacing: 12) {
             HStack {
@@ -146,12 +164,26 @@ struct PredictionDetailView: View {
                 )
                 Divider().frame(height: 36)
                 figureBlock(
-                    title: loc(L10n.Premium.growthProbability),
-                    value: probability.formatted(.percent.precision(.fractionLength(0)))
+                    title: loc(L10n.Premium.predictedGrowthLabel),
+                    value: "\(growth >= 0 ? "+" : "")\(Int(growth.rounded()).formatted(.number)) · \(growthPct >= 0 ? "+" : "")\(String(format: "%.1f", growthPct))%"
                 )
             }
             .padding(.vertical, 12)
             .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity)
+            .background(theme.cardSurface)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(.horizontal)
+
+            // 增长概率（独立行，更醒目）
+            VStack(spacing: 2) {
+                Text(probability.formatted(.percent.precision(.fractionLength(0))))
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .foregroundColor(theme.positiveGreen)
+                Text(loc(L10n.Premium.growthProbability))
+                    .font(.caption2).foregroundColor(.secondary)
+            }
+            .padding(.vertical, 12)
             .frame(maxWidth: .infinity)
             .background(theme.cardSurface)
             .clipShape(RoundedRectangle(cornerRadius: 16))

@@ -349,7 +349,9 @@ final class DashboardViewModel {
         // 趋势预测（贝叶斯负二项回归，30 天预测）
         if !snapshots.isEmpty {
             let dataPoints = snapshots.map { ($0.observedAt, Double($0.followersCount)) }
-            historyPoints = dataPoints.sorted { $0.0 < $1.0 }
+            // v1.3：图表历史窗口截取最近 90 天 — 全量历史（730 天）会把 30 天预测段
+            // 压缩成尾部细条导致区间/预测不可读；训练仍用全量数据（模型不受影响）
+            historyPoints = dataPoints.sorted { $0.0 < $1.0 }.suffix(90).map { $0 }
             predictionResult = await predictionService.predictLinear(dataPoints: dataPoints, daysAhead: 30)
         } else if let snap {
             let today = Date()
@@ -433,7 +435,10 @@ final class DashboardViewModel {
         unfollowList = computeUnfollowList(snapshots: snapshots)
         contentTip = computeContentTip()
         // v0.15-alpha: predictedValue 为累计增长量（贝叶斯模型）→ 预测总数 = 当前粉丝 + 累计增长
-        let growth = predictionResult.map { Int($0.predictedValue) } ?? 0
+        // v1.5：统一最终预测 = base + dailyMedian.last（图表终点同源）——修复
+        // 均值（predictedValue）与中位数（dailyMedian.last）不一致导致的 Hero/图表数字分叉
+        let medianGrowth = predictionResult?.dailyMedian?.last ?? predictionResult?.predictedValue ?? 0
+        let growth = Int(medianGrowth.rounded())
         predictedFollowers = growth + (latestSnapshot?.followersCount ?? 0)
     }
 

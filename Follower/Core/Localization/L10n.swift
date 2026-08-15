@@ -471,6 +471,8 @@ enum L10n {
         // MARK: Prediction
         static let predictedFollowersNext = "premium.predictedFollowersNext"
         static let predictionDescription = "premium.predictionDescription"
+        /// 预计增长标签（v1.4）
+        static let predictedGrowthLabel = "premium.predictedGrowthLabel"
 
         // MARK: No data generic
         static let noDataAvailable = "premium.noDataAvailable"
@@ -592,6 +594,10 @@ enum L10n {
         // MARK: - Detail views (v0.16 补缺：其余详情页 key 见上方各 Detail 分组)
         static let likelyRange80 = "premium.likelyRange80"
         static let growthProbability = "premium.growthProbability"
+        /// 95% 预测区间标签（v1.6 Tooltip）
+        static let likelyRange95 = "premium.likelyRange95"
+        /// Tooltip 预计值标签（v1.6）
+        static let predictionForecast = "premium.predictionForecast"
         static let predictionUnavailable = "premium.predictionUnavailable"
         static let predictionNeedsData = "premium.predictionNeedsData"
         static let comparisonUp = "premium.comparisonUp"

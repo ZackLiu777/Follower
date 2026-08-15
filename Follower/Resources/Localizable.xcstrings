@@ -33,6 +33,16 @@
     "%@'s Followers" : {
 
     },
+    "%@%@ · %@%@%%" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@%2$@ · %3$@%4$@%%"
+          }
+        }
+      }
+    },
     "%@%lld" : {
       "localizations" : {
         "en" : {
@@ -4268,9 +4278,6 @@
         }
       }
     },
-    "high50" : {
-
-    },
     "high80" : {
 
     },
@@ -4284,9 +4291,6 @@
 
     },
     "Login with your Instagram account via Meta OAuth." : {
-
-    },
-    "low50" : {
 
     },
     "low80" : {
@@ -8608,6 +8612,35 @@
         }
       }
     },
+    "premium.likelyRange95" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "95%% likely range"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "95%% 予測区間"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "95%% 可能区间"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "95%% 可能區間"
+          }
+        }
+      }
+    },
     "premium.likes" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9855,6 +9888,35 @@
         }
       }
     },
+    "premium.predictedGrowthLabel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expected growth"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "予想増加"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预计增长"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "預計增長"
+          }
+        }
+      }
+    },
     "premium.predictionDescription" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9880,6 +9942,35 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "基於你的歷史增長趨勢"
+          }
+        }
+      }
+    },
+    "premium.predictionForecast" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forecast"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "予測"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "预计"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "預計"
           }
         }
       }
@@ -11686,6 +11777,9 @@
       }
     },
     "Redirect URI" : {
+
+    },
+    "Selected" : {
 
     },
     "settings.accounts" : {
