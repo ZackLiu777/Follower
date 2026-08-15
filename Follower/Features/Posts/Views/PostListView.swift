@@ -14,6 +14,9 @@ struct PostListView: View {
 
     @Environment(AppState.self) private var appState
 
+    // 发布助手（帖子功能：始终可用）
+    @State private var showComposer: Bool = false
+
     private var currentTheme: Theme { appState.currentTheme.theme }
 
     var body: some View {
@@ -40,5 +43,35 @@ struct PostListView: View {
             .ignoresSafeArea()
         )
         .scrollContentBackground(.hidden)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                HStack(spacing: 16) {
+                    // 发布队列
+                    NavigationLink {
+                        PostQueueView(
+                            draftRepo: appState.container.draftPostRepository,
+                            assistant: appState.container.postAssistantService
+                        )
+                    } label: {
+                        Image(systemName: "list.bullet.rectangle.portrait")
+                            .foregroundColor(currentTheme.accentPrimary)
+                    }
+
+                    // 发布助手
+                    Button {
+                        showComposer = true
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundColor(currentTheme.accentPrimary)
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $showComposer) {
+            PostComposerView(
+                draftRepo: appState.container.draftPostRepository,
+                assistant: appState.container.postAssistantService
+            )
+        }
     }
 }

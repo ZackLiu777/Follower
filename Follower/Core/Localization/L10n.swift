@@ -514,7 +514,6 @@ enum L10n {
         static let mediaKitExport = "premium.mediaKitExport"
         static let campaignTracking = "premium.campaignTracking"
         static let engagementHeatmap = "premium.engagementHeatmap"
-        static let contentScheduling = "premium.contentScheduling"
         static let commentManagement = "premium.commentManagement"
         static let themeSwitching = "premium.themeSwitching"
 
