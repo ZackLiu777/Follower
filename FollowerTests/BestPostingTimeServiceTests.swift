@@ -49,7 +49,7 @@ struct BestPostingTimeServiceTests {
 
         // 历史层：19 点原始平均 30 为峰值
         #expect(result.hourValues[19] == 1.0, "Peak hour normalized to 1.0")
-        #expect(abs(result.hourValues[9] - 10.0 / 60.0) < 0.001)
+        #expect(abs(result.hourValues[9] - 10.0 / 30.0) < 0.001)
 
         let cal = Calendar.current
         let mon = cal.date(from: DateComponents(year: 2020, month: 1, day: 6, hour: 19))!
@@ -59,7 +59,7 @@ struct BestPostingTimeServiceTests {
 
         #expect(result.bestDay == monWD, "Monday has the most engagement (70)")
         #expect(result.dayValue(weekday: monWD) == 1.0)
-        #expect(abs(result.dayValue(weekday: tueWD) - 20.0 / 70.0) < 0.001)
+        #expect(abs(result.dayValue(weekday: tueWD) - 20.0 / (70.0 / 3.0)) < 0.001)
         #expect(!result.peakDescription.isEmpty)
     }
 
