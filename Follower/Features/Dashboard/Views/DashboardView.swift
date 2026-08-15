@@ -419,7 +419,6 @@ private struct PremiumInsightsSection: View {
                 .init(icon: "doc.richtext.fill", label: loc(L10n.Premium.mediaKitExport), locked: false),
                 .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking), locked: false),
                 .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap), locked: false),
-                .init(icon: "calendar.badge.plus", label: loc(L10n.Premium.contentScheduling), locked: false),
             ]
         } else {
             return [
@@ -437,7 +436,6 @@ private struct PremiumInsightsSection: View {
                 .init(icon: "doc.richtext.fill", label: loc(L10n.Premium.mediaKitExport), locked: true),
                 .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking), locked: true),
                 .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap), locked: true),
-                .init(icon: "calendar.badge.plus", label: loc(L10n.Premium.contentScheduling), locked: true),
             ]
         }
     }
@@ -579,7 +577,6 @@ private struct PremiumInsightsSection: View {
         case 10: MediaKitDetailView(viewModel: viewModel)
         case 11: CampaignDetailView(result: viewModel.campaignResult)
         case 12: HeatmapDetailView(result: viewModel.heatmapResult)
-        case 13: ContentSchedulingDetailView(activityResult: viewModel.activityResult)
         default: EmptyView()
         }
     }

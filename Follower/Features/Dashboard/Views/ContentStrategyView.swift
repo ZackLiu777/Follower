@@ -68,13 +68,13 @@ struct ContentStrategyView: View {
                             .font(.subheadline).fontWeight(.semibold)
                             .foregroundColor(theme.textPrimary)
                             .frame(width: 76, alignment: .leading)
-                        // 互动条
+                        // 互动条 — 相对平均互动比例，clamp [0,1] 防止爆款类型溢出到右侧统计区
                         GeometryReader { geo in
                             ZStack(alignment: .leading) {
                                 Capsule().fill(theme.backgroundSecondary)
                                 Capsule()
                                     .fill(theme.accentPrimary.opacity(0.75))
-                                    .frame(width: max(8, geo.size.width * CGFloat(profile.averageEngagement > 0 ? band.avgEngagement / profile.averageEngagement : 0)))
+                                    .frame(width: max(8, geo.size.width * CGFloat(barRatio(band: band, profile: profile))))
                             }
                         }
                         .frame(height: 10)
@@ -335,5 +335,11 @@ struct ContentStrategyView: View {
         Text(title)
             .font(.headline)
             .foregroundColor(theme.textPrimary)
+    }
+
+    /// 条形图比例：类型平均互动 / 整体平均，clamp [0,1]（爆款类型不会溢出容器）
+    private func barRatio(band: ContentTypeBand, profile: ContentProfileResult) -> Double {
+        guard profile.averageEngagement > 0 else { return 0 }
+        return min(1.0, max(0.0, band.avgEngagement / profile.averageEngagement))
     }
 }

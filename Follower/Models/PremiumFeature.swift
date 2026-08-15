@@ -31,7 +31,6 @@ enum PremiumFeatureKey: String, Codable, DatabaseValueConvertible, CaseIterable 
     case mediaKitExport             // 媒体包/商业价值报告导出（KOL + 品牌方）
     case campaignTracking           // 投放效果跟踪（品牌方）
     case engagementHeatmap          // 互动热力图（KOL）
-    case contentScheduling          // 内容排期推荐（KOL + 中小企业）
     case commentManagement          // 评论管理（中小企业）
     case growthDecisions            // 增长决策引擎（Premium 专属 Tab）
     case themeSwitching             // 主题切换（Premium）
@@ -57,7 +56,6 @@ enum PremiumFeatureKey: String, Codable, DatabaseValueConvertible, CaseIterable 
         case .mediaKitExport: return loc(L10n.Premium.mediaKitExport)
         case .campaignTracking: return loc(L10n.Premium.campaignTracking)
         case .engagementHeatmap: return loc(L10n.Premium.engagementHeatmap)
-        case .contentScheduling: return loc(L10n.Premium.contentScheduling)
         case .commentManagement: return loc(L10n.Premium.commentManagement)
         case .growthDecisions: return "Growth Decisions"
         case .themeSwitching: return loc(L10n.Premium.themeSwitching)

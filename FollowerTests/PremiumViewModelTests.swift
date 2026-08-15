@@ -342,7 +342,8 @@ struct PremiumViewModelTests {
 
     // MARK: - Phi: 新增 PremiumFeatureKey 用例
 
-    /// PremiumFeatureKey.allCases 应包含 Phi 阶段新增的 7 个三大人群画像键
+    /// PremiumFeatureKey.allCases 应包含 Phi 阶段新增的三大人群画像键
+    /// （v1.9：contentScheduling 内容排期已下线，不再要求）
     @Test
     func testPremiumFeatureKeyIncludesPhiCases() {
         let allKeys = PremiumFeatureKey.allCases
@@ -350,8 +351,6 @@ struct PremiumViewModelTests {
         #expect(allKeys.contains(.authenticityAssessment), "Should include authenticityAssessment")
         #expect(allKeys.contains(.mediaKitExport), "Should include mediaKitExport")
         #expect(allKeys.contains(.campaignTracking), "Should include campaignTracking")
-        #expect(allKeys.contains(.engagementHeatmap), "Should include engagementHeatmap")
-        #expect(allKeys.contains(.contentScheduling), "Should include contentScheduling")
         #expect(allKeys.contains(.commentManagement), "Should include commentManagement")
     }
 

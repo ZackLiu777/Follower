@@ -42,9 +42,8 @@ final class DIContainer {
     /// 媒体包 PDF 导出服务（Premium: mediaKitExport）
     let mediaKitService: MediaKitServiceProtocol
 
-    // MARK: - 发布助手 & 评论管理
+    // MARK: - 评论管理
 
-    let postAssistantService: PostAssistantService
     let commentService: CommentServiceProtocol
 
     // MARK: - Gamma Premium Services
@@ -138,8 +137,7 @@ final class DIContainer {
             generator: MediaKitPDFGenerator()
         )
 
-        // 发布助手 & 评论管理
-        self.postAssistantService = PostAssistantService()
+        // 评论管理
         self.commentService = CommentService(apiResolver: resolver, tokenProvider: tokenProv)
 
         // Premium Services
