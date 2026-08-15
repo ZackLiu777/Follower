@@ -59,6 +59,8 @@ final class DIContainer {
     let contentProfileService: ContentProfileService
     /// 互动漏斗服务（Phi+ — 浏览→互动→涨粉诊断）
     let engagementFunnelService: EngagementFunnelService
+    /// 内容归因服务（Phi+ — 什么内容真正涨了粉）
+    let contentAttributionService: ContentAttributionService
 
     // MARK: - Phi Premium Services
 
@@ -150,6 +152,7 @@ final class DIContainer {
         self.aiAnalysisService = AIAnalysisService()
         self.contentProfileService = ContentProfileService()
         self.engagementFunnelService = EngagementFunnelService()
+        self.contentAttributionService = ContentAttributionService()
         self.authenticityService = AuthenticityService()
         self.campaignComparisonService = CampaignComparisonService()
         self.engagementHeatmapService = EngagementHeatmapService()

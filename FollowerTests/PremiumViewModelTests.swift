@@ -24,6 +24,13 @@ final class MockSnapshotRepository: SnapshotRepositoryProtocol {
     func upsertBatch(_ snapshots: [Snapshot]) async throws -> [Snapshot] { snapshots }
 }
 
+/// Mock TokenProvider — 内存 token，隔离 Keychain
+final class MockTokenProvider: TokenProviderProtocol, @unchecked Sendable {
+    func storeToken(accountId: Int64, accessToken: String) async throws {}
+    func getToken(accountId: Int64) async throws -> String { MockInstagramAPIClient.sentinelToken }
+    func deleteToken(accountId: Int64) async throws {}
+}
+
 /// Mock MockAccountRepository — 可预设账户列表，用于隔离数据库依赖
 final class MockAccountRepository: AccountRepositoryProtocol {
     var accounts: [Account] = []
@@ -130,6 +137,9 @@ struct PremiumViewModelTests {
             bestPostingTimeService: BestPostingTimeService(),
             contentProfileService: ContentProfileService(),
             engagementFunnelService: EngagementFunnelService(),
+            contentAttributionService: ContentAttributionService(),
+            apiClient: MockInstagramAPIClient(),
+            tokenProvider: MockTokenProvider(),
             mediaKitService: MediaKitService()
         )
     }

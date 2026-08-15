@@ -113,6 +113,48 @@ final class MockInstagramAPIClient: InstagramAPIClientProtocol, @unchecked Senda
     func deleteComment(accessToken: String, commentID: String) async throws {
         // 本地 mock：删除总是成功
     }
+
+    func fetchCommentPrivateReply(accessToken: String, commentID: String, message: String) async throws -> String {
+        lock.lock(); defer { lock.unlock() }
+        replyCounter += 1
+        // 与真实 Instagram 私信 id 同形态的 18 位数字
+        return "1789569566800\(replyCounter)"
+    }
+
+    func fetchMediaInsights(accessToken: String, mediaID: String, metrics: [String]) async throws -> [IGInsightValue] {
+        // v1.10：确定性生成单帖深度指标（固定 seed 数据集的 media 中查找视频帖）
+        let media = dataset(for: accessToken).media
+        guard let post = media.first(where: { $0.id == mediaID }),
+              post.mediaType == "VIDEO" else { return [] }
+        let duration = Double(post.mediaDuration ?? 30)
+        let seed = UInt64(abs(post.id.hashValue)) &+ 0x5EED
+        var rng = SeededRandom(seed: seed)
+        let plays = Double(rng.int(in: 2_000...20_000))
+        let reach = plays * rng.double(in: 0.6..<0.95)
+        let saved = plays * rng.double(in: 0.02..<0.08)
+        let shares = plays * rng.double(in: 0.01..<0.06)
+        // 平均观看时长：时长的 40%-75%（完播率 40%-75%）
+        let avgWatch = duration * rng.double(in: 0.4..<0.75)
+
+        func scalar(_ name: String, _ value: Double) -> IGInsightValue {
+            IGInsightValue(name: name, period: "lifetime", values: nil,
+                totalValue: IGInsightTotalValue(breakdowns: [
+                    IGInsightBreakdown(dimensionValues: nil, value: value)
+                ]))
+        }
+        var result: [IGInsightValue] = []
+        for m in metrics {
+            switch m {
+            case "plays": result.append(scalar("plays", plays))
+            case "reach": result.append(scalar("reach", reach))
+            case "saved": result.append(scalar("saved", saved))
+            case "shares": result.append(scalar("shares", shares))
+            case "avg_watch_time": result.append(scalar("avg_watch_time", avgWatch))
+            default: break
+            }
+        }
+        return result
+    }
 }
 
 // MARK: - MockDataset
@@ -272,7 +314,9 @@ private struct MockDataset {
                 commentsCount: commentCounts[i],
                 // Mock 无真实图片（本地优先）→ nil，UI 走色块占位降级
                 mediaURL: nil,
-                thumbnailURL: nil
+                thumbnailURL: nil,
+                // v1.10：video（Reels）给确定性时长（15-45 秒），深度分析用
+                mediaDuration: mediaType == "VIDEO" ? rng.int(in: 15...45) : nil
             ))
         }
         media = generatedMedia

@@ -487,6 +487,9 @@ struct PhiServicesTests {
             bestPostingTimeService: BestPostingTimeService(),
             contentProfileService: ContentProfileService(),
             engagementFunnelService: EngagementFunnelService(),
+            contentAttributionService: ContentAttributionService(),
+            apiClient: MockInstagramAPIClient(),
+            tokenProvider: MockTokenProvider(),
             mediaKitService: MediaKitService()
         )
         #expect(vm.authenticityResult == nil)
@@ -538,6 +541,9 @@ struct PhiServicesTests {
             bestPostingTimeService: BestPostingTimeService(),
             contentProfileService: ContentProfileService(),
             engagementFunnelService: EngagementFunnelService(),
+            contentAttributionService: ContentAttributionService(),
+            apiClient: MockInstagramAPIClient(),
+            tokenProvider: MockTokenProvider(),
             mediaKitService: MediaKitService()
         )
         vm.selectedAccountId = 1
@@ -688,5 +694,257 @@ struct EngagementFunnelServiceTests {
         let result = await EngagementFunnelService().analyze(snapshots: [])
         #expect(result.bottleneck == .none)
         #expect(result.opportunityFollowers == 0)
+    }
+}
+
+// MARK: - ContentAttributionServiceTests
+
+struct ContentAttributionServiceTests {
+
+    private func makePost(id: Int, type: MediaPostType, likes: Int, comments: Int = 0, day: Int) -> MediaPost {
+        let cal = Calendar.current
+        let date = cal.date(byAdding: .day, value: day, to: cal.startOfDay(for: Date()))!
+        return MediaPost(id: Int64(id), accountId: 1, igMediaID: "attr-\(id)",
+            type: type, date: date, likes: likes, comments: comments,
+            caption: "p\(id)", mediaURL: nil, permalink: nil)
+    }
+
+    private func makeSnapshot(day: Int, followers: Int) -> Snapshot {
+        let cal = Calendar.current
+        let date = cal.date(byAdding: .day, value: day, to: cal.startOfDay(for: Date()))!
+        return Snapshot(id: nil, accountId: 1, followersCount: followers,
+            followingCount: 100, mediaCount: 10, engagementRate: 0.05,
+            totalLikes: 500, totalComments: 50, totalShares: 10, totalViews: 1000,
+            observedAt: date, createdAt: Date())
+    }
+
+    /// 冷启动：帖子 < 5 → nil
+    @Test
+    func testColdStart() async {
+        let service = ContentAttributionService()
+        let posts = (0..<4).map { makePost(id: $0, type: .image, likes: 10, day: $0) }
+        let snaps = [makeSnapshot(day: -1, followers: 100), makeSnapshot(day: 10, followers: 200)]
+        #expect(await service.analyze(posts: posts, snapshots: snaps) == nil)
+    }
+
+    /// 单帖窗口归因：7 天窗口涨粉全部归给该帖
+    @Test
+    func testSinglePostWindow() async {
+        let service = ContentAttributionService()
+        let posts = (0..<5).map { makePost(id: $0, type: .image, likes: 10, day: $0 * 10) }  // 间隔 10 天，窗口不重叠
+        // day 0 发帖：窗口 [0,6]，快照 day -1=1000 → day 7=1050 → +50
+        let snaps = [
+            makeSnapshot(day: -1, followers: 1000),
+            makeSnapshot(day: 7, followers: 1050),
+        ]
+        let result = try? #require(await service.analyze(posts: posts, snapshots: snaps))
+        #expect(result != nil)
+        #expect(abs((result?.totalAttributedGain ?? 0) - 50) < 0.01, "窗口涨粉 50 全归因")
+        #expect(result?.typeContribution.first?.type == .photo)
+    }
+
+    /// 重叠窗口按互动占比分摊：同窗口两帖，互动高者分得多
+    @Test
+    func testSharedWindowSplitByEngagement() async {
+        let service = ContentAttributionService()
+        // 两帖同一天发（day 0）：互动 90 vs 10 → 窗口涨粉 100 按 9:1 分摊
+        let posts = [
+            makePost(id: 0, type: .video, likes: 90, day: 0),
+            makePost(id: 1, type: .image, likes: 10, day: 0),
+            makePost(id: 2, type: .image, likes: 10, day: 30),
+            makePost(id: 3, type: .image, likes: 10, day: 40),
+            makePost(id: 4, type: .image, likes: 10, day: 50),
+        ]
+        let snaps = [
+            makeSnapshot(day: -1, followers: 1000),
+            makeSnapshot(day: 7, followers: 1100),   // day0 窗口 +100
+        ]
+        let result = try? #require(await service.analyze(posts: posts, snapshots: snaps))
+        let total = result?.totalAttributedGain ?? 0
+        #expect(abs(total - 100) < 0.01)
+        // video 90% → 90，image 10% → 10（同窗口分摊）
+        let video = result?.typeContribution.first { $0.type == .reel }?.contribution.followerGain ?? 0
+        let photo = result?.typeContribution.first { $0.type == .photo }?.contribution.followerGain ?? 0
+        #expect(abs(video - 90) < 0.01, "Reel 分得 90%（90/100 互动）")
+        #expect(abs(photo - 10) < 0.01, "Photo 分得 10%")
+    }
+
+    /// 负增长窗口不计入归因
+    @Test
+    func testNegativeWindowIgnored() async {
+        let service = ContentAttributionService()
+        let posts = (0..<5).map { makePost(id: $0, type: .image, likes: 10, day: $0 * 10) }
+        // day0 窗口下降 → 不计
+        let snaps = [
+            makeSnapshot(day: -1, followers: 1000),
+            makeSnapshot(day: 7, followers: 900),    // -100 → 忽略
+        ]
+        let result = try? #require(await service.analyze(posts: posts, snapshots: snaps))
+        #expect(result != nil)
+        #expect(abs(result?.totalAttributedGain ?? 999) < 0.01, "负增长不归因")
+    }
+
+    /// 快照不足 → nil
+    @Test
+    func testInsufficientSnapshots() async {
+        let service = ContentAttributionService()
+        let posts = (0..<5).map { makePost(id: $0, type: .image, likes: 10, day: $0) }
+        #expect(await service.analyze(posts: posts, snapshots: [makeSnapshot(day: 0, followers: 100)]) == nil)
+    }
+}
+
+// MARK: - ReelsAnalysisServiceTests
+
+struct ReelsAnalysisServiceTests {
+
+    /// mapReel：完播率 = avg_watch_time / duration；Saves/Shares 率正确
+    @Test
+    func testMapReel() {
+        let media = IGMedia(id: "m1", caption: "reel", mediaType: "VIDEO", permalink: nil,
+            timestamp: nil, likeCount: nil, commentsCount: nil, mediaURL: nil, thumbnailURL: nil,
+            mediaDuration: 30)
+        let insights: [IGInsightValue] = [
+            .scalar("plays", 10000),
+            .scalar("saved", 400),
+            .scalar("shares", 200),
+            .scalar("avg_watch_time", 18),
+        ]
+        let reel = ReelsAnalysisService.mapReel(media: media, insights: insights)
+        #expect(reel != nil)
+        #expect(abs((reel?.completionRate ?? 0) - 0.6) < 1e-9, "18/30 = 0.6")
+        #expect(abs((reel?.saveRate ?? 0) - 0.04) < 1e-9)
+        #expect(abs((reel?.shareRate ?? 0) - 0.02) < 1e-9)
+    }
+
+    /// 非视频 / 无时长 / 无 plays → nil
+    @Test
+    func testMapReelInvalid() {
+        let image = IGMedia(id: "m2", caption: nil, mediaType: "IMAGE", permalink: nil,
+            timestamp: nil, likeCount: nil, commentsCount: nil, mediaURL: nil, thumbnailURL: nil,
+            mediaDuration: nil)
+        #expect(ReelsAnalysisService.mapReel(media: image, insights: []) == nil)
+
+        let videoNoDuration = IGMedia(id: "m3", caption: nil, mediaType: "VIDEO", permalink: nil,
+            timestamp: nil, likeCount: nil, commentsCount: nil, mediaURL: nil, thumbnailURL: nil,
+            mediaDuration: nil)
+        #expect(ReelsAnalysisService.mapReel(media: videoNoDuration, insights: []) == nil)
+
+        let videoNoPlays = IGMedia(id: "m4", caption: nil, mediaType: "VIDEO", permalink: nil,
+            timestamp: nil, likeCount: nil, commentsCount: nil, mediaURL: nil, thumbnailURL: nil,
+            mediaDuration: 20)
+        #expect(ReelsAnalysisService.mapReel(media: videoNoPlays, insights: [.scalar("saved", 5)]) == nil)
+    }
+
+    /// 完播率 clamp：avg_watch > duration → 1.0；负值 → 0
+    @Test
+    func testCompletionClamped() {
+        let media = IGMedia(id: "m5", caption: nil, mediaType: "VIDEO", permalink: nil,
+            timestamp: nil, likeCount: nil, commentsCount: nil, mediaURL: nil, thumbnailURL: nil,
+            mediaDuration: 10)
+        let over = ReelsAnalysisService.mapReel(media: media,
+            insights: [.scalar("plays", 1), .scalar("avg_watch_time", 99)])
+        #expect(over?.completionRate == 1.0)
+    }
+
+    /// aggregate：平均完播率 / Saves 率 / 最佳 Reel（按完播率降序）
+    @Test
+    func testAggregate() {
+        let a = ReelPerformance(mediaID: "a", caption: "", duration: 30, plays: 1000,
+            completionRate: 0.4, saves: 100, shares: 50, saveRate: 0.1, shareRate: 0.05)
+        let b = ReelPerformance(mediaID: "b", caption: "", duration: 30, plays: 1000,
+            completionRate: 0.8, saves: 100, shares: 50, saveRate: 0.1, shareRate: 0.05)
+        let result = ReelsAnalysisService.aggregate([a, b])
+        #expect(result != nil)
+        #expect(abs((result?.avgCompletionRate ?? 0) - 0.6) < 1e-9)
+        #expect(result?.bestReel?.mediaID == "b")
+        #expect(result?.reels.first?.mediaID == "b", "按完播率降序")
+    }
+
+    /// 空数组 → nil
+    @Test
+    func testAggregateEmpty() {
+        #expect(ReelsAnalysisService.aggregate([]) == nil)
+    }
+
+    /// 百分比格式化
+    @Test
+    func testPercentFormat() {
+        #expect(ReelsAnalysisService.percent(0.42) == "42%")
+        #expect(ReelsAnalysisService.percent(1.0) == "100%")
+        #expect(ReelsAnalysisService.percent(0) == "0%")
+    }
+}
+
+// MARK: - IGInsightValue 测试辅助
+
+extension IGInsightValue {
+    /// 构造标量指标（breakdown 形式）
+    static func scalar(_ name: String, _ value: Double) -> IGInsightValue {
+        IGInsightValue(name: name, period: "lifetime", values: nil,
+            totalValue: IGInsightTotalValue(breakdowns: [
+                IGInsightBreakdown(dimensionValues: nil, value: value)
+            ]))
+    }
+}
+
+// MARK: - CommentDMServiceTests
+
+struct CommentDMServiceTests {
+
+    /// 匹配：评论文本包含关键词（大小写不敏感）→ 返回规则
+    @Test
+    func testMatchKeyword() {
+        let rules = [
+            DMTriggerRule(keyword: "PRICE", messageTemplate: "Price here", isEnabled: true),
+            DMTriggerRule(keyword: "send", messageTemplate: "Sent", isEnabled: true),
+        ]
+        #expect(CommentDMService.match(text: "what is the price?", rules: rules)?.keyword == "PRICE")
+        #expect(CommentDMService.match(text: "please SEND me", rules: rules)?.keyword == "send")
+        #expect(CommentDMService.match(text: "nice photo", rules: rules) == nil)
+    }
+
+    /// 禁用的规则不参与匹配
+    @Test
+    func testMatchDisabledRuleSkipped() {
+        let rules = [
+            DMTriggerRule(keyword: "PRICE", messageTemplate: "P", isEnabled: false),
+        ]
+        #expect(CommentDMService.match(text: "PRICE", rules: rules) == nil)
+    }
+
+    /// 模板渲染：{username} 替换 + 问候语变体前缀
+    @Test
+    func testRenderTemplate() {
+        var rng = SeededRandom(seed: 1)
+        let message = CommentDMService.render(
+            template: "{username} 谢谢询问！价格在这里 👉 https://x", username: "alice", rng: &rng)
+        #expect(message.contains("@alice"))
+        #expect(message.contains("价格在这里"))
+        // 变体前缀存在（Hi/Hey/Hello/Hi there）
+        let prefixes = ["Hi ", "Hey ", "Hello ", "Hi there "]
+        #expect(prefixes.contains { message.hasPrefix($0) })
+    }
+
+    /// 模板已含问候语 → 不再重复加前缀
+    @Test
+    func testRenderNoDuplicateGreeting() {
+        var rng = SeededRandom(seed: 2)
+        let message = CommentDMService.render(
+            template: "Hi {username} welcome!", username: "bob", rng: &rng)
+        #expect(message.hasPrefix("Hi @bob"))
+        #expect(!message.contains("Hi Hi"))
+    }
+
+    /// 24h 窗口：近期评论通过，过期评论拒绝
+    @Test
+    func testWindow() {
+        let now = Date()
+        let iso = ISO8601DateFormatter()
+        let recent = iso.string(from: now.addingTimeInterval(-3600))
+        let old = iso.string(from: now.addingTimeInterval(-48 * 3600))
+        #expect(CommentDMService.isWithinWindow(commentTimestamp: recent))
+        #expect(!CommentDMService.isWithinWindow(commentTimestamp: old))
+        #expect(!CommentDMService.isWithinWindow(commentTimestamp: nil))
+        #expect(!CommentDMService.isWithinWindow(commentTimestamp: "not-a-date"))
     }
 }

@@ -48,6 +48,12 @@ final class DashboardViewModel {
     private let bestPostingTimeService: BestPostingTimeServiceProtocol
     /// 内容档案服务（Phi+）
     private let contentProfileService: ContentProfileService
+    /// 内容归因服务（Phi+）
+    private let contentAttributionService: ContentAttributionService
+    /// 官方 API 客户端（Reels 深度分析 per-media insights）
+    private let apiClient: InstagramAPIClientProtocol
+    /// Token 提供器
+    private let tokenProvider: TokenProviderProtocol
     /// 互动漏斗服务（Phi+）
     private let engagementFunnelService: EngagementFunnelService
     /// 媒体包 PDF 服务（Premium: mediaKitExport）
@@ -115,6 +121,10 @@ final class DashboardViewModel {
     var contentProfileResult: ContentProfileResult?
     /// 互动漏斗结果（Phi+）
     var funnelResult: EngagementFunnelResult?
+    /// 内容归因结果（Phi+）
+    var attributionResult: ContentAttributionResult?
+    /// Reels 深度分析结果（Phi+）
+    var reelsResult: ReelsAnalysisResult?
 
     // MARK: - Published: Phi 三大人群画像 Premium 数据
 
@@ -166,6 +176,9 @@ final class DashboardViewModel {
         bestPostingTimeService: BestPostingTimeServiceProtocol,
         contentProfileService: ContentProfileService,
         engagementFunnelService: EngagementFunnelService,
+        contentAttributionService: ContentAttributionService,
+        apiClient: InstagramAPIClientProtocol,
+        tokenProvider: TokenProviderProtocol,
         mediaKitService: MediaKitServiceProtocol
     ) {
         self.snapshotRepo = snapshotRepo
@@ -187,6 +200,9 @@ final class DashboardViewModel {
         self.bestPostingTimeService = bestPostingTimeService
         self.contentProfileService = contentProfileService
         self.engagementFunnelService = engagementFunnelService
+        self.contentAttributionService = contentAttributionService
+        self.apiClient = apiClient
+        self.tokenProvider = tokenProvider
         self.mediaKitService = mediaKitService
 
         // 监听新账号创建通知，自动刷新列表
@@ -453,6 +469,27 @@ final class DashboardViewModel {
         // Phi+：互动漏斗（快照全量）
         if !snapshots.isEmpty {
             funnelResult = await engagementFunnelService.analyze(snapshots: snapshots)
+        }
+
+        // Phi+：内容归因（快照 + 帖子）
+        if !snapshots.isEmpty, let posts = try? await mediaPostRepository.fetchAll(accountId: accountId) {
+            attributionResult = await contentAttributionService.analyze(posts: posts, snapshots: snapshots)
+        }
+
+        // Phi+：Reels 深度分析（per-media insights，开发模式空数组 → 空态）
+        if let token = try? await tokenProvider.getToken(accountId: accountId),
+           let media = try? await apiClient.fetchMedia(accessToken: token, limit: 50) {
+            let reels = media.filter { $0.mediaType == "VIDEO" }.prefix(ReelsAnalysisService.maxReels)
+            var performances: [ReelPerformance] = []
+            for reel in reels {
+                if let insights = try? await apiClient.fetchMediaInsights(
+                    accessToken: token, mediaID: reel.id,
+                    metrics: ["plays", "reach", "saved", "shares", "avg_watch_time"]),
+                   let perf = ReelsAnalysisService.mapReel(media: reel, insights: insights) {
+                    performances.append(perf)
+                }
+            }
+            reelsResult = ReelsAnalysisService.aggregate(performances)
         }
 
         // Mock 回退 — 保持向后兼容，现有 UI 继续工作

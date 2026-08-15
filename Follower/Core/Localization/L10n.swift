@@ -629,6 +629,19 @@ enum L10n {
         static let contentFunnelBottleneck = "premium.contentFunnelBottleneck"
         static let contentBottleneckEngagement = "premium.contentBottleneckEngagement"
         static let contentBottleneckConversion = "premium.contentBottleneckConversion"
+
+        // MARK: 内容→增长归因（v1.10）
+        static let contentAttribution = "premium.contentAttribution"
+        static let attributionNoData = "premium.attributionNoData"
+        static let attributionNoDataDesc = "premium.attributionNoDataDesc"
+        static let attributionTotal = "premium.attributionTotal"
+        static let attributionBestType = "premium.attributionBestType"
+        static let attributionBestDay = "premium.attributionBestDay"
+        static let attributionByType = "premium.attributionByType"
+        static let attributionByDay = "premium.attributionByDay"
+        static let attributionTopPosts = "premium.attributionTopPosts"
+        static let attributionDisclaimer = "premium.attributionDisclaimer"
+
         static let predictionUnavailable = "premium.predictionUnavailable"
         static let predictionNeedsData = "premium.predictionNeedsData"
         static let comparisonUp = "premium.comparisonUp"
@@ -636,6 +649,43 @@ enum L10n {
         static let comparisonStable = "premium.comparisonStable"
         static let anomalies = "premium.anomalies"
         static let activeDaysOf = "premium.activeDaysOf"
+
+        // MARK: Reels 深度分析（v1.10）
+        static let reelsAnalysis = "premium.reelsAnalysis"
+        static let reelsAvgCompletion = "premium.reelsAvgCompletion"
+        static let reelsBest = "premium.reelsBest"
+        static let reelsCount = "premium.reelsCount"
+        static let reelsSaveRate = "premium.reelsSaveRate"
+        static let reelsShareRate = "premium.reelsShareRate"
+        static let reelsList = "premium.reelsList"
+        static let reelsNoCaption = "premium.reelsNoCaption"
+        static let reelsPlays = "premium.reelsPlays"
+        static let reelsNoData = "premium.reelsNoData"
+        static let reelsNoDataDesc = "premium.reelsNoDataDesc"
+        static let reelsNote = "premium.reelsNote"
+
+        // MARK: 评论触发私信（v1.10）
+        static let commentDM = "premium.commentDM"
+        static let commentDMInfoTitle = "premium.commentDMInfoTitle"
+        static let commentDMInfoDesc = "premium.commentDMInfoDesc"
+        static let commentDMAddRule = "premium.commentDMAddRule"
+        static let commentDMKeywordPlaceholder = "premium.commentDMKeywordPlaceholder"
+        static let commentDMTemplatePlaceholder = "premium.commentDMTemplatePlaceholder"
+        static let commentDMSample = "premium.commentDMSample"
+        static let commentDMAddButton = "premium.commentDMAddButton"
+        static let commentDMSampleTitle = "premium.commentDMSampleTitle"
+        static let commentDMSampleNote = "premium.commentDMSampleNote"
+        static let commentDMRules = "premium.commentDMRules"
+        static let commentDMNoRules = "premium.commentDMNoRules"
+        static let commentDMResetHistory = "premium.commentDMResetHistory"
+        static let commentDMRunning = "premium.commentDMRunning"
+        static let commentDMRun = "premium.commentDMRun"
+        static let commentDMResult = "premium.commentDMResult"
+        static let commentDMComplianceTitle = "premium.commentDMComplianceTitle"
+        static let commentDMComplianceDesc = "premium.commentDMComplianceDesc"
+        static let commentDMNoMedia = "premium.commentDMNoMedia"
+        static let commentDMNoMediaDesc = "premium.commentDMNoMediaDesc"
+
     }
 
     // MARK: MediaKit（媒体包 PDF 导出）

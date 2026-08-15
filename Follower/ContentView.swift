@@ -51,6 +51,9 @@ private struct ContentViewInner: View {
             bestPostingTimeService: container.bestPostingTimeService,
             contentProfileService: container.contentProfileService,
             engagementFunnelService: container.engagementFunnelService,
+            contentAttributionService: container.contentAttributionService,
+            apiClient: container.apiClient,
+            tokenProvider: container.tokenProvider,
             mediaKitService: container.mediaKitService
         ))
         _trendsVM = State(wrappedValue: TrendsViewModel(

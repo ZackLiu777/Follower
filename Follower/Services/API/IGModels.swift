@@ -94,6 +94,8 @@ struct IGMedia: Codable {
     let mediaURL: String?
     /// 缩略图 URL（视频/轮播封面图）— video 类型展示用封面
     let thumbnailURL: String?
+    /// 视频时长（秒）— Reels 深度分析（完播率 = 平均观看时长/时长）
+    let mediaDuration: Int?
 
     enum CodingKeys: String, CodingKey {
         case id, caption, permalink, timestamp
@@ -102,6 +104,7 @@ struct IGMedia: Codable {
         case commentsCount = "comments_count"
         case mediaURL = "media_url"
         case thumbnailURL = "thumbnail_url"
+        case mediaDuration = "media_duration"
     }
 
     /// 展示用图片 URL：video 用封面缩略图（media_url 是视频文件），其余用 media_url 原图，互缺时兜底
