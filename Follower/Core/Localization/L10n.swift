@@ -598,6 +598,8 @@ enum L10n {
         static let likelyRange95 = "premium.likelyRange95"
         /// Tooltip 预计值标签（v1.6）
         static let predictionForecast = "premium.predictionForecast"
+        /// 图表恢复全览按钮（v1.6 缩放）
+        static let chartReset = "premium.chartReset"
         static let predictionUnavailable = "premium.predictionUnavailable"
         static let predictionNeedsData = "premium.predictionNeedsData"
         static let comparisonUp = "premium.comparisonUp"
