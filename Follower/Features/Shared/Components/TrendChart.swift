@@ -98,13 +98,15 @@ struct TrendChart: View {
     // MARK: - Day Chart (24h, unit: .hour)
 
     private var dayChart: some View {
-        let dayStart = calendar.startOfDay(for: referenceDate)
-        let domainStart = dayStart
-        let domainEnd   = calendar.date(byAdding: .day, value: 1, to: dayStart)!
+        // x 域锚定数据日期（非固定今天）：
+        // 今天有采样 → 锚定今天（等价原行为）；今天无数据回退最近观测日 → 柱仍可见
+        let anchorDay = dataPoints.map { calendar.startOfDay(for: $0.date) }.min() ?? calendar.startOfDay(for: referenceDate)
+        let domainStart = anchorDay
+        let domainEnd   = calendar.date(byAdding: .day, value: 1, to: anchorDay)!
         // Grid line: 0, 5, 10, 15, 20, 24h (cell 边界)
-        let boundaries = [0, 5, 10, 15, 20, 24].map { calendar.date(byAdding: .hour, value: $0, to: dayStart)! }
+        let boundaries = [0, 5, 10, 15, 20, 24].map { calendar.date(byAdding: .hour, value: $0, to: anchorDay)! }
         // Label: 2, 7, 12, 17, 22h (cell 中心)
-        let centers = [2, 7, 12, 17, 22].map { calendar.date(byAdding: .hour, value: $0, to: dayStart)! }
+        let centers = [2, 7, 12, 17, 22].map { calendar.date(byAdding: .hour, value: $0, to: anchorDay)! }
 
         return Chart {
             ForEach(dataPoints) { point in
