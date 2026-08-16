@@ -62,6 +62,7 @@ final class DIContainer {
     let engagementFunnelService: EngagementFunnelService
     /// 内容归因服务（Phi+ — 什么内容真正涨了粉）
     let contentAttributionService: ContentAttributionService
+    let milestoneService: MilestoneService
 
     // MARK: - Phi Premium Services
 
@@ -155,6 +156,7 @@ final class DIContainer {
         self.contentProfileService = ContentProfileService()
         self.engagementFunnelService = EngagementFunnelService()
         self.contentAttributionService = ContentAttributionService()
+        self.milestoneService = MilestoneService()
         self.authenticityService = AuthenticityService()
         self.campaignComparisonService = CampaignComparisonService()
         self.engagementHeatmapService = EngagementHeatmapService()

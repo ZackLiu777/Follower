@@ -50,6 +50,8 @@ final class DashboardViewModel {
     private let contentProfileService: ContentProfileService
     /// 内容归因服务（Phi+）
     private let contentAttributionService: ContentAttributionService
+    /// 成长里程碑服务（Phi+）
+    private let milestoneService: MilestoneService
     /// 官方 API 客户端（Reels 深度分析 per-media insights）
     private let apiClient: InstagramAPIClientProtocol
     /// Token 提供器
@@ -125,6 +127,8 @@ final class DashboardViewModel {
     var attributionResult: ContentAttributionResult?
     /// Reels 深度分析结果（Phi+）
     var reelsResult: ReelsAnalysisResult?
+    /// 成长里程碑结果（Phi+）
+    var milestoneResult: MilestoneResult?
 
     // MARK: - Published: Phi 三大人群画像 Premium 数据
 
@@ -177,6 +181,7 @@ final class DashboardViewModel {
         contentProfileService: ContentProfileService,
         engagementFunnelService: EngagementFunnelService,
         contentAttributionService: ContentAttributionService,
+        milestoneService: MilestoneService,
         apiClient: InstagramAPIClientProtocol,
         tokenProvider: TokenProviderProtocol,
         mediaKitService: MediaKitServiceProtocol
@@ -201,6 +206,7 @@ final class DashboardViewModel {
         self.contentProfileService = contentProfileService
         self.engagementFunnelService = engagementFunnelService
         self.contentAttributionService = contentAttributionService
+        self.milestoneService = milestoneService
         self.apiClient = apiClient
         self.tokenProvider = tokenProvider
         self.mediaKitService = mediaKitService
@@ -366,7 +372,7 @@ final class DashboardViewModel {
             // 清空所有 Premium 结果
             predictionResult = nil; activityResult = nil; retentionResult = nil
             qualityScore = nil; comparisonResult = nil; geoDistribution = nil
-            aiSummary = ""; authenticityResult = nil; campaignResult = nil; heatmapResult = nil
+            aiSummary = ""; authenticityResult = nil; campaignResult = nil; heatmapResult = nil; milestoneResult = nil
             bestPostingTimeResult = nil
             unfollowList = []
             contentTip = "Share your first post to get content tips."
@@ -475,6 +481,10 @@ final class DashboardViewModel {
         if !snapshots.isEmpty, let posts = try? await mediaPostRepository.fetchAll(accountId: accountId) {
             attributionResult = await contentAttributionService.analyze(posts: posts, snapshots: snapshots)
         }
+
+        // Phi+：成长里程碑 — 帖子 + 快照事件叙事（任一数据源可用即出结果）
+        let milestonePosts = (try? await mediaPostRepository.fetchAll(accountId: accountId)) ?? []
+        milestoneResult = await milestoneService.extract(posts: milestonePosts, snapshots: snapshots)
 
         // Phi+：Reels 深度分析（per-media insights，开发模式空数组 → 空态）
         if let token = try? await tokenProvider.getToken(accountId: accountId),

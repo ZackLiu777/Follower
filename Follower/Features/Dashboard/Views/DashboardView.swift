@@ -417,7 +417,7 @@ private struct PremiumInsightsSection: View {
                 .init(icon: "chart.bar.fill", label: loc(L10n.Premium.competitorComparison), locked: false),
                 .init(icon: "checkmark.shield.fill", label: loc(L10n.Premium.authenticityAssessment), locked: false),
                 .init(icon: "doc.richtext.fill", label: loc(L10n.Premium.mediaKitExport), locked: false),
-                .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking), locked: false),
+                .init(icon: "flag.checkered", label: loc(L10n.Premium.milestones), locked: false),
                 .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap), locked: false),
                 .init(icon: "person.2.badge.gearshape", label: loc(L10n.Premium.contentAttribution), locked: false),
                 .init(icon: "play.rectangle.fill", label: loc(L10n.Premium.reelsAnalysis), locked: false),
@@ -437,7 +437,7 @@ private struct PremiumInsightsSection: View {
                 .init(icon: "chart.bar.fill", label: loc(L10n.Premium.competitorComparison), locked: true),
                 .init(icon: "checkmark.shield.fill", label: loc(L10n.Premium.authenticityAssessment), locked: true),
                 .init(icon: "doc.richtext.fill", label: loc(L10n.Premium.mediaKitExport), locked: true),
-                .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking), locked: true),
+                .init(icon: "flag.checkered", label: loc(L10n.Premium.milestones), locked: true),
                 .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap), locked: true),
                 .init(icon: "person.2.badge.gearshape", label: loc(L10n.Premium.contentAttribution), locked: true),
                 .init(icon: "play.rectangle.fill", label: loc(L10n.Premium.reelsAnalysis), locked: true),
@@ -581,7 +581,7 @@ private struct PremiumInsightsSection: View {
         case 8: CompetitorDetailView(comparisonResult: viewModel.comparisonResult)
         case 9: AuthenticityDetailView(result: viewModel.authenticityResult)
         case 10: MediaKitDetailView(viewModel: viewModel)
-        case 11: CampaignDetailView(result: viewModel.campaignResult)
+        case 11: MilestoneTimelineView(result: viewModel.milestoneResult)
         case 12: HeatmapDetailView(result: viewModel.heatmapResult)
         case 13: ContentAttributionView(result: viewModel.attributionResult)
         case 14: ReelsAnalysisView(result: viewModel.reelsResult)
@@ -630,6 +630,7 @@ private struct PremiumTileItem {
         contentProfileService: container.contentProfileService,
         engagementFunnelService: container.engagementFunnelService,
         contentAttributionService: container.contentAttributionService,
+        milestoneService: container.milestoneService,
         apiClient: container.apiClient,
         tokenProvider: container.tokenProvider,
         mediaKitService: container.mediaKitService
