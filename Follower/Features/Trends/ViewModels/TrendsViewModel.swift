@@ -164,7 +164,14 @@ final class TrendsViewModel {
         let result: [TrendDataPoint]
         switch window {
         case .day:
-            result = hourlyData[metricType] ?? []
+            // 优先今天的真实同步采样点（小时粒度）；今天无采样事件时回退
+            // 最近一个有数据的日期（日粒度 Metric 真实值，修复"暂无趋势数据"空态）。
+            if let hourly = hourlyData[metricType], !hourly.isEmpty {
+                result = hourly
+            } else {
+                let daily = (dailyMetrics[metricType] ?? []).sorted { $0.observedAt < $1.observedAt }
+                result = daily.suffix(1).map { TrendDataPoint(date: $0.observedAt, value: $0.value) }
+            }
 
         case .week:
             // ★ 使用 TrendChart.weeklyDataPoints 共用方法，确保与 Dashboard 数据完全一致

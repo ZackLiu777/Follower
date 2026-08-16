@@ -2,18 +2,26 @@
 //  PredictionTrendChart.swift
 //  Follower
 //
-//  Lambda: 粉丝预测区间时序图（Swift Charts）。
-//  历史实线 + 未来中位数虚线 + 50/80/95% 三层渐变区间带 + "今天"垂直分界线。
-//  预测段纵轴 = baseFollowers + 逐日累计增长分位数（与 predictedFollowers 语义一致）。
+//  Lambda: 粉丝预测区间时序图（Swift Charts）— v1.6 Actual→Forecast Fan Chart。
 //
-//  图层声明顺序（先声明的在下层）：
-//    95% 带（最浅）→ 80% 带 → 50% 带（最深）→ 中位数虚线 → 今天线 → 历史实线
+//  视觉叙事（Actual → Forecast → Uncertainty）：
+//  - 历史 = 主色实线（唯一"过去"身份）
+//  - 预测 = accent 色虚线（唯一"未来"身份）+ 95% 淡背景带 + 80% 主区间带
+//  - Today = 灰虚线 + "今天"标签（语义明确）
+//  - 终点不做数值标注（Hero 负责"答案"，图负责"过程"，避免数字重复三遍）
 //
+//  交互（详情态）：
+//  - 按住/横向拖动 → Selection（Rule + Point + Tooltip）
+//  - Tooltip 按选中位置智能避让（左选右出 / 右选左出 / 中间上方）
+//  - 历史点显示"实际值"，预测点显示"预计 + 80%/95% 区间"
+//  - 交互状态（selectedDate）留在 View 层，不进 ViewModel
+//
+//  compact 模式（Dashboard 卡片）：静态渲染，无交互。
 
 import SwiftUI
 import Charts
 
-/// 粉丝预测区间时序图 — 历史 + 预测带（compact 用于卡片，全尺寸用于详情页）
+/// 粉丝预测区间时序图 — Actual → Forecast Fan Chart
 struct PredictionTrendChart: View {
     @Environment(\.theme) private var theme
 
@@ -27,12 +35,8 @@ struct PredictionTrendChart: View {
     let dailyLower: [Double]
     /// 逐日累计增长 10% 分位 — 80% 带
     let dailyQ10: [Double]
-    /// 逐日累计增长 25% 分位 — 50% 带
-    let dailyQ25: [Double]
     /// 逐日累计增长中位数
     let dailyMedian: [Double]
-    /// 逐日累计增长 75% 分位 — 50% 带上界
-    let dailyQ75: [Double]
     /// 逐日累计增长 90% 分位 — 80% 带上界
     let dailyQ90: [Double]
     /// 逐日累计增长 97.5% 分位 — 95% 带上界
@@ -40,10 +44,45 @@ struct PredictionTrendChart: View {
 
     var compact: Bool = false
 
+    /// 交互状态（UI 状态，不进 VM）
+    @State private var selectedIndex: Int?
+    @State private var tooltipPos: AnnotationPosition = .top
+    /// 缩放/平移状态：nil = 全览；非 nil = 用户可见域
+    @State private var zoomDomain: ClosedRange<Date>?
+    /// 捏合开始时的域（magnification 是手势内累计值 → 用起始域 × 当前倍数重算，幂等）
+    @State private var pinchStartDomain: ClosedRange<Date>?
+    /// 平移开始时的域与锚点（translation 是累计值 → 从起始域平移）
+    @State private var panStartDomain: ClosedRange<Date>?
+    /// 捏合激活标志 — 隔离 DragGesture（两指时 drag 也会触发）
+    @State private var isPinching = false
+
+    /// 最小可见窗口（天）— 防止无限放大
+    private var minVisibleDays: TimeInterval { 3 * 86_400 }
+
+    /// 全览域：历史起点 … 预测终点（Today 天然位于 75% 附近）
+    private var fullDomain: ClosedRange<Date> {
+        let start = historical.map(\.0).min() ?? forecastStart
+        let end = forecastDates.last ?? forecastStart
+        return (start.addingTimeInterval(-86_400))...end
+    }
+
     /// 预测段日期序列（forecastStart + 0...n−1 天）
     private var forecastDates: [Date] {
         let cal = Calendar.current
         return dailyMedian.indices.map { cal.date(byAdding: .day, value: $0, to: forecastStart) ?? forecastStart }
+    }
+
+    /// 动态 Y 轴域 — 历史 + 预测区间范围 + 12% 安全 padding（视觉稳定，不过度紧缩）
+    private var yDomain: ClosedRange<Double> {
+        var values = historical.map(\.1)
+        values.append(contentsOf: forecastDates.indices.flatMap { i in
+            [baseFollowers + dailyLower[i], baseFollowers + dailyUpper[i],
+             baseFollowers + dailyMedian[i]]
+        })
+        guard let minValue = values.min(), let maxValue = values.max() else { return 0...1 }
+        let range = maxValue - minValue
+        let padding = max(range * 0.12, maxValue * 0.004)
+        return (minValue - padding)...(maxValue + padding)
     }
 
     var body: some View {
@@ -53,80 +92,275 @@ struct PredictionTrendChart: View {
                     .chartXAxis(.hidden)
                     .chartYAxis(.hidden)
             } else {
-                chartContent
-                    .chartXAxis {
-                        AxisMarks { _ in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(theme.divider.opacity(0.5))
-                            AxisValueLabel().foregroundStyle(theme.textTertiary)
+                ZStack(alignment: .topTrailing) {
+                    chartContent
+                        .chartYScale(domain: yDomain)
+                        .chartXScale(domain: zoomDomain ?? fullDomain)
+                        .chartXAxis {
+                            AxisMarks { _ in
+                                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(theme.divider.opacity(0.5))
+                                AxisValueLabel().foregroundStyle(theme.textTertiary)
+                            }
                         }
-                    }
-                    .chartYAxis {
-                        AxisMarks { _ in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(theme.divider.opacity(0.5))
-                            AxisValueLabel().foregroundStyle(theme.textTertiary)
+                        .chartYAxis {
+                            AxisMarks { _ in
+                                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(theme.divider.opacity(0.5))
+                                AxisValueLabel().foregroundStyle(theme.textTertiary)
+                            }
                         }
+                        .chartOverlay { proxy in
+                            GeometryReader { geometry in
+                                Rectangle()
+                                    .fill(.clear)
+                                    .contentShape(Rectangle())
+                                    .gesture(
+                                        DragGesture(minimumDistance: 0)
+                                            .onChanged { value in
+                                                handleDrag(value: value, proxy: proxy, geometry: geometry)
+                                            }
+                                            .onEnded { _ in
+                                                panStartDomain = nil
+                                                if zoomDomain == nil { selectedIndex = nil }
+                                            }
+                                    )
+                                    .simultaneousGesture(
+                                        MagnifyGesture()
+                                            .onChanged { value in
+                                                handleMagnify(value: value, proxy: proxy, geometry: geometry)
+                                            }
+                                            .onEnded { _ in
+                                                pinchStartDomain = nil
+                                                isPinching = false
+                                            }
+                                    )
+                            }
+                        }
+
+                    // 恢复全览按钮（缩放态显示）
+                    if zoomDomain != nil {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                zoomDomain = nil
+                                selectedIndex = nil
+                                panStartDomain = nil
+                                pinchStartDomain = nil
+                                isPinching = false
+                            }
+                        } label: {
+                            Label(loc(L10n.Premium.chartReset), systemImage: "arrow.up.left.and.arrow.down.right")
+                                .font(.system(size: 11, weight: .semibold))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(theme.cardSurface)
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(theme.divider, lineWidth: 0.5))
+                        }
+                        .buttonStyle(.plain)
+                        .padding(8)
                     }
+                }
             }
         }
     }
 
-    /// 图表内容（含全部图层）
+    // MARK: - Interaction
+
+    /// 拖动分派：捏合激活 → 忽略；缩放态 → 平移；全览态 → 选择
+    private func handleDrag(value: DragGesture.Value, proxy: ChartProxy, geometry: GeometryProxy) {
+        guard !isPinching else { return }
+        if zoomDomain != nil {
+            pan(to: value.translation, proxy: proxy, geometry: geometry)
+        } else {
+            select(at: value.location.x, proxy: proxy, geometry: geometry)
+        }
+    }
+
+    /// 平移：translation.width 像素 → 日期偏移，从 panStartDomain 平移（clamp 到全览）
+    private func pan(to translation: CGSize, proxy: ChartProxy, geometry: GeometryProxy) {
+        guard let plot = proxy.plotFrame else { return }
+        let frame = geometry[plot]
+        guard frame.size.width > 0 else { return }
+        if panStartDomain == nil { panStartDomain = zoomDomain }
+        guard let start = panStartDomain else { return }
+        let domainWidth = start.upperBound.timeIntervalSince(start.lowerBound)
+        let shift = Double(translation.width) / Double(frame.size.width) * domainWidth
+        // 手指右移 → 内容左移 → 域向左（查看更早时间）
+        zoomDomain = clampDomain((start.lowerBound - shift)...(start.upperBound - shift))
+    }
+
+    /// 捏合缩放：围绕捏合起点锚定，幂等（用 pinchStartDomain × 当前倍数重算）
+    private func handleMagnify(value: MagnifyGesture.Value, proxy: ChartProxy, geometry: GeometryProxy) {
+        isPinching = true
+        selectedIndex = nil
+        let start = pinchStartDomain ?? (zoomDomain ?? fullDomain)
+        if pinchStartDomain == nil { pinchStartDomain = start }
+        guard let anchor: Date = proxy.value(atX: value.startLocation.x) else { return }
+
+        let startWidth = start.upperBound.timeIntervalSince(start.lowerBound)
+        var newWidth = startWidth / Double(max(value.magnification, 0.2))
+        let fullWidth = fullDomain.upperBound.timeIntervalSince(fullDomain.lowerBound)
+        newWidth = min(max(newWidth, minVisibleDays), fullWidth)
+
+        let anchorRatio = anchor.timeIntervalSince(start.lowerBound) / max(startWidth, 1)
+        let newLower = anchor.addingTimeInterval(-newWidth * anchorRatio)
+        zoomDomain = clampDomain(newLower...(newLower.addingTimeInterval(newWidth)))
+    }
+
+    /// 域 clamp：不出全览边界
+    private func clampDomain(_ domain: ClosedRange<Date>) -> ClosedRange<Date> {
+        let full = fullDomain
+        let fullWidth = full.upperBound.timeIntervalSince(full.lowerBound)
+        let width = domain.upperBound.timeIntervalSince(domain.lowerBound)
+        // 宽度不超过全览
+        let w = min(width, fullWidth)
+        var lower = domain.lowerBound
+        if lower < full.lowerBound { lower = full.lowerBound }
+        var upper = lower.addingTimeInterval(w)
+        if upper > full.upperBound { upper = full.upperBound; lower = upper.addingTimeInterval(-w) }
+        return lower...upper
+    }
+
+    /// 拖动映射：x 坐标 → 最近预测日期索引 + Tooltip 避让方向
+    private func select(at x: CGFloat, proxy: ChartProxy, geometry: GeometryProxy) {
+        guard let date: Date = proxy.value(atX: x) else { return }
+        if let nearest = forecastDates.enumerated().min(by: {
+            abs($0.element.timeIntervalSince(date)) < abs($1.element.timeIntervalSince(date))
+        }) {
+            selectedIndex = nearest.offset
+            tooltipPos = tooltipPosition(for: nearest.element, proxy: proxy, geometry: geometry)
+        }
+    }
+
+    /// 选中日期（预测区日期；nil = 未选中）
+    private var selectedDate: Date? {
+        guard let selectedIndex else { return nil }
+        return forecastDates[selectedIndex]
+    }
+
+    /// Tooltip 避让方向：选中点 x 在 domain 左/中/右
+    private func tooltipPosition(for date: Date, proxy: ChartProxy, geometry: GeometryProxy) -> AnnotationPosition {
+        guard let plot = proxy.plotFrame else { return .top }
+        let frame = geometry[plot]
+        guard let x = proxy.position(forX: date) else { return .top }
+        let midX = frame.origin.x + frame.size.width / 2
+        if x < midX - frame.size.width * 0.25 { return .trailing }
+        if x > midX + frame.size.width * 0.25 { return .leading }
+        return .top
+    }
+
+    /// Tooltip 内容（历史点 = 实际值；预测点 = 预计 + 区间）
+    private func tooltipText(for index: Int) -> String {
+        let date = forecastDates[index]
+        let day = date.formatted(.dateTime.month().day())
+        let median = Int((baseFollowers + dailyMedian[index]).rounded()).formatted(.number)
+        let lo80 = Int((baseFollowers + dailyQ10[index]).rounded()).formatted(.number)
+        let hi80 = Int((baseFollowers + dailyQ90[index]).rounded()).formatted(.number)
+        let lo95 = Int((baseFollowers + dailyLower[index]).rounded()).formatted(.number)
+        let hi95 = Int((baseFollowers + dailyUpper[index]).rounded()).formatted(.number)
+        return "\(day)\n\(loc(L10n.Premium.predictionForecast)) \(median)\n\(loc(L10n.Premium.likelyRange80)) \(lo80)–\(hi80)\n\(loc(L10n.Premium.likelyRange95)) \(lo95)–\(hi95)"
+    }
+
+    // MARK: - Chart Content
+
     private var chartContent: some View {
-        Chart {
-            // ── 三层预测区间带（95% 最浅 → 50% 最深）──
+        let forecastColor = theme.accentSecondary
+        return Chart {
+            // ── 95% 极淡背景带（更大可能空间，不抢视觉）──
             ForEach(forecastDates.indices, id: \.self) { i in
                 AreaMark(
                     x: .value("Date", forecastDates[i]),
                     yStart: .value("low95", baseFollowers + dailyLower[i]),
                     yEnd: .value("high95", baseFollowers + dailyUpper[i])
                 )
-                .foregroundStyle(theme.chartArea.opacity(0.5))   // 叠加后 ~0.05-0.06
-                .interpolationMethod(.catmullRom)
+                .foregroundStyle(forecastColor.opacity(0.09))
+                .interpolationMethod(.linear)
+                .alignsMarkStylesWithPlotArea(true)
+                .zIndex(0)
             }
+
+            // ── 80% 主区间带（核心不确定性表达）──
             ForEach(forecastDates.indices, id: \.self) { i in
                 AreaMark(
                     x: .value("Date", forecastDates[i]),
                     yStart: .value("low80", baseFollowers + dailyQ10[i]),
                     yEnd: .value("high80", baseFollowers + dailyQ90[i])
                 )
-                .foregroundStyle(theme.chartArea.opacity(0.9))   // ~0.09-0.11
-                .interpolationMethod(.catmullRom)
-            }
-            ForEach(forecastDates.indices, id: \.self) { i in
-                AreaMark(
-                    x: .value("Date", forecastDates[i]),
-                    yStart: .value("low50", baseFollowers + dailyQ25[i]),
-                    yEnd: .value("high50", baseFollowers + dailyQ75[i])
-                )
-                .foregroundStyle(theme.chartArea.opacity(1.0))   // ~0.10-0.12 基础值
-                .interpolationMethod(.catmullRom)
+                .foregroundStyle(forecastColor.opacity(0.20))
+                .interpolationMethod(.linear)
+                .alignsMarkStylesWithPlotArea(true)
+                .zIndex(0)
             }
 
-            // ── 预测中位数虚线 ──
+            // ── 预测中位数（唯一预测线：accent 色虚线，与历史身份鲜明区分）──
             ForEach(forecastDates.indices, id: \.self) { i in
                 LineMark(
                     x: .value("Date", forecastDates[i]),
                     y: .value("Median", baseFollowers + dailyMedian[i])
                 )
-                .foregroundStyle(theme.chartLine)
-                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                .interpolationMethod(.catmullRom)
+                .foregroundStyle(forecastColor)
+                .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round, dash: [5, 5]))
+                .interpolationMethod(.linear)
+                .zIndex(1)
             }
 
-            // ── "今天"分界线 ──
-            RuleMark(x: .value("Today", forecastStart))
-                .foregroundStyle(theme.textTertiary.opacity(0.4))
-                .lineStyle(StrokeStyle(lineWidth: 0.8, dash: [2, 2]))
-
-            // ── 历史实线（最上层）──
+            // ── 历史实线（主色，唯一"过去"身份）──
             ForEach(historical, id: \.0) { date, value in
                 LineMark(
                     x: .value("Date", date),
                     y: .value("Followers", value)
                 )
                 .foregroundStyle(theme.chartLine)
-                .lineStyle(StrokeStyle(lineWidth: 2))
-                .interpolationMethod(.catmullRom)
+                .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                .interpolationMethod(.linear)
+                .zIndex(2)
+            }
+
+            // ── Today 分界线 + "今天"标签（语义明确）──
+            RuleMark(x: .value("Today", forecastStart))
+                .foregroundStyle(Color.secondary.opacity(0.5))
+                .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                .annotation(position: .top, alignment: .trailing, spacing: 2) {
+                    Text(loc(L10n.Trends.today))
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundColor(theme.textTertiary)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(theme.cardSurface)
+                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                }
+                .zIndex(3)
+
+            // ── Selection（交互态：Rule + Point + Tooltip）──
+            if !compact, let selectedIndex, let date = selectedDate {
+                // 选中竖线
+                RuleMark(x: .value("Selected", date))
+                    .foregroundStyle(forecastColor.opacity(0.6))
+                    .lineStyle(StrokeStyle(lineWidth: 1))
+                    .zIndex(4)
+
+                // 选中点（预测中位）
+                PointMark(
+                    x: .value("Date", date),
+                    y: .value("Median", baseFollowers + dailyMedian[selectedIndex])
+                )
+                .symbolSize(70)
+                .foregroundStyle(forecastColor)
+                .zIndex(5)
+
+                // Tooltip（智能避让：左选右出 / 右选左出 / 中上）
+                RuleMark(x: .value("Selected", date))
+                    .annotation(position: tooltipPos, spacing: 6) {
+                        Text(tooltipText(for: selectedIndex))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(theme.textPrimary)
+                            .multilineTextAlignment(.leading)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                            .background(theme.cardElevated)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(theme.divider, lineWidth: 0.5))
+                    }
+                    .zIndex(6)
             }
         }
     }
@@ -137,34 +371,28 @@ struct PredictionTrendChart: View {
 // ═══════════════════════════════════════════════════════
 
 /// 生成与真实使用一致的示例数据（确定性公式，无随机 → 多次预览结果稳定）。
-/// 形态：90 天历史缓慢增长（~8000 → ~8460）+ 30 天预测累计增长分位（中位 ~171）。
 private func samplePredictionChartData() -> (
     historical: [(Date, Double)], forecastStart: Date, base: Double,
-    lower: [Double], q10: [Double], q25: [Double], median: [Double],
-    q75: [Double], q90: [Double], upper: [Double]
+    lower: [Double], q10: [Double], median: [Double], q90: [Double], upper: [Double]
 ) {
     let cal = Calendar.current
     let today = cal.startOfDay(for: Date())
 
-    // 历史：90 天，日增 ~5 的确定性波动序列
     let historical: [(Date, Double)] = (0..<90).map { i in
         let date = cal.date(byAdding: .day, value: -(89 - i), to: today)!
-        return (date, 8000.0 + 5.0 * Double(i) + Double((i * 7) % 11))
+        return (date, 11_200.0 + 3.0 * Double(i) + Double((i * 7) % 9))
     }
     let base = historical.last!.1
 
-    // 预测：逐日累计增长中位（每天 ~4.2 略加速），带宽分层（50/80/95%）
     let median: [Double] = (0...30).map { x -> Double in
-            let d = Double(x)
-            return 4.2 * d + 0.05 * d * d
-        }
-    let q25 = median.map { $0 - 12 }
-    let q75 = median.map { $0 + 12 }
-    let q10 = median.map { $0 - 30 }
-    let q90 = median.map { $0 + 30 }
-    let lower = median.map { $0 - 70 }
-    let upper = median.map { $0 + 70 }
-    return (historical, today, base, lower, q10, q25, median, q75, q90, upper)
+        let d = Double(x)
+        return 4.0 * d + 0.03 * d * d
+    }
+    let q10 = median.map { $0 - 40 }
+    let q90 = median.map { $0 + 40 }
+    let lower = median.map { $0 - 95 }
+    let upper = median.map { $0 + 95 }
+    return (historical, today, base, lower, q10, median, q90, upper)
 }
 
 /// 全尺寸（详情页）：Apple Native 主题
@@ -176,9 +404,7 @@ private func samplePredictionChartData() -> (
         baseFollowers: d.base,
         dailyLower: d.lower,
         dailyQ10: d.q10,
-        dailyQ25: d.q25,
         dailyMedian: d.median,
-        dailyQ75: d.q75,
         dailyQ90: d.q90,
         dailyUpper: d.upper
     )
@@ -186,27 +412,7 @@ private func samplePredictionChartData() -> (
     .padding()
 }
 
-/// 全尺寸（详情页）：Instagram 主题 — 双主题视觉对比
-#Preview("Full — Instagram") {
-    let d = samplePredictionChartData()
-    PredictionTrendChart(
-        historical: d.historical,
-        forecastStart: d.forecastStart,
-        baseFollowers: d.base,
-        dailyLower: d.lower,
-        dailyQ10: d.q10,
-        dailyQ25: d.q25,
-        dailyMedian: d.median,
-        dailyQ75: d.q75,
-        dailyQ90: d.q90,
-        dailyUpper: d.upper
-    )
-    .frame(height: 240)
-    .padding()
-    .environment(\.theme, .instagram)
-}
-
-/// compact（Dashboard 主卡片内嵌）：隐藏双轴
+/// compact（Dashboard 主卡片内嵌）：隐藏双轴，无交互
 #Preview("Compact Card") {
     let d = samplePredictionChartData()
     PredictionTrendChart(
@@ -215,9 +421,7 @@ private func samplePredictionChartData() -> (
         baseFollowers: d.base,
         dailyLower: d.lower,
         dailyQ10: d.q10,
-        dailyQ25: d.q25,
         dailyMedian: d.median,
-        dailyQ75: d.q75,
         dailyQ90: d.q90,
         dailyUpper: d.upper,
         compact: true

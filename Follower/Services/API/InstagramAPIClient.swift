@@ -21,6 +21,11 @@ protocol InstagramAPIClientProtocol: Sendable {
     func replyComment(accessToken: String, mediaID: String, message: String) async throws -> String
     /// 删除评论（DELETE /{comment-id}）
     func deleteComment(accessToken: String, commentID: String) async throws
+    /// 拉取单条媒体的深度指标（Reels 分析：plays/reach/saved/shares/avg_watch_time）
+    func fetchMediaInsights(accessToken: String, mediaID: String, metrics: [String]) async throws -> [IGInsightValue]
+    /// 评论私密回复（Comment-to-DM）：POST /{ig-comment-id}/private_replies
+    /// 官方评论→私信机制，权限 = instagram_business_manage_comments（无需 manage_messages）
+    func fetchCommentPrivateReply(accessToken: String, commentID: String, message: String) async throws -> String
 }
 
 // MARK: - Client
@@ -86,6 +91,22 @@ final class InstagramAPIClient: InstagramAPIClientProtocol {
         let url = "\(baseURL)/me/media?fields=id,caption,media_type,permalink,timestamp,like_count,comments_count,media_url,thumbnail_url&limit=\(limit)&access_token=\(accessToken)"
         let response: IGMediaResponse = try await get(url)
         return response.data ?? []
+    }
+
+    func fetchMediaInsights(accessToken: String, mediaID: String, metrics: [String]) async throws -> [IGInsightValue] {
+        let metricStr = metrics.joined(separator: ",")
+        let url = "\(baseURL)/\(mediaID)/insights?metric=\(metricStr)&access_token=\(accessToken)"
+        let response: IGInsightsResponse = try await get(url)
+        return response.data ?? []
+    }
+
+    func fetchCommentPrivateReply(accessToken: String, commentID: String, message: String) async throws -> String {
+        let url = "\(baseURL)/\(commentID)/private_replies"
+        let response: IGCommentReplyResponse = try await post(url, body: [
+            "message": message,
+            "access_token": accessToken,
+        ])
+        return response.id ?? ""
     }
 
     // MARK: - HTTP

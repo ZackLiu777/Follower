@@ -46,6 +46,16 @@ final class DashboardViewModel {
     private let mediaPostRepository: MediaPostRepositoryProtocol
     /// 最佳发帖时间服务（Premium — 基于 MediaPost，与热力图数据源分离）
     private let bestPostingTimeService: BestPostingTimeServiceProtocol
+    /// 内容档案服务（Phi+）
+    private let contentProfileService: ContentProfileService
+    /// 内容归因服务（Phi+）
+    private let contentAttributionService: ContentAttributionService
+    /// 官方 API 客户端（Reels 深度分析 per-media insights）
+    private let apiClient: InstagramAPIClientProtocol
+    /// Token 提供器
+    private let tokenProvider: TokenProviderProtocol
+    /// 互动漏斗服务（Phi+）
+    private let engagementFunnelService: EngagementFunnelService
     /// 媒体包 PDF 服务（Premium: mediaKitExport）
     private let mediaKitService: MediaKitServiceProtocol
 
@@ -107,6 +117,14 @@ final class DashboardViewModel {
      var predictionResult: PredictionResult?
     /// AI 生成的摘要文本（Premium）
      var aiSummary: String = ""
+    /// 内容档案结果（Phi+ — 内容策略 v2）
+    var contentProfileResult: ContentProfileResult?
+    /// 互动漏斗结果（Phi+）
+    var funnelResult: EngagementFunnelResult?
+    /// 内容归因结果（Phi+）
+    var attributionResult: ContentAttributionResult?
+    /// Reels 深度分析结果（Phi+）
+    var reelsResult: ReelsAnalysisResult?
 
     // MARK: - Published: Phi 三大人群画像 Premium 数据
 
@@ -156,6 +174,11 @@ final class DashboardViewModel {
         engagementHeatmapService: EngagementHeatmapServiceProtocol,
         mediaPostRepository: MediaPostRepositoryProtocol,
         bestPostingTimeService: BestPostingTimeServiceProtocol,
+        contentProfileService: ContentProfileService,
+        engagementFunnelService: EngagementFunnelService,
+        contentAttributionService: ContentAttributionService,
+        apiClient: InstagramAPIClientProtocol,
+        tokenProvider: TokenProviderProtocol,
         mediaKitService: MediaKitServiceProtocol
     ) {
         self.snapshotRepo = snapshotRepo
@@ -175,6 +198,11 @@ final class DashboardViewModel {
         self.engagementHeatmapService = engagementHeatmapService
         self.mediaPostRepository = mediaPostRepository
         self.bestPostingTimeService = bestPostingTimeService
+        self.contentProfileService = contentProfileService
+        self.engagementFunnelService = engagementFunnelService
+        self.contentAttributionService = contentAttributionService
+        self.apiClient = apiClient
+        self.tokenProvider = tokenProvider
         self.mediaKitService = mediaKitService
 
         // 监听新账号创建通知，自动刷新列表
@@ -349,7 +377,9 @@ final class DashboardViewModel {
         // 趋势预测（贝叶斯负二项回归，30 天预测）
         if !snapshots.isEmpty {
             let dataPoints = snapshots.map { ($0.observedAt, Double($0.followersCount)) }
-            historyPoints = dataPoints.sorted { $0.0 < $1.0 }
+            // v1.3：图表历史窗口截取最近 90 天 — 全量历史（730 天）会把 30 天预测段
+            // 压缩成尾部细条导致区间/预测不可读；训练仍用全量数据（模型不受影响）
+            historyPoints = dataPoints.sorted { $0.0 < $1.0 }.suffix(90).map { $0 }
             predictionResult = await predictionService.predictLinear(dataPoints: dataPoints, daysAhead: 30)
         } else if let snap {
             let today = Date()
@@ -418,13 +448,58 @@ final class DashboardViewModel {
         if let posts = try? await mediaPostRepository.fetchAll(accountId: accountId),
            !posts.isEmpty {
             bestPostingTimeResult = await bestPostingTimeService.analyze(from: posts)
+            // Phi+：内容档案（MediaPost 数据驱动）
+            contentProfileResult = await contentProfileService.analyze(from: posts)
+            #if DEBUG
+            if let r = bestPostingTimeResult {
+                print("[BestTime] posts: \(posts.count) | recommendation: \(r.peakDescription) "
+                    + "| score: \(r.recommendation.score) | conf: \(r.confidence.rawValue) "
+                    + "| lift: \(String(format: "%.0f%%", r.recommendation.liftVsAverage * 100)) "
+                    + "| P(best): \(String(format: "%.0f%%", r.recommendation.probabilityOfBeingBest * 100)) "
+                    + "| samples: \(r.recommendation.sampleCount)")
+            }
+            if let profile = contentProfileResult {
+                print("[ContentProfile] posts: \(profile.totalPosts) | viral: \(profile.viralCount) "
+                    + "| avg: \(profile.averageCount) | low: \(profile.lowCount) "
+                    + "| top: \(profile.topPosts.count) | formula: \(profile.viralFormula != nil)")
+            }
+            #endif
+        }
+
+        // Phi+：互动漏斗（快照全量）
+        if !snapshots.isEmpty {
+            funnelResult = await engagementFunnelService.analyze(snapshots: snapshots)
+        }
+
+        // Phi+：内容归因（快照 + 帖子）
+        if !snapshots.isEmpty, let posts = try? await mediaPostRepository.fetchAll(accountId: accountId) {
+            attributionResult = await contentAttributionService.analyze(posts: posts, snapshots: snapshots)
+        }
+
+        // Phi+：Reels 深度分析（per-media insights，开发模式空数组 → 空态）
+        if let token = try? await tokenProvider.getToken(accountId: accountId),
+           let media = try? await apiClient.fetchMedia(accessToken: token, limit: 50) {
+            let reels = media.filter { $0.mediaType == "VIDEO" }.prefix(ReelsAnalysisService.maxReels)
+            var performances: [ReelPerformance] = []
+            for reel in reels {
+                if let insights = try? await apiClient.fetchMediaInsights(
+                    accessToken: token, mediaID: reel.id,
+                    metrics: ["plays", "reach", "saved", "shares", "avg_watch_time"]),
+                   let perf = ReelsAnalysisService.mapReel(media: reel, insights: insights) {
+                    performances.append(perf)
+                }
+            }
+            reelsResult = ReelsAnalysisService.aggregate(performances)
         }
 
         // Mock 回退 — 保持向后兼容，现有 UI 继续工作
         unfollowList = computeUnfollowList(snapshots: snapshots)
         contentTip = computeContentTip()
         // v0.15-alpha: predictedValue 为累计增长量（贝叶斯模型）→ 预测总数 = 当前粉丝 + 累计增长
-        let growth = predictionResult.map { Int($0.predictedValue) } ?? 0
+        // v1.5：统一最终预测 = base + dailyMedian.last（图表终点同源）——修复
+        // 均值（predictedValue）与中位数（dailyMedian.last）不一致导致的 Hero/图表数字分叉
+        let medianGrowth = predictionResult?.dailyMedian?.last ?? predictionResult?.predictedValue ?? 0
+        let growth = Int(medianGrowth.rounded())
         predictedFollowers = growth + (latestSnapshot?.followersCount ?? 0)
     }
 

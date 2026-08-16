@@ -419,7 +419,9 @@ private struct PremiumInsightsSection: View {
                 .init(icon: "doc.richtext.fill", label: loc(L10n.Premium.mediaKitExport), locked: false),
                 .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking), locked: false),
                 .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap), locked: false),
-                .init(icon: "calendar.badge.plus", label: loc(L10n.Premium.contentScheduling), locked: false),
+                .init(icon: "person.2.badge.gearshape", label: loc(L10n.Premium.contentAttribution), locked: false),
+                .init(icon: "play.rectangle.fill", label: loc(L10n.Premium.reelsAnalysis), locked: false),
+                .init(icon: "paperplane.fill", label: loc(L10n.Premium.commentDM), locked: false),
             ]
         } else {
             return [
@@ -437,7 +439,9 @@ private struct PremiumInsightsSection: View {
                 .init(icon: "doc.richtext.fill", label: loc(L10n.Premium.mediaKitExport), locked: true),
                 .init(icon: "chart.line.flattrend.xyaxis", label: loc(L10n.Premium.campaignTracking), locked: true),
                 .init(icon: "square.grid.3x3.fill", label: loc(L10n.Premium.engagementHeatmap), locked: true),
-                .init(icon: "calendar.badge.plus", label: loc(L10n.Premium.contentScheduling), locked: true),
+                .init(icon: "person.2.badge.gearshape", label: loc(L10n.Premium.contentAttribution), locked: true),
+                .init(icon: "play.rectangle.fill", label: loc(L10n.Premium.reelsAnalysis), locked: true),
+                .init(icon: "paperplane.fill", label: loc(L10n.Premium.commentDM), locked: true),
             ]
         }
     }
@@ -571,14 +575,21 @@ private struct PremiumInsightsSection: View {
         case 4: ComparisonDetailView(result: viewModel.comparisonResult)
         case 5: UnfollowListView(followers: viewModel.unfollowList)
         case 6: BestTimeView(result: viewModel.bestPostingTimeResult)
-        case 7: ContentStrategyView(aiSummary: viewModel.aiSummary.isEmpty ? viewModel.contentTip : viewModel.aiSummary)
+        case 7: ContentStrategyView(profile: viewModel.contentProfileResult,
+                                    funnel: viewModel.funnelResult)
         // Phi: 三大人群画像新 Premium 功能
         case 8: CompetitorDetailView(comparisonResult: viewModel.comparisonResult)
         case 9: AuthenticityDetailView(result: viewModel.authenticityResult)
         case 10: MediaKitDetailView(viewModel: viewModel)
         case 11: CampaignDetailView(result: viewModel.campaignResult)
         case 12: HeatmapDetailView(result: viewModel.heatmapResult)
-        case 13: ContentSchedulingDetailView(activityResult: viewModel.activityResult)
+        case 13: ContentAttributionView(result: viewModel.attributionResult)
+        case 14: ReelsAnalysisView(result: viewModel.reelsResult)
+        case 15: CommentDMView(
+            apiClient: appState.container.apiClient,
+            tokenProvider: appState.container.tokenProvider,
+            accountId: viewModel.selectedAccountId,
+            mediaID: viewModel.recentPosts.first?.igMediaID ?? "")
         default: EmptyView()
         }
     }
@@ -616,6 +627,11 @@ private struct PremiumTileItem {
         engagementHeatmapService: container.engagementHeatmapService,
         mediaPostRepository: container.mediaPostRepository,
         bestPostingTimeService: container.bestPostingTimeService,
+        contentProfileService: container.contentProfileService,
+        engagementFunnelService: container.engagementFunnelService,
+        contentAttributionService: container.contentAttributionService,
+        apiClient: container.apiClient,
+        tokenProvider: container.tokenProvider,
         mediaKitService: container.mediaKitService
     )
     let settingsViewModel = SettingsViewModel(

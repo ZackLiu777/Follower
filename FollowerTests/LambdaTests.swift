@@ -151,26 +151,30 @@ struct LambdaTests {
         let video = IGMedia(
             id: "v1", caption: nil, mediaType: "VIDEO", permalink: nil, timestamp: nil,
             likeCount: nil, commentsCount: nil,
-            mediaURL: "https://cdn/video.mp4", thumbnailURL: "https://cdn/video-cover.jpg"
+            mediaURL: "https://cdn/video.mp4", thumbnailURL: "https://cdn/video-cover.jpg",
+            mediaDuration: 30
         )
         #expect(video.displayImageURL == "https://cdn/video-cover.jpg", "video 应优先封面缩略图")
 
         let videoFallback = IGMedia(
             id: "v2", caption: nil, mediaType: "VIDEO", permalink: nil, timestamp: nil,
-            likeCount: nil, commentsCount: nil, mediaURL: nil, thumbnailURL: nil
+            likeCount: nil, commentsCount: nil, mediaURL: nil, thumbnailURL: nil,
+            mediaDuration: nil
         )
         #expect(videoFallback.displayImageURL == nil)
 
         let image = IGMedia(
             id: "i1", caption: nil, mediaType: "IMAGE", permalink: nil, timestamp: nil,
             likeCount: nil, commentsCount: nil,
-            mediaURL: "https://cdn/img.jpg", thumbnailURL: "https://cdn/thumb.jpg"
+            mediaURL: "https://cdn/img.jpg", thumbnailURL: "https://cdn/thumb.jpg",
+            mediaDuration: nil
         )
         #expect(image.displayImageURL == "https://cdn/img.jpg", "image 应优先原图")
 
         let imageFallback = IGMedia(
             id: "i2", caption: nil, mediaType: "IMAGE", permalink: nil, timestamp: nil,
-            likeCount: nil, commentsCount: nil, mediaURL: nil, thumbnailURL: "https://cdn/thumb.jpg"
+            likeCount: nil, commentsCount: nil, mediaURL: nil, thumbnailURL: "https://cdn/thumb.jpg",
+            mediaDuration: nil
         )
         #expect(imageFallback.displayImageURL == "https://cdn/thumb.jpg", "image 缺原图时用缩略图兜底")
     }

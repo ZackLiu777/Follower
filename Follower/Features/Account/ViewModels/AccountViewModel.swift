@@ -207,11 +207,16 @@ final class AccountViewModel {
                 errorMessage = "测试账号创建失败"
                 return
             }
-            // 哨兵 token：RoutingTokenProvider 对测试账号跳过 Keychain（no-op），
-            // 连接流程永不因 Keychain 失败；分派由 APIClientResolver 按 token 值决定
+            // 哨兵 token（带账号序号）：RoutingTokenProvider 对测试账号跳过 Keychain（no-op），
+            // 连接流程永不因 Keychain 失败；分派由 APIClientResolver 按 token 值决定。
+            // v1.3：token 携带账号序号 → MockInstagramAPIClient 按 token 派生 seed，
+            // 不同测试账号 → 不同 mock 数据集 → 分析结果互不相同。
+            let token = accountId > 1
+                ? "mock://token-\(accountId)"
+                : MockInstagramAPIClient.sentinelToken
             try await tokenProvider.storeToken(
                 accountId: accountId,
-                accessToken: MockInstagramAPIClient.sentinelToken
+                accessToken: token
             )
             // v0.15.1: sync 失败不再静默吞掉 — 用户能看到测试数据未写入的原因
             do {

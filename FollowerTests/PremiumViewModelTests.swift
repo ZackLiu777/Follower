@@ -24,6 +24,13 @@ final class MockSnapshotRepository: SnapshotRepositoryProtocol {
     func upsertBatch(_ snapshots: [Snapshot]) async throws -> [Snapshot] { snapshots }
 }
 
+/// Mock TokenProvider — 内存 token，隔离 Keychain
+final class MockTokenProvider: TokenProviderProtocol, @unchecked Sendable {
+    func storeToken(accountId: Int64, accessToken: String) async throws {}
+    func getToken(accountId: Int64) async throws -> String { MockInstagramAPIClient.sentinelToken }
+    func deleteToken(accountId: Int64) async throws {}
+}
+
 /// Mock MockAccountRepository — 可预设账户列表，用于隔离数据库依赖
 final class MockAccountRepository: AccountRepositoryProtocol {
     var accounts: [Account] = []
@@ -128,6 +135,11 @@ struct PremiumViewModelTests {
             engagementHeatmapService: EngagementHeatmapService(),
             mediaPostRepository: mediaPostRepo,
             bestPostingTimeService: BestPostingTimeService(),
+            contentProfileService: ContentProfileService(),
+            engagementFunnelService: EngagementFunnelService(),
+            contentAttributionService: ContentAttributionService(),
+            apiClient: MockInstagramAPIClient(),
+            tokenProvider: MockTokenProvider(),
             mediaKitService: MediaKitService()
         )
     }
@@ -340,7 +352,8 @@ struct PremiumViewModelTests {
 
     // MARK: - Phi: 新增 PremiumFeatureKey 用例
 
-    /// PremiumFeatureKey.allCases 应包含 Phi 阶段新增的 7 个三大人群画像键
+    /// PremiumFeatureKey.allCases 应包含 Phi 阶段新增的三大人群画像键
+    /// （v1.9：contentScheduling 内容排期已下线，不再要求）
     @Test
     func testPremiumFeatureKeyIncludesPhiCases() {
         let allKeys = PremiumFeatureKey.allCases
@@ -348,8 +361,6 @@ struct PremiumViewModelTests {
         #expect(allKeys.contains(.authenticityAssessment), "Should include authenticityAssessment")
         #expect(allKeys.contains(.mediaKitExport), "Should include mediaKitExport")
         #expect(allKeys.contains(.campaignTracking), "Should include campaignTracking")
-        #expect(allKeys.contains(.engagementHeatmap), "Should include engagementHeatmap")
-        #expect(allKeys.contains(.contentScheduling), "Should include contentScheduling")
         #expect(allKeys.contains(.commentManagement), "Should include commentManagement")
     }
 

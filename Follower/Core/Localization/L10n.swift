@@ -347,6 +347,30 @@ enum L10n {
         static let bestTimeToPost = "premium.bestTimeToPost"
         static let contentStrategy = "premium.contentStrategy"
 
+        // MARK: Best Time v2（推荐 + 置信度 + 证据）
+        /// 评分数字（%@ = 0-100）
+        static let bestTimeScore = "premium.bestTimeScore"
+        /// 评分标签
+        static let bestTimeScoreLabel = "premium.bestTimeScoreLabel"
+        /// 置信度标签
+        static let bestTimeConfidenceLabel = "premium.bestTimeConfidenceLabel"
+        /// 相对基线提升标签
+        static let bestTimeLiftLabel = "premium.bestTimeLiftLabel"
+        /// 置信度分档
+        static let confidenceLow = "premium.confidenceLow"
+        static let confidenceMedium = "premium.confidenceMedium"
+        static let confidenceHigh = "premium.confidenceHigh"
+        /// Why 卡标题
+        static let bestTimeWhyTitle = "premium.bestTimeWhyTitle"
+        /// 相对基线提升说明
+        static let bestTimeLiftDesc = "premium.bestTimeLiftDesc"
+        /// 样本说明（%@ = 窗口样本，%d = 总帖数）："%@ 篇帖子分析（窗口内 %@ 篇）"
+        static let bestTimeSamples = "premium.bestTimeSamples"
+        /// 最佳窗口概率
+        static let bestTimeProbability = "premium.bestTimeProbability"
+        /// 历史表现卡标题
+        static let bestTimeHistoricalTitle = "premium.bestTimeHistoricalTitle"
+
         // MARK: Card value snippets
         static let analyzing = "premium.analyzing"
         static let in30Days = "premium.in30Days"
@@ -447,6 +471,8 @@ enum L10n {
         // MARK: Prediction
         static let predictedFollowersNext = "premium.predictedFollowersNext"
         static let predictionDescription = "premium.predictionDescription"
+        /// 预计增长标签（v1.4）
+        static let predictedGrowthLabel = "premium.predictedGrowthLabel"
 
         // MARK: No data generic
         static let noDataAvailable = "premium.noDataAvailable"
@@ -488,7 +514,6 @@ enum L10n {
         static let mediaKitExport = "premium.mediaKitExport"
         static let campaignTracking = "premium.campaignTracking"
         static let engagementHeatmap = "premium.engagementHeatmap"
-        static let contentScheduling = "premium.contentScheduling"
         static let commentManagement = "premium.commentManagement"
         static let themeSwitching = "premium.themeSwitching"
 
@@ -568,6 +593,54 @@ enum L10n {
         // MARK: - Detail views (v0.16 补缺：其余详情页 key 见上方各 Detail 分组)
         static let likelyRange80 = "premium.likelyRange80"
         static let growthProbability = "premium.growthProbability"
+        /// 95% 预测区间标签（v1.6 Tooltip）
+        static let likelyRange95 = "premium.likelyRange95"
+        /// Tooltip 预计值标签（v1.6）
+        static let predictionForecast = "premium.predictionForecast"
+        /// 图表恢复全览按钮（v1.6 缩放）
+        static let chartReset = "premium.chartReset"
+
+        // MARK: 内容策略 v2（内容档案 + 互动漏斗）
+        static let contentStrategyNoData = "premium.contentStrategyNoData"
+        static let contentStrategyNoDataDesc = "premium.contentStrategyNoDataDesc"
+        static let contentProfileTitle = "premium.contentProfileTitle"
+        static let contentProfileTypes = "premium.contentProfileTypes"
+        /// 发帖数后缀（%@ = 数字，如 "12 篇"）
+        static let contentProfilePosts = "premium.contentProfilePosts"
+        static let contentTierViral = "premium.contentTierViral"
+        static let contentTierAverage = "premium.contentTierAverage"
+        static let contentTierLow = "premium.contentTierLow"
+        static let contentViralFormula = "premium.contentViralFormula"
+        static let contentFormulaType = "premium.contentFormulaType"
+        static let contentFormulaDay = "premium.contentFormulaDay"
+        static let contentFormulaHour = "premium.contentFormulaHour"
+        static let contentFormulaCaption = "premium.contentFormulaCaption"
+        static let contentCaptionInsight = "premium.contentCaptionInsight"
+        static let contentTopPosts = "premium.contentTopPosts"
+        static let contentNoCaption = "premium.contentNoCaption"
+        static let contentFunnelTitle = "premium.contentFunnelTitle"
+        static let contentFunnelViews = "premium.contentFunnelViews"
+        static let contentFunnelEngagement = "premium.contentFunnelEngagement"
+        static let contentFunnelFollowers = "premium.contentFunnelFollowers"
+        static let contentFunnelViewToEng = "premium.contentFunnelViewToEng"
+        static let contentFunnelEngToFollower = "premium.contentFunnelEngToFollower"
+        static let contentFunnelOverall = "premium.contentFunnelOverall"
+        static let contentFunnelBottleneck = "premium.contentFunnelBottleneck"
+        static let contentBottleneckEngagement = "premium.contentBottleneckEngagement"
+        static let contentBottleneckConversion = "premium.contentBottleneckConversion"
+
+        // MARK: 内容→增长归因（v1.10）
+        static let contentAttribution = "premium.contentAttribution"
+        static let attributionNoData = "premium.attributionNoData"
+        static let attributionNoDataDesc = "premium.attributionNoDataDesc"
+        static let attributionTotal = "premium.attributionTotal"
+        static let attributionBestType = "premium.attributionBestType"
+        static let attributionBestDay = "premium.attributionBestDay"
+        static let attributionByType = "premium.attributionByType"
+        static let attributionByDay = "premium.attributionByDay"
+        static let attributionTopPosts = "premium.attributionTopPosts"
+        static let attributionDisclaimer = "premium.attributionDisclaimer"
+
         static let predictionUnavailable = "premium.predictionUnavailable"
         static let predictionNeedsData = "premium.predictionNeedsData"
         static let comparisonUp = "premium.comparisonUp"
@@ -575,6 +648,43 @@ enum L10n {
         static let comparisonStable = "premium.comparisonStable"
         static let anomalies = "premium.anomalies"
         static let activeDaysOf = "premium.activeDaysOf"
+
+        // MARK: Reels 深度分析（v1.10）
+        static let reelsAnalysis = "premium.reelsAnalysis"
+        static let reelsAvgCompletion = "premium.reelsAvgCompletion"
+        static let reelsBest = "premium.reelsBest"
+        static let reelsCount = "premium.reelsCount"
+        static let reelsSaveRate = "premium.reelsSaveRate"
+        static let reelsShareRate = "premium.reelsShareRate"
+        static let reelsList = "premium.reelsList"
+        static let reelsNoCaption = "premium.reelsNoCaption"
+        static let reelsPlays = "premium.reelsPlays"
+        static let reelsNoData = "premium.reelsNoData"
+        static let reelsNoDataDesc = "premium.reelsNoDataDesc"
+        static let reelsNote = "premium.reelsNote"
+
+        // MARK: 评论触发私信（v1.10）
+        static let commentDM = "premium.commentDM"
+        static let commentDMInfoTitle = "premium.commentDMInfoTitle"
+        static let commentDMInfoDesc = "premium.commentDMInfoDesc"
+        static let commentDMAddRule = "premium.commentDMAddRule"
+        static let commentDMKeywordPlaceholder = "premium.commentDMKeywordPlaceholder"
+        static let commentDMTemplatePlaceholder = "premium.commentDMTemplatePlaceholder"
+        static let commentDMSample = "premium.commentDMSample"
+        static let commentDMAddButton = "premium.commentDMAddButton"
+        static let commentDMSampleTitle = "premium.commentDMSampleTitle"
+        static let commentDMSampleNote = "premium.commentDMSampleNote"
+        static let commentDMRules = "premium.commentDMRules"
+        static let commentDMNoRules = "premium.commentDMNoRules"
+        static let commentDMResetHistory = "premium.commentDMResetHistory"
+        static let commentDMRunning = "premium.commentDMRunning"
+        static let commentDMRun = "premium.commentDMRun"
+        static let commentDMResult = "premium.commentDMResult"
+        static let commentDMComplianceTitle = "premium.commentDMComplianceTitle"
+        static let commentDMComplianceDesc = "premium.commentDMComplianceDesc"
+        static let commentDMNoMedia = "premium.commentDMNoMedia"
+        static let commentDMNoMediaDesc = "premium.commentDMNoMediaDesc"
+
     }
 
     // MARK: MediaKit（媒体包 PDF 导出）
