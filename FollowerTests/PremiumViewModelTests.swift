@@ -138,6 +138,7 @@ struct PremiumViewModelTests {
             contentProfileService: ContentProfileService(),
             engagementFunnelService: EngagementFunnelService(),
             contentAttributionService: ContentAttributionService(),
+            milestoneService: MilestoneService(),
             apiClient: MockInstagramAPIClient(),
             tokenProvider: MockTokenProvider(),
             mediaKitService: MediaKitService()

@@ -52,6 +52,7 @@ private struct ContentViewInner: View {
             contentProfileService: container.contentProfileService,
             engagementFunnelService: container.engagementFunnelService,
             contentAttributionService: container.contentAttributionService,
+            milestoneService: MilestoneService(),
             apiClient: container.apiClient,
             tokenProvider: container.tokenProvider,
             mediaKitService: container.mediaKitService

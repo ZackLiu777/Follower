@@ -488,6 +488,7 @@ struct PhiServicesTests {
             contentProfileService: ContentProfileService(),
             engagementFunnelService: EngagementFunnelService(),
             contentAttributionService: ContentAttributionService(),
+            milestoneService: MilestoneService(),
             apiClient: MockInstagramAPIClient(),
             tokenProvider: MockTokenProvider(),
             mediaKitService: MediaKitService()
@@ -542,6 +543,7 @@ struct PhiServicesTests {
             contentProfileService: ContentProfileService(),
             engagementFunnelService: EngagementFunnelService(),
             contentAttributionService: ContentAttributionService(),
+            milestoneService: MilestoneService(),
             apiClient: MockInstagramAPIClient(),
             tokenProvider: MockTokenProvider(),
             mediaKitService: MediaKitService()
@@ -946,5 +948,157 @@ struct CommentDMServiceTests {
         #expect(!CommentDMService.isWithinWindow(commentTimestamp: old))
         #expect(!CommentDMService.isWithinWindow(commentTimestamp: nil))
         #expect(!CommentDMService.isWithinWindow(commentTimestamp: "not-a-date"))
+    }
+}
+
+// MARK: - MilestoneServiceTests
+
+struct MilestoneServiceTests {
+
+    private func makePost(id: Int, type: MediaPostType, likes: Int, comments: Int = 0, day: Int) -> MediaPost {
+        let cal = Calendar.current
+        let date = cal.date(byAdding: .day, value: day, to: cal.startOfDay(for: Date()))!
+        return MediaPost(id: Int64(id), accountId: 1, igMediaID: "ms-\(id)",
+            type: type, date: date, likes: likes, comments: comments,
+            caption: "p\(id)", mediaURL: nil, permalink: nil)
+    }
+
+    private func makeSnapshot(day: Int, followers: Int) -> Snapshot {
+        let cal = Calendar.current
+        let date = cal.date(byAdding: .day, value: day, to: cal.startOfDay(for: Date()))!
+        return Snapshot(id: nil, accountId: 1, followersCount: followers,
+            followingCount: 100, mediaCount: 10, engagementRate: 0.05,
+            totalLikes: 500, totalComments: 50, totalShares: 10, totalViews: 1000,
+            observedAt: date, createdAt: Date())
+    }
+
+    /// 全部输入为空 → nil（调用方显示空态）
+    @Test
+    func testEmptyInputsNil() async {
+        let service = MilestoneService()
+        #expect(await service.extract(posts: [], snapshots: []) == nil)
+    }
+
+    /// 粉丝里程碑：快照序列跨过 1K/5K 阈值 → 对应事件
+    @Test
+    func testFollowerMilestones() async {
+        let service = MilestoneService()
+        let snaps = [
+            makeSnapshot(day: -20, followers: 800),
+            makeSnapshot(day: -10, followers: 1_200),
+            makeSnapshot(day: -5, followers: 5_200),
+        ]
+        let result = await service.extract(posts: [], snapshots: snaps)
+        let milestones = result?.events.filter { $0.kind == .followerMilestone } ?? []
+        #expect(milestones.count == 2)
+        #expect(milestones[0].value == 1_000)
+        #expect(milestones[1].value == 5_000)
+        #expect(milestones[1].date <= snaps[2].observedAt)
+    }
+
+    /// 爆帖：互动 > 均值 × 3；最佳单帖为互动最高帖
+    @Test
+    func testViralAndBestPost() async {
+        let service = MilestoneService()
+        let posts = [
+            makePost(id: 1, type: .image, likes: 10, day: -10),
+            makePost(id: 2, type: .image, likes: 10, day: -9),
+            makePost(id: 3, type: .image, likes: 12, day: -8),
+            makePost(id: 4, type: .video, likes: 100, day: -7),
+        ]
+        let result = await service.extract(posts: posts, snapshots: [])
+        let viral = result?.events.filter { $0.kind == .viralPost } ?? []
+        #expect(viral.count == 1)
+        #expect(viral.first?.value == 100)
+        #expect(result?.bestPost?.value == 100)
+        #expect(result?.bestPost?.kind == .bestPost)
+    }
+
+    /// 全部帖子互动相同 → 无爆帖（均值×3 内），但最佳单帖存在
+    @Test
+    func testNoViralWhenUniform() async {
+        let service = MilestoneService()
+        let posts = [
+            makePost(id: 1, type: .image, likes: 20, day: -5),
+            makePost(id: 2, type: .image, likes: 20, day: -4),
+            makePost(id: 3, type: .image, likes: 20, day: -3),
+        ]
+        let result = await service.extract(posts: posts, snapshots: [])
+        #expect((result?.events.filter { $0.kind == .viralPost } ?? []).isEmpty)
+        #expect(result?.bestPost != nil)
+    }
+
+    /// 掉粉事件：最负单日增量 Top N（按天去重）
+    @Test
+    func testUnfollowEvents() async {
+        let service = MilestoneService()
+        let snaps = [
+            makeSnapshot(day: -10, followers: 1000),
+            makeSnapshot(day: -9, followers: 970),   // -30
+            makeSnapshot(day: -8, followers: 940),   // -30
+            makeSnapshot(day: -7, followers: 900),   // -40
+            makeSnapshot(day: -6, followers: 950),   // +50
+        ]
+        let result = await service.extract(posts: [], snapshots: snaps)
+        let drops = result?.events.filter { $0.kind == .unfollowEvent } ?? []
+        #expect(drops.count == 3)
+        #expect(drops.first?.value == 40)
+    }
+
+    /// 最佳一周：7 日滑动净增峰值
+    @Test
+    func testBoostWeek() async {
+        let service = MilestoneService()
+        let snaps = [
+            makeSnapshot(day: -20, followers: 1000),
+            makeSnapshot(day: -19, followers: 1000),
+            makeSnapshot(day: -18, followers: 1000),
+            makeSnapshot(day: -17, followers: 1000),
+            makeSnapshot(day: -16, followers: 1000),
+            makeSnapshot(day: -15, followers: 1000),
+            makeSnapshot(day: -14, followers: 1000),
+            makeSnapshot(day: -13, followers: 1500), // 7 日窗口 +500
+            makeSnapshot(day: -12, followers: 1500),
+            makeSnapshot(day: -11, followers: 1500),
+        ]
+        let result = await service.extract(posts: [], snapshots: snaps)
+        let boost = result?.events.filter { $0.kind == .boostWeek } ?? []
+        #expect(boost.count == 1)
+        #expect(boost.first?.value == 500)
+    }
+
+    /// 确定性：同输入两次提取 → 事件完全一致
+    @Test
+    func testDeterministic() async {
+        let service = MilestoneService()
+        let posts = [makePost(id: 1, type: .image, likes: 30, day: -3)]
+        let snaps = [
+            makeSnapshot(day: -5, followers: 500),
+            makeSnapshot(day: -2, followers: 900),
+        ]
+        let a = await service.extract(posts: posts, snapshots: snaps)
+        let b = await service.extract(posts: posts, snapshots: snaps)
+        #expect(a?.events == b?.events)
+    }
+
+    /// 事件按日期升序
+    @Test
+    func testEventsSortedByDate() async {
+        let service = MilestoneService()
+        let posts = [
+            makePost(id: 1, type: .image, likes: 5, day: -1),
+            makePost(id: 2, type: .image, likes: 200, day: -30),
+        ]
+        let snaps = [
+            makeSnapshot(day: -40, followers: 600),
+            makeSnapshot(day: -10, followers: 2_000),
+        ]
+        let result = await service.extract(posts: posts, snapshots: snaps)
+        guard let events = result?.events, events.count >= 2 else {
+            #expect(Bool(false)); return
+        }
+        for i in 1..<events.count {
+            #expect(events[i - 1].date <= events[i].date)
+        }
     }
 }
